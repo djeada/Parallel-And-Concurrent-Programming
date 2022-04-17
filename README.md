@@ -199,25 +199,14 @@ A mutex is a mechanism develop to prevent data races. Multiple threads (or proce
 While one thread is allowed to use the resources, other requesting threads are put to sleep until thread exits the portion of code guarded by the mutex.
 
 #### Semaphore
- semaphore should be used for Synchronization (i.e. "Hey Someone! This occurred!").
-Semaphores are a type of synchronization primitives. A trivial semaphore is a plain variable that is changed (for example, incremented or decremented, or toggled) depending on programmer-defined conditions.  Binary semaphore can take only values 1 or 0, so it can achieve the same purpose as mutex.
+
+Semaphore are used for synchronization (i.e "Hello there, function foo()! Did you know that something occurred just now?"). A semaphore is an integer variable that can only be accessed via two atomic operations: wait and signal. Changes to the sempahore value in the wait and signal actions must be carried out independently. That is, when one process changes a semaphore value, no other process can change the same semaphore value at that time.
 
 #### Common miconceptions
 
-!!!!
-Mutex is for exclusive access to a resource. A Binary semaphore should be used for Synchronization (i.e. "Hey Someone! This occurred!"). The Binary "giver" simply notifies whoever the "taker" that what they were waiting for happened. 
-!!!!
+Because a binary semaphore can only accept one of two values, it serves the same function as a mutex. The prevalent misunderstanding is that they are the same thing.
 
-The terms binary semaphore and mutex are interchangeable.
-However, they are not the same!
-Mutex and semaphore serve various purposes.
-
-A mutex is a locking mechanism used to synchronize access to a resource.
-Only one job (depending on OS abstraction, this might be a thread or process) can obtain the mutex.
-It signifies that the mutex has ownership, and only the owner may release the lock (mutex).
-
-Semaphore is a signaling mechanism ("I am finished, you may proceed" type of signal).
-For example, if you are listening to music on your phone (assuming it is one task) and a buddy calls you at the same time, an interrupt is triggered, and an interrupt service routine (ISR) notifies the call processing task to wake up. 
+Mutex is used to gain exclusive access to a resource. A binary semaphore should be used as a signaling technique. The binary "producer" merely informs all of the "consumers" that what they were expecting has occurred. 
 
 ### Examples
 
