@@ -99,18 +99,18 @@ Important: Each thread has its own call stack, but the memory on other thread st
 
 Process:
 
-* Independent instance
-* Includes code and data
-* Carries considerable state (e.g., ready, running, waiting, or stopped) information,
-* Separate adress space
-* No process can directly access the memory of another process
+* Independent instance;
+* Includes code and data;
+* Carries considerable state (e.g., ready, running, waiting, or stopped) information;
+* Separate adress space;
+* No process can directly access the memory of another process;
 * Processes communicate each other through inter-process communication.
 
 Thread:
 
-* Independent path of execution
-* Subset of a process
-* Operating system schedules threads for execution
+* Independent path of execution;
+* Subset of a process;
+* Operating system schedules threads for execution;
 * All threads within a single process share the same address space and other resources.
 
 ### CPU-Bound VS I/O-Bound
@@ -182,27 +182,27 @@ The strength of threads is shared state. The weakness of threads is shared state
 
 #### Data race
 
-Race condition - Program result depends on scheduling of execution units
+When in multithreaded program, the result is depndend on the order in which the threads are executed, then we refer to that stuation as 'race condition'. 
 
-Threads switch preemptively. This is useful since you don't have to manually code where the task should switch. The tradeoff of this convenience is that you must presume that a switch will occur at an inconvenient moment.
+Why does it happen? By defualt threads switch preemptively (you don't control it, the os can switch the thread execution at any time. This is useful since you don't have to manually code where the task should switch. The tradeoff of this convenience is that you must presume that a switch will occur at an inconvenient moment.
 
-* Two or moce concurrent thread acess the same memory location 
-* At least one thread is modyfing it
+When many threads use the same resources, the scenario becomes increasingly dangerous. Given the following:
 
-Accordingly, critical sections have to be guarded with locks.
+* At least two concurrent threads access the same memory address.
+* It's being modified by at least one thread.
+
+That section of memory may even get corrupted. As a result, crucial areas must be protected with locks. 
 
 #### Mutex
 
 A mutex is a mechanism develop to prevent data races. Multiple threads (or processes) can take turns sharing the same resource without conflict.
 While one thread is allowed to use the resources, other requesting threads are put to sleep until thread exits the portion of code guarded by the mutex.
 
-ALL THREADS WAIT WHEN ONE IS GOING TROUGH THE CODE BETWEEN LOCK AND UNLCOK
-
 #### Semaphore
+ semaphore should be used for Synchronization (i.e. "Hey Someone! This occurred!").
+Semaphores are a type of synchronization primitives. A trivial semaphore is a plain variable that is changed (for example, incremented or decremented, or toggled) depending on programmer-defined conditions.  Binary semaphore can take only values 1 or 0, so it can achieve the same purpose as mutex.
 
-A semaphore is a generalized mutex. Binary semaphore can take only values 1 or 0, so it can achieve the same purpose as mutex.
-
-#### Misconception
+#### Common miconceptions
 
 !!!!
 Mutex is for exclusive access to a resource. A Binary semaphore should be used for Synchronization (i.e. "Hey Someone! This occurred!"). The Binary "giver" simply notifies whoever the "taker" that what they were waiting for happened. 
@@ -295,6 +295,8 @@ The strength of processes is their independence from one another. The weakness o
 If one of the processes in hanging how do you know which one? How can you debug it?
 
 #### Deadlocks
+Mask in the shop.
+
 A deadlock occurs when two or more processes wait for each other to complete and none of them ever do. Consider the following scenario: two trains are approaching each other on the same track, and there is only one track; neither train can move once they are in front of each other. In operating systems, a similar scenario happens when two or more processes each have certain resources and one waits for the resources held by the other. 
 
 What causes a deadlock to occur?
