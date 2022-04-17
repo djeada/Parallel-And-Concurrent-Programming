@@ -151,14 +151,9 @@ In contrast, on-demand thread spawning reduces the waste of resources spent by i
 
 ### Worker threads
 
-In multithreading, we typically have one main thread that initiates all other threads.
-These new threads are referred to as "worker threads."
-They are named thus because they are waiting for a job and only do the task when it is allocated to them by someone else.
-To regulate and limit the number of worker threads, you may wish to employ a thread pool.
+In multithreading, we typically have one main thread that initiates all other threads. These new threads are referred to as "worker threads." They are named thus because they are waiting for a job and only do the task when it is allocated to them by someone else. To regulate and limit the number of worker threads, you may wish to employ a thread pool.
 
-A web server process, for example, receives a request and assigns it to a thread from its pool for processing.
-That thread obeys the primary thread, completes the task, and returns to the pool.
-Until then, the main thread is free to do anything it wants. 
+A web server process, for example, receives a request and assigns it to a thread from its pool for processing. That thread obeys the main thread, completes the task, and returns to the pool. Until then, the main thread is free to do anything it wants. 
 
 ### Advantages of threads over processes
 
