@@ -173,7 +173,7 @@ While in process, we must use a special communication approach to communicate be
 
 ### Challanges with multithreading
 
-The strength of threads is shared state. The weakness of threads is shared state (managing race conditions).
+The irony is that multithreading challenges are coming from its biggest advantage. Threads are favored over processes because they share state with one another, making communication simple. This fact is also the reason for most common challanges when dealing with multithreading. 
 
 #### Data race
 
@@ -223,12 +223,9 @@ I used the <code>GCC</code> compiler with the following flags to compile the exa
 
 #### Examples in Python
 
-A global interpreter lock (GIL) is a mechanism used in computer-language interpreters to synchronize the execution of threads so that only one native thread can execute at a time. GIL allows exactly one native thread to execute at a time, even if run on a multi-core processor.
+A global interpreter lock (GIL) is a technique used in programming language interpreters to synchronize thread execution such that only one native thread may run at any given moment. Even when running on a multi-core CPU, GIL permits only one native thread to execute at a time.
 
-Using Python threading, we are able to make better use of the CPU sitting idle when waiting for the I/O. By overlapping the waiting time for requests, we are able to improve the performance. In addition, because all the threads share the same memory, to do collaborative tasks in Python using threading, we would have to be careful and use locks when necessary. Lock and unlock make sure that only one thread could write to memory at one time.
-
-* https://tenthousandmeters.com/blog/python-behind-the-scenes-13-the-gil-and-its-effects-on-python-multithreading/
-* https://stackoverflow.com/questions/52507601/whats-the-point-of-multithreading-in-python-if-the-gil-exists
+The natural question is if it even makes sense to use threads in Python? The answer is, it depends. We can still make greater use of the CPU that is idle while waiting for I/O by using multihreading. We can increase performance by overlapping the waiting time for requests. We should however look at multiprocessing if we want to split CPU-intensive activities over multiple CPU cores. 
 
 The main module that we are going to use is called <code>threading</code>.
 
@@ -448,6 +445,8 @@ The result, just like you have guessed, can either be a Python object, that will
 #### Examples in JavaScript
 
 ## Rules of thumb
+
+Previously i tried to be objective. Here I want to share some of my subjective takes on the subject
 
 Avoid Threads, Async and Promises
 Threads and Async are fascinating. BUT: It's hard to debug. You will need much longer than you initially estimated. Avoid it, if you want to get things done. It's different in your spare time: Do what you want and what is fascinating for you. There is one tool and one concept that is rock solid, well known, easy
