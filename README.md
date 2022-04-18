@@ -323,6 +323,13 @@ How do you make a child process run a different program?
 
 #### Examples in Python
 
+IT IS EASY TO USE INTERPROCESS COMUNICATION WITH MULTIPROCESSING
+
+Subprocess spawns new processes, but aside from stdin/stdout and whatever other APIs the other program may implement you have no means to communicate with them. Its main purpose is to launch processes that are completely separate from your own program.
+
+Multiprocessing also spawns new processes, but they run your code, and are designed to communicate with each other. You use it to divide tasks within your own program across multiple CPU cores.
+
+
 Using Python multiprocessing, we are able to run a Python using multiple processes. In principle, a multi-process Python program could fully utilize all the CPU cores and native threads available, by creating multiple Python interpreters on many native threads. Because all the processes are independent to each other, and they don’t share memory. To do collaborative tasks in Python using multiprocessing, it requires to use the API provided the operating system. Therefore, there will be slightly large overhead.
 
 multiprocessing is a package that supports spawning processes using an API similar to the threading module. The multiprocessing package offers both local and remote concurrency, effectively side-stepping the Global Interpreter Lock by using subprocesses instead of threads. Due to this, the multiprocessing module allows the programmer to fully leverage multiple processors on a given machine. It runs on both Unix and Windows.
