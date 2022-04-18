@@ -338,6 +338,8 @@ The multiprocessing module can use multiple processes, but still has to work wit
 
 * https://opensourceoptions.com/blog/asynchronous-parallel-programming-in-python-with-multiprocessing/
 
+The multiprocessing module contains primitives to help share values across multiple processes.
+
 #### Examples in JavaScript
 
 ## Asynchrony
