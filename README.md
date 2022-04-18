@@ -432,6 +432,8 @@ Corutines
 
 Coroutines are functions that can be stopped and resumed while being run. In Python, they are defined using the async def keyword. Much like generators, they too use their own form of yield from which is await. 
 
+CAN BE STOPPED AND RESUMED
+
 Futures
 
 Futures are objects that have the __await__() method implemented, and their job is to hold a certain state and result. The state can be one of the following:
