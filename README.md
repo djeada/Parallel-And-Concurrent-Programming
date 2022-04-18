@@ -86,7 +86,7 @@ The scheduler controls CPU access and switches between threads. Each gets a sing
 
 ### Process vs Thread
 
-A program typically gets divided into:
+A program's memory allocation is often divided into: 
 
 - Code
 - Data
