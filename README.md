@@ -179,7 +179,7 @@ The irony is that multithreading challenges are coming from its biggest advantag
 
 When in multithreaded program, the result is depndend on the order in which the threads are executed, then we refer to that stuation as 'race condition'. 
 
-Why does it happen? By defualt threads switch preemptively (you don't control it, the os can switch the thread execution at any time. This is useful since you don't have to manually code where the task should switch. The tradeoff of this convenience is that you must presume that a switch will occur at an inconvenient moment.
+Why does it happen? By defualt threads switch preemptively (you don't control when the threads switch, the os can make the switch at any time). This is useful since you don't have to manually code where the task should switch. The tradeoff of this convenience is that you must presume that a switch will occur at an inconvenient moment.
 
 When many threads use the same resources, the scenario becomes increasingly dangerous. Given the following:
 
@@ -256,29 +256,28 @@ An orphan process is one that no longer exists because its parent process has en
 
 An orphan is a live, running process just like any other -- it just has a peculiar name.
 
-### Message Passing vs. Shared Memory
+### Communication between processes
+
+To fully take advantage of multiprocessing we need to have a way to communicate between the processes. 
 
 #### Message Passing
-   Message passing exchanges data via inter-process communication(IPC) mechanisms.
-   Pros: Generalizes to both local & remote communication.
-   Cons: May incur excess overhead for large messages in a "loop-back" configuration.
+
+Message passing exchanges data via techniques known as inter-process communication (IPC). On the plus side, it is applicable to both local and remote communication (multiprocessing programs can be distributed between remote machines). One disadvantage is a possible "loop-back" configuration, this may result in excessive overhead for big messages. 
    
 #### Shared Memory
-   Shared memory allows apps to access & exchange data as though they were local to address space of each process.
-   Pros: Can be more efficient for large messages in loop-back configuration.
-   Cons: Doesn't generalize efficiently to remote systems & can be more error-prone & non-portable for OO apps.
+
+Shared memory enables programs to access and share data as though they were local to each process's address space. On the plus side, in a loop-back design, it may be more efficient for massive data. One disadvantage is that it does not generalize well to remote systems and may be more error-prone. 
 
 ### Challanges with multiprocessing
 
-The strength of processes is their independence from one another. The weakness of processes is lack of communication (hence the need for IPC and object pickling and other overhead).
+The independence of processes from one another is their strength. It's also its weakest point, because processes don't communicate easily with one another.
 
 #### Debugging
-If one of the processes in hanging how do you know which one? How can you debug it?
+If one of the processes in hanging how do you know which one? How can you debug it? When you start debbuger you have to tell it which process it should follow. More processes the harder and more time consuming the whole process is.
 
 #### Deadlocks
-Mask in the shop.
 
-A deadlock occurs when two or more processes wait for each other to complete and none of them ever do. Consider the following scenario: two trains are approaching each other on the same track, and there is only one track; neither train can move once they are in front of each other. In operating systems, a similar scenario happens when two or more processes each have certain resources and one waits for the resources held by the other. 
+A deadlock occurs when two or more processes wait for each other to complete and none of them ever do. Consider the following scenario: Mask in the shop.
 
 What causes a deadlock to occur?
 
@@ -288,10 +287,12 @@ What causes a deadlock to occur?
 * Circular Wait: A group of processes that are waiting for each other in a circular fashion.
 
 ### Containers
+
 You can have microservice architecture.
 Each app is one process. But many apps are spread across the containers.
 
 ### Examples
+
 #### Examples in C++
 
 How to create new processes?
