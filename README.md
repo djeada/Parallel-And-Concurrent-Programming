@@ -223,6 +223,8 @@ The main module we'll be using is named <code>threading</code>. To spawn  a new 
 
 #### Examples in JavaScript
 
+A Node.js application runs on a single thread. In this thread an event loop listens for events and then triggers the events associated callback function upon detection. By this simple illustration we can already see that Node.js does not support multithreading because each application is run on a single thread. 
+
 ## Multiprocessing
 
 Multiprocessing is a method of achieving concurrency by creating several processes within a single program. It is important to note that parallelism is not guaranteed by multiprocessing. Processes, unlike threads, do not share any resources by default, hence it makes the most sense to use that approach when you wish to simulatenously complete unrelated tasks.
@@ -328,6 +330,8 @@ The multiprocessing module contains primitives to help share values across multi
 POOL = RUn same function with different set of inputs. t allows you to run tasks in a pool of processes, a great way to improve the parallelism of your program. 
 
 #### Examples in JavaScript
+
+Although multithreading is not supported there is a way to harness the power of a multicore system by using processes. Node.js has a module called cluster designed to support a multiprocessing alternative.
 
 ## Asynchrony
 
