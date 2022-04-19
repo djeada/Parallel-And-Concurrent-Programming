@@ -3,7 +3,7 @@ Unveiling the mysteries of parallel and concurrent programming.
 
 ## Basic terminology
 
-Let's start by defining some key terms and emphasizing the distinctions between related concepts. Those concepts are universal and may be applied to any programming language. The differences between the languages will be discussed in greater detail later, when we attempt to explain the specific approach in implementing concurrency.
+Let's start by defining some key terms and emphasizing the distinctions between related concepts. In general those concepts are universal and may be applied to any programming language. The differences between the languages will be discussed in greater detail later, when we attempt to explain the specific approach in implementing concurrency.
 
 ### Sequential vs Nonsequential
 
