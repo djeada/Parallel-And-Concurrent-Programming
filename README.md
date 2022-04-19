@@ -237,24 +237,22 @@ Multiprocessing is a method of achieving concurrency by creating several process
 
 ### Child processes 
 
+The process that spawns new processes is referred to as the parent process. The processes that have been spawned are known as child processes.
+
 The parent processe may:
 
-- wait for it 
-- it may need to check on its status and see if it's still running
-- it may want to communicate with it and get some data back from it
-- if it's just taking too long I might just need to kill it
+- wait till it's child is finished; 
+- check on the child's condition (it may be running, sleeping, stopped, or zombie); 
+- it may want to communicate with the child and request some data back from it; 
+- if it's taking too long, it may may just need to kill the child.
 
 #### Zombie Process
 
-A zombie process is one that has completed its execution but still has an entry in the process table to report to its parent process. Before being deleted from the process table, a child process always becomes a zombie. The parent process reads the child process's exit status and removes the child process entry from the process table. 
-
-The zombie isn't occupying any significant memory or resources, it's (effectively) only an exit status waiting to be delivered. 
+A zombie process is one that has finished running but still has an entry in the process table to report to its parent process. A child process always becomes a zombie before being removed from the process table. The parent process reads the exit status of the child process and removes the child process entry from the process table. The zombie isn't taking up much memory or resources; it's just an exit status waiting to be delivered. However, too many zombies might significantly slow down the system.
 
 #### Orphan Process
 
-An orphan process is one that no longer exists because its parent process has ended or been terminated without waiting for its child process to finish.
-
-An orphan is a live, running process just like any other -- it just has a peculiar name.
+An orphan process is one whose parent process has finished execution or been terminated without waiting for its child process to finish. An orphan is alive and running, just like any other process; it just has a peculiar name. 
 
 ### Communication between processes
 
@@ -273,23 +271,23 @@ Shared memory enables programs to access and share data as though they were loca
 The independence of processes from one another is their strength. It's also its weakest point, because processes don't communicate easily with one another.
 
 #### Debugging
-If one of the processes in hanging how do you know which one? How can you debug it? When you start debbuger you have to tell it which process it should follow. More processes the harder and more time consuming the whole process is.
+
+Even for single-process applications, debugging may be a time-consuming operation. We often have to run the code line by line to figure out where the bug is hidden. The more processes there are, the more complex the whole operation becomes. Because the debugger can only track one process at a time, you must specify which one it should be. You may not be aware of which one is creating the issues. In that case you may need to repeat the operation  for each process.
 
 #### Deadlocks
 
-A deadlock occurs when two or more processes wait for each other to complete and none of them ever do. Consider the following scenario: Mask in the shop.
+A deadlock occurs when two or more processes wait for each other to complete and none of them ever do. Consider the following scenario: during the coronavirus pandemic, many places, including mask retailers, forced you to wear a mask. But what could you do if you didn't have a mask? To go into the shop, you required a mask, but to have one in the first place, you had to buy one from the shop. 
 
 What causes a deadlock to occur?
 
-* Mutual Exclusion: A resource is not available for sharing.
-* Hold and Wait: A process holds at least one resource while waiting for another resource that is held by another waiting process.
-* No Preemption: The operating system is not permitted to reclaim a resource from a process until the process returns it.
-* Circular Wait: A group of processes that are waiting for each other in a circular fashion.
+* Mutual exclusion occurs when a resource is not available for sharing.
+* A circular wait is a collection of processes that wait for each other in a circular pattern.
+* No preemption is the situation when the operating system may not recover a resource from a process until the process returns it.
+* Hold and wait refers to when a process holds at least one resource while waiting for another waiting process to hold another resource. 
 
 ### Containers
 
-You can have microservice architecture.
-Each app is one process. But many apps are spread across the containers.
+An alternative to a single multiprocess program is a microservice architecture using containers, each of which executes a single process program. There is a plethora of technologies available that make container orchestration as easy as ABC.
 
 ### Examples
 
@@ -326,7 +324,6 @@ IT IS EASY TO USE INTERPROCESS COMUNICATION WITH MULTIPROCESSING
 Subprocess spawns new processes, but aside from stdin/stdout and whatever other APIs the other program may implement you have no means to communicate with them. Its main purpose is to launch processes that are completely separate from your own program.
 
 Multiprocessing also spawns new processes, but they run your code, and are designed to communicate with each other. You use it to divide tasks within your own program across multiple CPU cores.
-
 
 Using Python multiprocessing, we are able to run a Python using multiple processes. In principle, a multi-process Python program could fully utilize all the CPU cores and native threads available, by creating multiple Python interpreters on many native threads. Because all the processes are independent to each other, and they don’t share memory. To do collaborative tasks in Python using multiprocessing, it requires to use the API provided the operating system. Therefore, there will be slightly large overhead.
 
