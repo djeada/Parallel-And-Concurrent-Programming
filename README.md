@@ -215,8 +215,6 @@ I used the <code>GCC</code> compiler with the following flags to compile the exa
 
 #### Examples in Python
 
-The <code>os</code> module allows for use of pure <code>fork()</code>.
-
 A global interpreter lock (GIL) is a technique used in programming language interpreters to synchronize thread execution such that only one native thread may run at any given moment. Even when running on a multi-core CPU, GIL permits only one native thread to execute at a time.
 
 The natural question is if it even makes sense to use threads in Python? The answer is, it depends. We can still make greater use of the CPU that is idle while waiting for I/O by using multihreading. We can increase performance by overlapping the waiting time for requests. We should however look at multiprocessing if we want to split CPU-intensive activities over multiple CPU cores.
@@ -316,6 +314,8 @@ How do you make a child process run a different program?
 <code>exec()</code> will only return a value if the new program could not be launched for whatever reason. Otherwise, the caller program will simply stop existing, and the new program will run in its place. 
 
 #### Examples in Python
+
+The <code>os</code> module allows for use of pure <code>fork()</code>.
 
 Using Python multiprocessing, we are able to run a Python using multiple processes. In principle, a multi-process Python program could fully utilize all the CPU cores and native threads available, by creating multiple Python interpreters on many native threads.
 
