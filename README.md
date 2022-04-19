@@ -157,19 +157,11 @@ A web server process, for example, receives a request and assigns it to a thread
 
 ### Advantages of threads over processes
 
-1. Responsiveness: If the process is separated into threads, when one thread completes its execution, its output may be returned instantly.
+1. Responsiveness: If a process is splited into threads, when one thread completes its execution, its output may be used instantly.
 
 2. Faster context transition: The time it takes to switch between threads is shorter than the time it takes to move between processes.
-Process context shift necessitates greater CPU cost.
 
-3. Resource sharing: Code, data, and files can be shared across all threads in a process.
-Each thread, on the other hand, has its own stack and registers. 
-
-4. Effective multiprocessor system utilization: If we have numerous threads in a single process, we can schedule multiple threads on various processors.
-This will speed up the process execution.
-
-5. Communication: Because the threads share a common address space, communication between them is simplified.
-While in process, we must use a special communication approach to communicate between two processes. 
+3. Resource sharing: Code, data, and files can be shared across all threads within a process.
 
 ### Challanges with multithreading
 
