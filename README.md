@@ -217,9 +217,9 @@ I used the <code>GCC</code> compiler with the following flags to compile the exa
 
 A global interpreter lock (GIL) is a technique used in programming language interpreters to synchronize thread execution such that only one native thread may run at any given moment. Even when running on a multi-core CPU, GIL permits only one native thread to execute at a time.
 
-The natural question is if it even makes sense to use threads in Python? The answer is, it depends. We can still make greater use of the CPU that is idle while waiting for I/O by using multihreading. We can increase performance by overlapping the waiting time for requests. We should however look at multiprocessing if we want to split CPU-intensive activities over multiple CPU cores. 
+The natural question is if it even makes sense to use threads in Python? The answer is, it depends. We can still make greater use of the CPU that is idle while waiting for I/O by using multihreading. We can increase performance by overlapping the waiting time for requests. We should however look at multiprocessing if we want to split CPU-intensive activities over multiple CPU cores.
 
-The main module that we are going to use is called <code>threading</code>.
+The main module we'll be using is named <code>threading</code>. To spawn  a new thread, just create an object of <code>Thread</code> class and specify the function that you want to run in the new thread as the first parameter. The thread will not begin executing until you invoke the <code>start()</code> method. Call the <code>join()</code> method to suspend further program execution until the thread has completed its task. There are several other functions available that make it simple to work with threads. For example to see which thread is currently executing we can call <code>current_thread()</code>. We use <code>main thread()</code> to obtain the main thread instance.
 
 #### Examples in JavaScript
 
@@ -313,21 +313,19 @@ How do you make a child process run a different program?
 
 #### Examples in Python
 
+Using Python multiprocessing, we are able to run a Python using multiple processes. In principle, a multi-process Python program could fully utilize all the CPU cores and native threads available, by creating multiple Python interpreters on many native threads.
+
 IT IS EASY TO USE INTERPROCESS COMUNICATION WITH MULTIPROCESSING
 
 Subprocess spawns new processes, but aside from stdin/stdout and whatever other APIs the other program may implement you have no means to communicate with them. Its main purpose is to launch processes that are completely separate from your own program.
 
 Multiprocessing also spawns new processes, but they run your code, and are designed to communicate with each other. You use it to divide tasks within your own program across multiple CPU cores.
 
-Using Python multiprocessing, we are able to run a Python using multiple processes. In principle, a multi-process Python program could fully utilize all the CPU cores and native threads available, by creating multiple Python interpreters on many native threads. Because all the processes are independent to each other, and they don’t share memory. To do collaborative tasks in Python using multiprocessing, it requires to use the API provided the operating system. Therefore, there will be slightly large overhead.
-
 multiprocessing is a package that supports spawning processes using an API similar to the threading module. The multiprocessing package offers both local and remote concurrency, effectively side-stepping the Global Interpreter Lock by using subprocesses instead of threads. Due to this, the multiprocessing module allows the programmer to fully leverage multiple processors on a given machine. It runs on both Unix and Windows.
 
-The multiprocessing module can use multiple processes, but still has to work with the Python Global Interpreter Lock, wich means you can't share memory between your processes. So when you try to launch a Pool, you need to copy useful variables, process your calculation, and retrieve the result. This cost you a little time for every process, and makes you less effective.
-
-* https://opensourceoptions.com/blog/asynchronous-parallel-programming-in-python-with-multiprocessing/
-
 The multiprocessing module contains primitives to help share values across multiple processes.
+
+POOL = RUn same function with different set of inputs. t allows you to run tasks in a pool of processes, a great way to improve the parallelism of your program. 
 
 #### Examples in JavaScript
 
