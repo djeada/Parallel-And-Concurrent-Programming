@@ -133,7 +133,7 @@ CPU-bound refers to a situation in which the time required to accomplish a task 
 The phrase "I/O bound" refers to a situation in which the time it takes to finish a task is mostly dictated by the time spent waiting for input/output operations to complete.
 
 * Software solution: Concurrency without parallelism may be sufficient to cause improvement.
-* Hardware solution: Faster I/O, such as faster memory I/O, hard disk I/O, network I/O, and so on, our program's performance will improve.
+* Hardware solution: Faster I/O, such as faster memory I/O, hard disk I/O, network I/O, and so on.
 
           I/O waiting         -----request----->     ------request------>     ------request------>
           CPU Processing  --->                  ---->                    ---->
