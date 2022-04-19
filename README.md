@@ -163,9 +163,9 @@ A web server process, for example, receives a request and assigns it to a thread
 
 3. Resource sharing: Code, data, and files can be shared across all threads within a process.
 
-### Challanges with multithreading
+### Challenges with multithreading
 
-The irony is that multithreading challenges are coming from its biggest advantage. Threads are favored over processes because they share state with one another, making communication simple. This fact is also the reason for most common challanges when dealing with multithreading. 
+The irony is that multithreading challenges are coming from its biggest advantage. Threads are favored over processes because they share state with one another, making communication simple. This fact is also the reason for most common challenges when dealing with multithreading. 
 
 #### Data race
 
@@ -262,7 +262,7 @@ Message passing exchanges data via techniques known as inter-process communicati
 
 Shared memory enables programs to access and share data as though they were local to each process's address space. On the plus side, in a loop-back design, it may be more efficient for massive data. One disadvantage is that it does not generalize well to remote systems and may be more error-prone. 
 
-### Challanges with multiprocessing
+### Challenges with multiprocessing
 
 The independence of processes from one another is their strength. It's also its weakest point, because processes don't communicate easily with one another.
 
@@ -379,7 +379,7 @@ Asynchrony and multithreading often go hand in hand, but the concepts itself are
 
 ### Why would you want to use asynchrony over multithreading?
 
-### Challanges
+### Challenges
 
 Async switches cooperatively, so you do need to add explicit code “yield” or “await” to cause a task switch.
 
