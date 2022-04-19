@@ -285,7 +285,9 @@ An alternative to a single multiprocess program is a microservice architecture u
 
 #### Examples in C++
 
-How to create new processes?
+How to create new processes? 
+
+The C++ standard library only enables concurrent execution synchronization for threads. We must use OS-specific API: 
 
 * In Windows: <code>CreateProcess()</code>
 * In Linux: <code>fork()</code>
