@@ -434,6 +434,10 @@ The result, just like you have guessed, can either be a Python object, that will
 
 #### Examples in JavaScript
 
+## MPI
+
+MPI is a distributed memory device programming model. Parallelism is achieved by running various processes on different machines. 
+
 ## Rules of thumb
 
 Previously i tried to be objective. Here I want to share some of my subjective takes on the subject
