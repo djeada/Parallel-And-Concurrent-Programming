@@ -367,17 +367,25 @@ Asynchrony is unrelated to the previous two concepts (multithreading and multipr
 
 For example, retrieving data from a database may take some time, but we don't want our UI to freeze while we wait. As soon as the asynchronous function is invoked, the asynchronous call accepts a call-back reference and returns execution to the client function. While the asynchronous function performs any necessary processing, your UI may continue to respond to the user; after the asynchronous function has completed its task, the client function may use the resultant data (e.g. to display it in the ui). 
 
-As opposed to..
-Threading typically works with existing code and tools as long as locks are added around critical sections.
-For complex systems, async is much easier to get right than threads with locks.
-Threads require very little tooling (locks and queues).
-Async needs a great deal of tooling (futures, event loops, and non-blocking versions of just about everything).
+### Building blocks of asynchronous programming
 
-### Corutines
+#### Event loop
+
+#### Corutines
 
 Coroutines are functions that can be stopped and resumed while being run. In Python, they are defined using the async def keyword. Much like generators, they too use their own form of yield from which is await. 
 
 CAN BE STOPPED AND RESUMED
+
+#### Futures
+
+Futures are objects that have the __await__() method implemented, and their job is to hold a certain state and result. The state can be one of the following:
+
+    PENDING - future does not have any result or exception set.
+    CANCELLED - future was cancelled using fut.cancel()
+    FINISHED - future was finished, either by a result set using fut.set_result() or by an exception set using fut.set_exception()
+
+The result, just like you have guessed, can either be a Python object, that will be returned, or an exception which may be raised.
 
 ### Asynchrony vs multithreading
 
@@ -419,7 +427,6 @@ This means that async is very cheap.
 
 In return, you’ll need a non-blocking version of just about everything you do. Accordingly, the async world has a huge ecosystem of support tools. This increases the learning curve.
 
-
 FOR ASYnchrony you need asynchronous functions (called coruitnes) marked with async keyword. How are you going to interact with the massive world of functions written in a blocking way?
 
 ### Examples
@@ -450,17 +457,6 @@ Using Python asyncio, we are also able to make better use of the CPU sitting idl
 The main module we'll be using is named <code>asyncio</code>. It is distinguished for its outstanding speed and simplicity of usage. It makes it easy to write single-threaded concurrent programs using corutines (stripped down version of threads). It conceals the complexities of concurrent programming from us by providing a plethora of different functions that implement numerous synchronization strategies for us. 
 
 
-
-Futures
-
-Futures are objects that have the __await__() method implemented, and their job is to hold a certain state and result. The state can be one of the following:
-
-    PENDING - future does not have any result or exception set.
-    CANCELLED - future was cancelled using fut.cancel()
-    FINISHED - future was finished, either by a result set using fut.set_result() or by an exception set using fut.set_exception()
-
-The result, just like you have guessed, can either be a Python object, that will be returned, or an exception which may be raised.
-
 #### Examples in JavaScript
 
  FUTURE = PROMISE
@@ -472,14 +468,15 @@ MPI is a distributed memory device programming model. Parallelism is achieved by
 
 ## Rules of thumb
 
-Previously i tried to be objective. Here I want to share some of my subjective takes on the subject
+In the preceding sections, I attempted to state the facts as objectively as possible. I'd like to offer some of my personal perspectives on the issue here.
 
-Avoid Threads, Async and Promises
-Threads and Async are fascinating. BUT: It's hard to debug. You will need much longer than you initially estimated. Avoid it, if you want to get things done. It's different in your spare time: Do what you want and what is fascinating for you. There is one tool and one concept that is rock solid, well known, easy
-to debug, and available everywhere and it is great for parallel execution. The tool is called "operating system" and the concept is
-called "process". Why re-invent it? Do you think starting a new process is "expensive" ("it is too slow")? Just, do not start a new process for
-every small method you want to call in parallel. Use a [Task Queue](https://www.fullstackpython.com/task-queues.html). Let this tool
-handle the complicated async stuff and keep your code simple like running in one process with one thread.
+1. Avoid concurrency as much as possible. I think that this is an intriguing issue, however it is difficult to design well and far more difficult to debug. Make sure your programs are both synchronous and sequential.
+
+2. If performance becomes an issue, take the following steps: 
+     - If your system's performance is dominated by I/O waits, you should use asynchronous programming.
+     - If your system's performance is predicated on CPU-intensive calculation, you should think about employing processes.
+     Processes are more isolated than threads and eliminate various kinds of mistakes that might occur in multi-threaded systems.
+     - Threads are the ideal solution for obtaining the absolute most CPU speed out of a multi-core computer since they share memory, but this is still dependent on the language implementation, so double-check. 
 
 ## Hardware
 
@@ -526,12 +523,10 @@ handle the complicated async stuff and keep your code simple like running in one
      - Cache-coherent NUMA (CC-NUMA), completely implemented in hardware
      - Became standard approach with recent X86 chips
 
-
 |                         | Data Parallel / SIMD                             | Task Parallel / MIMD         |
 | ------------------------| ------------------------------------------------ | ---------------------------- |
 | **Shared Memory (SM)**      | GPU, Cell, SSE, AltiVec, Vector processor        | ManyCore/SMP system          |
 | **Distributed Memory (DM)** | processor-array systems, systolic arrays, Hadoop | cluster systems, MPP systems |
-
 
 ### Parallel hardware
 
