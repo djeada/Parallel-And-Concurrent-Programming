@@ -70,7 +70,7 @@ Every process is documented in this table, along with the resources it employs a
 
 1. Running - The running state indicates that the process has all of the resources it requires for execution and that the operating system has granted it permission to use the processor. At any given moment, only one process can be in that state.
 
-2. Ready - awaiting authorization to utilize the processor
+2. Ready - awaiting authorization to use the CPU.
 
 3. Waiting - the process of waiting for an external event to occur, such as user input or disk access. 
 
