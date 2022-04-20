@@ -335,6 +335,29 @@ POOL = RUn same function with different set of inputs. t allows you to run tasks
 
 Although multithreading is not supported there is a way to harness the power of a multicore system by using processes. Node.js has a module called cluster designed to support a multiprocessing alternative.
 
+Spawn returns a childObject, which may later be used to listen for events. The following events are available: 
+
+     Class: ChildProcess
+        Event: 'error'
+        Event: 'exit'
+        Event: 'close'
+        Event: 'disconnect'
+        Event: 'message'
+
+There are also a number of potentially useful objects from childObject, which are as follows: 
+
+    Class: ChildProcess
+        child.stdin
+        child.stdout
+        child.stderr
+        child.stdio
+        child.pid
+        child.connected
+        child.kill([signal])
+        child.send(message[, sendHandle][, callback])
+        child.disconnect()
+
+
 ## Asynchrony
 
  FUTURE = PROMISE
