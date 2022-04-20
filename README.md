@@ -552,3 +552,4 @@ Different ways of achieving parallelism:
 * https://princetonuniversity.github.io/PUbootcamp/sessions/parallel-programming/
 * https://w3.cs.jmu.edu/kirkpams/OpenCSF/Books/csf/html/
 * https://lucumr.pocoo.org/2016/10/30/i-dont-understand-asyncio/
+* https://www.cs.unb.ca/~bremner/teaching/cs2613/books/nodejs-api/
