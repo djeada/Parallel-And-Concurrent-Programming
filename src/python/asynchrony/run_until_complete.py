@@ -15,7 +15,8 @@ async def bar():
 
 loop = asyncio.get_event_loop()
 
-loop.run_until_complete(foo())
+# The event loop is executed until the task is completed.
+loop.run_until_complete(foo()) 
 loop.run_until_complete(bar())
 
 loop.close()
