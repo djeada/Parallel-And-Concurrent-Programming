@@ -199,7 +199,7 @@ Mutex is used to gain exclusive access to a resource. A binary semaphore should 
 
 #### Examples in C++
 
-Every C++ application has one default main thread, which is represented by the <code>main()</code> function. Since C++11, we may add more threads by creating instances of the <code>std::thread</code> type. The constructor of that class receives a callback to the function to be called from the new thread as well as a list of arguments for that function. When an object is created, the thread begins executing.
+Every C++ application has one default main thread, which is represented by the <code>main()</code> function. Since C++11, we may spawn more threads by creating instances of the <code>std::thread</code> type. The constructor of that class receives a callback to the function to be called from the new thread as well as a list of arguments for that function. When an object is created, the thread begins executing.
 
 Then we have two alternatives. We have the option of joining or detaching the thread. 
 
