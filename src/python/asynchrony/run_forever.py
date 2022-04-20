@@ -20,6 +20,7 @@ try:
     asyncio.ensure_future(bar())
     loop.run_forever()
 except KeyboardInterrupt:
+    # use Ctrl+C to close the program
     pass
 finally:
     loop.close()
