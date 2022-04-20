@@ -165,7 +165,7 @@ A web server process, for example, receives a request and assigns it to a thread
 
 ### Challenges with multithreading
 
-The irony is that multithreading challenges are coming from its biggest advantage. Threads are favored over processes because they share state with one another, making communication simple. This fact is also the reason for most common challenges when dealing with multithreading. 
+The irony is that most multithreading challenges are coming from its biggest advantage. Threads are favored over processes because they share state with one another, making communication simple. This fact is also the reason for most common challenges when dealing with multithreading. 
 
 #### Data race
 
@@ -274,7 +274,7 @@ Even for single-process applications, debugging may be a time-consuming operatio
 
 #### Deadlocks
 
-A deadlock occurs when two or more processes wait for each other to complete and none of them ever do. Consider the following scenario: during the coronavirus pandemic, many places, including mask retailers, forced you to wear a mask. But what could you do if you didn't have a mask? To go into the shop, you required a mask, but to have one in the first place, you had to buy one from the shop. 
+A deadlock occurs when two or more processes wait for each other to complete and none of them ever do. Consider the following scenario: during the coronavirus pandemic, many places, including mask retailers, forced you to wear a mask. But what could you do if you didn't have a mask?To enter the shop, you must wear a mask, which you had to buy from the shop in the first place. 
 
 What causes a deadlock to occur?
 
@@ -321,13 +321,11 @@ How do you make a child process run a different program?
 
 The <code>os</code> module supports the usage of pure <code>fork()</code>, which works in the same way that we discussed while discussing C++ examples. However, there are superior higher level abstraction alternatives. <code>Subprocess</code> and <code>multiprocessing</code> are two modules that may be used to create new processes from a Python script. 
 
-Subprocess spawns new processes, but aside from stdin/stdout and whatever other APIs the other program may implement you have no means to communicate with them. Its main purpose is to launch processes that are completely separate from your own program.
+Subprocess creates new processes, but you have no way of communicating with them except from stdin/stdout and any additional APIs the other program may use. Its primary use is to start processes that are fully independent of your own program.
 
-Multiprocessing also spawns new processes, but they run your code, and are designed to communicate with each other. The multiprocessing module contains primitives to help share values across multiple processes.
+Multiprocessing creates new processes as well, but these processes are meant to run some subtask of your program and easily communicate with one another. The multiprocessing module includes primitives for sharing values between processes.
 
-Using Python multiprocessing, we are able to divide tasks within our own program. In principle, a multi-process Python program could fully utilize all the CPU cores and native threads available, by creating multiple Python interpreters on many native threads.
-
-Additionaly multiprocessing uses an API similar to the threading module. HERE START AND JOIN
+Additionaly multiprocessing uses an API similar to the threading module. Process
 
 POOL = RUn same function with different set of inputs. t allows you to run tasks in a pool of processes, a great way to improve the parallelism of your program. 
 
@@ -412,8 +410,6 @@ Asynchrony and multithreading often go hand in hand, but the concepts itself are
           thread 1: AAAAAAAAA-----
           thread 2: ---BBBBBBBBBBB
           thread 3: ----CCCC------
-
-### Why would you want to use asynchrony over multithreading?
 
 ### Challenges
 
