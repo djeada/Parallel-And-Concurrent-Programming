@@ -325,13 +325,11 @@ Subprocess creates new processes, but you have no way of communicating with them
 
 Multiprocessing creates new processes as well, but these processes are meant to run some subtask of your program and easily communicate with one another. The multiprocessing module includes primitives for sharing values between processes.
 
-Additionaly multiprocessing uses an API similar to the threading module. Process
+Furthermore, multiprocessing has an API similar to that of the threading module. Use the <code>Process</code> class to start a new process. The first argument should be the callback function. Then, to begin the process execution, use the <code>start()</code> method. Similarly to threads, if you want the rest of your program to wait for the process to complete, use <code>join()</code>.
 
-POOL = RUn same function with different set of inputs. t allows you to run tasks in a pool of processes, a great way to improve the parallelism of your program. 
+Pool is another useful multiprocessing construction. It allows users to run one function in parallel with different sets of inputs.
 
 #### Examples in JavaScript
-
-Although multithreading is not supported there is a way to harness the power of a multicore system by using processes. Node.js has a module called cluster designed to support a multiprocessing alternative.
 
 In NodeJs, there are four functions for creating a child process: spawn(), fork(), exec(), and execFile().
 
@@ -357,6 +355,8 @@ There are also a number of potentially useful objects from childObject, which ar
         child.send(message[, sendHandle][, callback])
         child.disconnect()
 
+Although multithreading is not supported there is a way to harness the power of a multicore system by using processes. Node.js has a module called cluster designed to support a multiprocessing alternative.
+
 ## Asynchrony
 
 Asynchrony is unrelated to the previous two concepts (multithreading and multiprocessing). When one task is completed in an asynchronous approach, you may go on to the next without waiting for the preceding task to finish. This is known as nonblocking behavior. When you execute anything synchronously, you wait for it to finish before proceeding to the next task. Concurrency is accomplished with the help of asynchronous programming. Parallelism may be achieved by asynchronous programming in a multi-threaded environment. 
@@ -368,6 +368,7 @@ For example, retrieving data from a database may take some time, but we don't wa
 ### Building blocks of asynchronous programming
 
 #### Event loop
+An event loop is a loop that can register tasks to be executed, execute them, delay or even cancel them and handle different events related to these operations. The loop runs one function, while that function waits for IO, it pauses it and runs another. 
 
 #### Corutines
 
@@ -376,6 +377,8 @@ Coroutines are functions that can be stopped and resumed while being run. In Pyt
 CAN BE STOPPED AND RESUMED
 
 #### Futures
+
+A Future is an object that is supposed to have a result in the future.
 
 Futures are objects that have the __await__() method implemented, and their job is to hold a certain state and result. The state can be one of the following:
 
@@ -448,15 +451,13 @@ Given threading is using multi-thread to maximize the performance of a I/O-bound
 
 Using Python asyncio, we are also able to make better use of the CPU sitting idle when waiting for the I/O. What’s different to threading is that, asyncio is single-process and single-thread. There is an event loop in asyncio which routinely measure the progress of the tasks. If the event loop has measured any progress, it would schedule another task for execution, therefore, minimizing the time spent on waiting I/O. This is also called cooperative multitasking. The tasks must cooperate by announcing when they are ready to be switched out. 
 
-* https://masnun.com/2015/11/20/python-asyncio-future-task-and-the-event-loop.html
+The main module we'll be using is named <code>asyncio</code>. It is distinguished for its outstanding speed and simplicity of usage. It makes it easy to write single-threaded concurrent programs using corutines (stripped down version of threads). It conceals the complexities of concurrent programming from us by providing a plethora of different functions that implement numerous synchronization strategies for us.
 
-The main module we'll be using is named <code>asyncio</code>. It is distinguished for its outstanding speed and simplicity of usage. It makes it easy to write single-threaded concurrent programs using corutines (stripped down version of threads). It conceals the complexities of concurrent programming from us by providing a plethora of different functions that implement numerous synchronization strategies for us. 
-
+A coroutine can pause the execution of the function by using the yield yield from or await (python 3.5+) keywords in an expression. The function is paused until the yield statement actually gets a value. 
 
 #### Examples in JavaScript
 
- FUTURE = PROMISE
-
+FUTURE = PROMISE
 
 ## MPI
 
