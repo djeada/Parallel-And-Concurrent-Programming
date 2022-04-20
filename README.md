@@ -495,8 +495,8 @@ Different ways of achieving parallelism:
 
 * Every step of the program is converted to a binary instruction(s).
 
-     print(3) ---> 0110 1010 (Hex: 6A)
-
+          print(3) ---> 0110 1010 (Hex: 6A)
+     
 * The codes are tailored to the individual CPU architecture.
 * All codes combine to produce an instruction set.
 * The program is first loaded into system memory (RAM) from the hard drive.
