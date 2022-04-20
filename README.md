@@ -437,7 +437,7 @@ In this approach we have however very little control over the details. We don't 
     std::thread thread(std::move(task), 3, 5);
     auto result = future.get();  
     
-The thread starts running immediately. We can either detach it, or have join it at the end of the scope, or whenever. The details of using std::thread don't concern us here, though; just be sure to join or detach thr eventually.
+The thread starts running after the object gets created. We can either join or detach it.
 
 #### Examples in Python
 
