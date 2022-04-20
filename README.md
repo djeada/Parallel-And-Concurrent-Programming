@@ -303,6 +303,8 @@ In every UNIX-based operating system, all processes are created from a single pr
 All of the processes that are currently running on your machine are clones of that original process.
 When you call <code>fork()</code>', you are just requesting that a clone of your process be created. Everything is copied from the parent process, except for the PID. 
 
+The function <code>waitpid</code> is commonly called in the parent process and causes a process to wait for the execution of a specified process to complete before continuing. 
+
 How do we check if the program in use is the child or the parent?
 You may examine the <code>fork()</code>'s return value. It returns different results to the parent and the child. The child receives zero, whereas the parent receives the child's PID. 
 
@@ -448,6 +450,11 @@ In this approach we have however very little control over the details. We don't 
     auto result = future.get();  
     
 The thread starts running after the object gets created. We can either join or detach it.
+
+Another option is to overwrite the default value of the first parameter that specifies how the task should be completed. We have two choices:
+
+1. <code>std::launch::async</code> specifies that the function call must be executed on its own thread.
+2. <code>std::launch::deferred</code> implies that we do not want to start a new thread and merely want to guarantee that the function is called before its return value is required. 
 
 I used the <code>GCC</code> compiler with the following flags to compile the examples:
 
