@@ -34,7 +34,7 @@ if __name__ == "__main__":
     # task1.add_done_callback(display_result)
     task2.add_done_callback(display_result)
     
-    loop.run_until_complete(asyncio.wait(tasks))
+    loop.run_until_complete(asyncio.wait((task1, task2)))
 
     display_result(future)
 
