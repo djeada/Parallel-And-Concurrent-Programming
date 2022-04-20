@@ -317,6 +317,10 @@ How do you make a child process run a different program?
 
 <code>exec()</code> will only return a value if the new program could not be launched for whatever reason. Otherwise, the caller program will simply stop existing, and the new program will run in its place. 
 
+I used the <code>GCC</code> compiler with the following flags to compile the examples:
+
+     g++ file_name.cpp -std=c++17 -pthread -o executable_name
+     
 #### Examples in Python
 
 The <code>os</code> module supports the usage of pure <code>fork()</code>, which works in the same way that we discussed while discussing C++ examples. However, there are superior higher level abstraction alternatives. <code>Subprocess</code> and <code>multiprocessing</code> are two modules that may be used to create new processes from a Python script. 
@@ -382,9 +386,9 @@ A Future is an object that is supposed to have a result in the future.
 
 Futures are objects that have the __await__() method implemented, and their job is to hold a certain state and result. The state can be one of the following:
 
-    PENDING - future does not have any result or exception set.
-    CANCELLED - future was cancelled using fut.cancel()
-    FINISHED - future was finished, either by a result set using fut.set_result() or by an exception set using fut.set_exception()
+1. pending - the future has no outcome or exception set.
+2. cancelled - the future was cancelled. 
+3. finished - the future was completed, either by a result set or by an exception.
 
 The result, just like you have guessed, can either be a Python object, that will be returned, or an exception which may be raised.
 
@@ -445,6 +449,10 @@ In this approach we have however very little control over the details. We don't 
     
 The thread starts running after the object gets created. We can either join or detach it.
 
+I used the <code>GCC</code> compiler with the following flags to compile the examples:
+
+     g++ file_name.cpp -std=c++17 -pthread -o executable_name
+     
 #### Examples in Python
 
 Given threading is using multi-thread to maximize the performance of a I/O-bound task in Python, we wonder if using multi-thread is necessary. The answer is no, if you know when to switch the tasks. For example, for each thread in a Python program using threading, it will really stay idle between the request is sent and the result is returned. If somehow a thread could know the time I/O request has been sent, it could switch to do another task, without staying idle, and one thread should be sufficient to manage all these tasks. Without the thread management overhead, the execution should be faster for a I/O-bound task. Obviously, threading could not do it, but we have asyncio.
