@@ -485,35 +485,37 @@ In the preceding sections, I attempted to state the facts as objectively as poss
 
 ## Hardware
 
- Inside the processor (instruction-level parallelism, multicore)
-• Through multiple processors in one machine (multiprocessing)
-• Through multiple machines (multicomputer)
+Different ways of achieving parallelism:
 
+* Within the processor (instruction-level parallelism, multicore). 
+* Using several processors in the same machine (multiprocessing). 
+* Using various machines (distributed computing, multicomputer).
+ 
 ### A single-core CPU
 
-* Every step of the program is converted to instruction
+* Every step of the program is converted to a binary instruction(s).
 
-          print(3) ---> 0110 1010 (Hex: 6A)
- 
- * Codes are specific for the given architecture
- * All codes form an instruction set
+     print(3) ---> 0110 1010 (Hex: 6A)
 
+* The codes are tailored to the individual CPU architecture.
+* All codes combine to produce an instruction set.
+* The program is first loaded into system memory (RAM) from the hard drive.
+* The instructions are then sent from system memory to the CPU via a bus.
+* Once a program is loaded into the CPU, it moves down the queue (pipeline) of instructions, which are executed one at a time.
+* To execute instructions, the CPU employs many components (ALU, for example).
+* The clock determines the speed of the CPU. 
 
-          CPU <===> RAM
-  
-  * From hardrive to system memory (RAM)
-  * From system memory over a bus to CPU
-  * Once a program is loaded into CPU it's going down the queue (pipeline) of instructions. Executing one at at ime.
-  * CPU uses different components (ALU and so on) inside it to execute the instructions
-  * At the heart of the CPU there is a clock
-  
-### Today's CPU
+### A multi-core CPU
 
-* designed to handle multithreading easily
-* hyper threading was one of the early ideas
-* hyper threading was duplicating the pipelines for the threads (quicker but not everything in parallel(
-* Multi-Core: everything is duplicated (pipeline and execution engine)
-* Multi CPU - the best solution
+* Intended to handle multithreading easily.
+* Hyper-threading was one of the early concepts for improving multithreading efficiency.
+* The pipelines for the threads were being duplicated in hyper-threading (it was effectiveliy quicker but not everything could be executed in parallel).
+* The term "multi-core" refers to the fact that everything is replicated (pipeline and execution engine). 
+
+### Graphics Processing Unit (GPU)
+
+* Intended to do linear algebra computations efficiently.
+* Potentially contain hundreds of cores.
 
 ### Shared memory architectures
 
@@ -532,11 +534,6 @@ In the preceding sections, I attempted to state the facts as objectively as poss
 | ------------------------| ------------------------------------------------ | ---------------------------- |
 | **Shared Memory (SM)**      | GPU, Cell, SSE, AltiVec, Vector processor        | ManyCore/SMP system          |
 | **Distributed Memory (DM)** | processor-array systems, systolic arrays, Hadoop | cluster systems, MPP systems |
-
-### Parallel hardware
-
-* Multi-core processors
-* Graphics Processing Unit (GPU)
 
 ## Bibliography
 
