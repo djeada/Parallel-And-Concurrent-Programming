@@ -199,6 +199,10 @@ Mutex is used to gain exclusive access to a resource. A binary semaphore should 
 
 #### Examples in C++
 
+Every C++ application has one default main thread, which is represented by the <code>main()</code> function. Since C++11, we may add more threads by creating instances of the <code>std::thread</code> type. The constructor of that class receives a callback to the function to be called from the new thread as well as a list of arguments for that function. When an object is created, the thread begins executing.
+
+Then we have two alternatives. We have the option of joining or detaching the thread. 
+
 When we use <code>join()</code>:
 
 * The program will wait for the thread to complete before continuing its execution. 
@@ -315,25 +319,23 @@ How do you make a child process run a different program?
 
 #### Examples in Python
 
-The <code>os</code> module allows for use of pure <code>fork()</code>.
-
-Using Python multiprocessing, we are able to run a Python using multiple processes. In principle, a multi-process Python program could fully utilize all the CPU cores and native threads available, by creating multiple Python interpreters on many native threads.
-
-IT IS EASY TO USE INTERPROCESS COMUNICATION WITH MULTIPROCESSING
+The <code>os</code> module supports the usage of pure <code>fork()</code>, which works in the same way that we discussed while discussing C++ examples. However, there are superior higher level abstraction alternatives. <code>Subprocess</code> and <code>multiprocessing</code> are two modules that may be used to create new processes from a Python script. 
 
 Subprocess spawns new processes, but aside from stdin/stdout and whatever other APIs the other program may implement you have no means to communicate with them. Its main purpose is to launch processes that are completely separate from your own program.
 
-Multiprocessing also spawns new processes, but they run your code, and are designed to communicate with each other. You use it to divide tasks within your own program across multiple CPU cores.
+Multiprocessing also spawns new processes, but they run your code, and are designed to communicate with each other. The multiprocessing module contains primitives to help share values across multiple processes.
 
-multiprocessing is a package that supports spawning processes using an API similar to the threading module. The multiprocessing package offers both local and remote concurrency, effectively side-stepping the Global Interpreter Lock by using subprocesses instead of threads. Due to this, the multiprocessing module allows the programmer to fully leverage multiple processors on a given machine. It runs on both Unix and Windows.
+Using Python multiprocessing, we are able to divide tasks within our own program. In principle, a multi-process Python program could fully utilize all the CPU cores and native threads available, by creating multiple Python interpreters on many native threads.
 
-The multiprocessing module contains primitives to help share values across multiple processes.
+Additionaly multiprocessing uses an API similar to the threading module. HERE START AND JOIN
 
 POOL = RUn same function with different set of inputs. t allows you to run tasks in a pool of processes, a great way to improve the parallelism of your program. 
 
 #### Examples in JavaScript
 
 Although multithreading is not supported there is a way to harness the power of a multicore system by using processes. Node.js has a module called cluster designed to support a multiprocessing alternative.
+
+In NodeJs, there are four functions for creating a child process: spawn(), fork(), exec(), and execFile().
 
 Spawn returns a childObject, which may later be used to listen for events. The following events are available: 
 
@@ -357,10 +359,7 @@ There are also a number of potentially useful objects from childObject, which ar
         child.send(message[, sendHandle][, callback])
         child.disconnect()
 
-
 ## Asynchrony
-
- FUTURE = PROMISE
 
 Asynchrony is unrelated to the previous two concepts (multithreading and multiprocessing). When one task is completed in an asynchronous approach, you may go on to the next without waiting for the preceding task to finish. This is known as nonblocking behavior. When you execute anything synchronously, you wait for it to finish before proceeding to the next task. Concurrency is accomplished with the help of asynchronous programming. Parallelism may be achieved by asynchronous programming in a multi-threaded environment. 
 
@@ -373,6 +372,12 @@ Threading typically works with existing code and tools as long as locks are adde
 For complex systems, async is much easier to get right than threads with locks.
 Threads require very little tooling (locks and queues).
 Async needs a great deal of tooling (futures, event loops, and non-blocking versions of just about everything).
+
+### Corutines
+
+Coroutines are functions that can be stopped and resumed while being run. In Python, they are defined using the async def keyword. Much like generators, they too use their own form of yield from which is await. 
+
+CAN BE STOPPED AND RESUMED
 
 ### Asynchrony vs multithreading
 
@@ -444,11 +449,7 @@ Using Python asyncio, we are also able to make better use of the CPU sitting idl
 
 The main module we'll be using is named <code>asyncio</code>. It is distinguished for its outstanding speed and simplicity of usage. It makes it easy to write single-threaded concurrent programs using corutines (stripped down version of threads). It conceals the complexities of concurrent programming from us by providing a plethora of different functions that implement numerous synchronization strategies for us. 
 
-Corutines
 
-Coroutines are functions that can be stopped and resumed while being run. In Python, they are defined using the async def keyword. Much like generators, they too use their own form of yield from which is await. 
-
-CAN BE STOPPED AND RESUMED
 
 Futures
 
@@ -460,8 +461,10 @@ Futures are objects that have the __await__() method implemented, and their job 
 
 The result, just like you have guessed, can either be a Python object, that will be returned, or an exception which may be raised.
 
-
 #### Examples in JavaScript
+
+ FUTURE = PROMISE
+
 
 ## MPI
 
