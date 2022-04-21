@@ -1,7 +1,6 @@
-
 async def example_producer(queue):
-  pass
+    pass
 
 
 async def example_consumer(queue):
-  pass
+    pass
