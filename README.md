@@ -409,17 +409,16 @@ I used the <code>GCC</code> compiler with the following flags to compile the exa
 
      g++ file_name.cpp -std=c++17 -pthread -o executable_name
 
-* <a href=""></a>
-* <a href=""></a>
-* <a href=""></a>
-* <a href=""></a>
-* <a href=""></a>
-* <a href=""></a>
-
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multiprocessing/spawn_single_process.cpp">spawn single process</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multiprocessing/spawn_multiple_processes.cpp">spawn multiple processes</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multiprocessing/single_pipe.cpp">single pipe</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multiprocessing/deadlock.cpp">deadlock</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multiprocessing/orphan.cpp">orphan</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multiprocessing/zombie.cpp">zombie</a>
 
 #### Examples in Python
 
-The <code>os</code> module supports the usage of pure <code>fork()</code>, which works in the same way that we discussed while discussing C++ examples. However, there are superior higher level abstraction alternatives. <code>Subprocess</code> and <code>multiprocessing</code> are two modules that may be used to create new processes from a Python script. 
+The <code>os</code> module supports the usage of pure <code>fork()</code>, which works in the same way that we discussed while discussing C++ examples. However, there are superior higher level abstraction alternatives. <code>subprocess</code> and <code>multiprocessing</code> are two modules that may be used to create new processes from a Python script. 
 
 Subprocess creates new processes, but you have no way of communicating with them except from stdin/stdout and any additional APIs the other program may use. Its primary use is to start processes that are fully independent of your own program.
 
@@ -429,17 +428,17 @@ Furthermore, multiprocessing has an API similar to that of the threading module.
 
 Pool is another useful multiprocessing construction. It allows users to run one function in parallel with different sets of inputs.
 
-* <a href=""></a>
-* <a href=""></a>
-* <a href=""></a>
-* <a href=""></a>
-* <a href=""></a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multiprocessing/spawn_single_process.py">spawn single process</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multiprocessing/process_pool.py">process pool</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multiprocessing/data_sharing_queue.py">data sharing queue</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multiprocessing/single_pipe.py">single pipe</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multiprocessing/deadlock.py">deadlock</a>
 
 #### Examples in JavaScript
 
-In NodeJs, there are four functions for creating a child process: spawn(), fork(), exec(), and execFile().
+In NodeJs, there are four functions for creating a child process: <code>spawn()</code>, <code>fork()</code>, <code>exec()</code>, and <code>execFile()</code>.
 
-Spawn returns a childObject, which may later be used to listen for events. The following events are available: 
+Spawn returns a <code>childObject</code>, which may later be used to listen for events. The following events are available: 
 
      Class: ChildProcess
         Event: 'error'
@@ -565,10 +564,10 @@ I used the <code>GCC</code> compiler with the following flags to compile the exa
 
      g++ file_name.cpp -std=c++17 -pthread -o executable_name
      
-* <a href=""></a>
-* <a href=""></a>
-* <a href=""></a>
-* <a href=""></a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/asynchrony/future_read_result.cpp">future read result</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/asynchrony/future_status.cpp">future status</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/asynchrony/async_reuses_threads.cpp">async reuses threads</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/asynchrony/merge_sort.cpp">merge sort</a>
 
 #### Examples in Python
 
@@ -580,10 +579,13 @@ The main module we'll be using is named <code>asyncio</code>. It is distinguishe
 
 A coroutine can pause the execution of the function by using the yield yield from or await (python 3.5+) keywords in an expression. The function is paused until the yield statement actually gets a value.
 
-* <a href=""></a>
-* <a href=""></a>
-* <a href=""></a>
-* <a href=""></a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/asynchrony/loop_run_until_complete.py">loop run until complete</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/asynchrony/loop_run_forever.py">loop run forever</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/asynchrony/future_read_result.py">future read result</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/asynchrony/future_create_task.py">future create task</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/asynchrony/data_sharing_queue.py">data sharing queue</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/asynchrony/mutex.py">mutex</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/asynchrony/semaphore.py">semaphore</a>
 
 #### Examples in JavaScript
 
@@ -595,6 +597,13 @@ A coroutine can pause the execution of the function by using the yield yield fro
 ## MPI
 
 MPI is a distributed memory device programming model. Parallelism is achieved by running various processes on different machines. 
+
+### Examples
+#### Examples in C++
+#### Examples in Python
+
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/mpi/hello_world_mpi.py">hello world mpi</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/mpi/point_to_point_communication.py">point to point communication</a>
 
 ## Rules of thumb
 
