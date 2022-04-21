@@ -125,9 +125,9 @@ The operating system is in charge of overseeing all processes.
 
 Each process is given:
 
-- time to use the processor
-- computer memory
-- disks
+- time to use the processor,
+- share of computer memory,
+- access to the hard drive.
 
 The operating system maintains a table known as the process table to keep track of the status of all processes.
 Every process is documented in this table, along with the resources it employs and the current status of the process.
@@ -253,7 +253,7 @@ While one thread is allowed to use the resources, other requesting threads are p
 
 #### Semaphore
 
-Semaphore are used for synchronization (i.e "Hello there, function foo()! Did you know that something occurred just now?"). A semaphore is an integer variable that can only be accessed via two atomic operations: wait and signal. Changes to the sempahore value in the wait and signal actions must be carried out independently. That is, when one process changes a semaphore value, no other process can change the same semaphore value at that time.
+Semaphores are used for synchronization (i.e "Hello there, function foo()! Did you know that something occurred just now?"). A semaphore is an integer variable that can only be accessed via two atomic operations: wait and signal. Changes to the sempahore value in the wait and signal actions must be carried out independently. That is, when one process changes a semaphore value, no other process can change the same semaphore value at that time.
 
 #### Common miconceptions
 
