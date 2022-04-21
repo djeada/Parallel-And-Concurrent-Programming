@@ -12,10 +12,11 @@ void foo(int multiplier) {
   }
 }
 
-int main() {
+auto main() -> int {
 
   std::vector<std::thread> threads;
 
+  threads.reserve(10);
   for (int i = 0; i < 10; i++) {
     threads.push_back(std::thread(foo, i + 1));
   }

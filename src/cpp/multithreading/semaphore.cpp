@@ -5,28 +5,29 @@
 #include <vector>
 
 class Semaphore {
-  std::mutex mutex_;
+  std::mutex mutex;
   std::condition_variable condition_;
-  unsigned long count_ = 0;
+  unsigned long count = 0;
 
 public:
   void release() {
-    std::lock_guard<decltype(mutex_)> lock(mutex_);
-    ++count_;
+    std::lock_guard<decltype(mutex)> lock(mutex);
+    ++count;
     condition_.notify_one();
   }
 
   void acquire() {
-    std::unique_lock<decltype(mutex_)> lock(mutex_);
-    while (!count_)
+    std::unique_lock<decltype(mutex)> lock(mutex);
+    while (count == 0u) {
       condition_.wait(lock);
-    --count_;
+    }
+    --count;
   }
 
-  bool try_acquire() {
-    std::lock_guard<decltype(mutex_)> lock(mutex_);
-    if (count_) {
-      --count_;
+  auto try_acquire() -> bool {
+    std::lock_guard<decltype(mutex)> lock(mutex);
+    if (count != 0u) {
+      --count;
       return true;
     }
     return false;
@@ -54,15 +55,16 @@ void producer() {
   std::cout << "The end of producer function" << std::endl;
 }
 
-int main() {
+auto main() -> int {
 
   std::vector<std::thread> threads;
 
   threads.emplace_back(std::thread(producer));
   threads.emplace_back(std::thread(consumer));
 
-  for (auto &thread : threads)
+  for (auto &thread : threads) {
     thread.join();
+  }
 
   std::cout << "The end of main function" << std::endl;
   return 0;

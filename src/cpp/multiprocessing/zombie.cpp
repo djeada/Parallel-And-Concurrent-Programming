@@ -1,12 +1,8 @@
-/*
-Check for zombie processes with the following command:
-ps axo stat,ppid,pid,comm | grep -w defunct
-*/
 #include <iostream>
 #include <thread>
 #include <unistd.h>
 
-int main() {
+auto main() -> int {
   auto pid = fork();
   if (pid == 0) {
     std::cout << "The child process is terminated instantly. " << std::endl;

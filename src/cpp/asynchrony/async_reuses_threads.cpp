@@ -1,26 +1,22 @@
-#include <iostream>
 #include <future>
+#include <iostream>
 #include <thread>
 
 void foo() {
-    std::cout << "Worker thread id: " << std::this_thread::get_id() << std::endl;
+  std::cout << "Worker thread id: " << std::this_thread::get_id() << std::endl;
 }
 
-int main()
-{
-      std::cout << "Main thread id: " << std::this_thread::get_id() << std::endl;
+auto main() -> int {
+  std::cout << "Main thread id: " << std::this_thread::get_id() << std::endl;
 
-    std::future<void> future1 = async(std::launch::async, foo);
+  std::future<void> future1 = async(std::launch::async, foo);
+  future1.get();
 
-    f1.get(); 
+  std::future<void> future2 = async(std::launch::async, foo);
+  future2.get();
 
-    std::future<void> future2 =async(std::launch::async, foo);
+  std::future<void> future3 = async(std::launch::async, foo);
+  future3.get();
 
-    f2.get();
-
-    std::future<void> future3 = async(std::launch::async, foo);
-
-    f3.get();
-
-    return 0;
+  return 0;
 }

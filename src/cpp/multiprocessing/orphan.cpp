@@ -3,7 +3,7 @@
 #include <thread>
 #include <unistd.h>
 
-int main() {
+auto main() -> int {
   auto pid = fork();
 
   if (pid < 0) {

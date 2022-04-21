@@ -8,7 +8,7 @@ void foo() {
   std::cout << "Worker thread id: " << std::this_thread::get_id() << std::endl;
 }
 
-int main() {
+auto main() -> int {
   std::cout << "Main function id: " << getpid() << std::endl;
   std::cout << "Main thread id: " << std::this_thread::get_id() << std::endl;
 

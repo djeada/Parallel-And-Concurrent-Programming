@@ -14,11 +14,12 @@ void bar(int id) {
   std::cout << "Function bar() finishes, Thread id: " << id << std::endl;
 }
 
-int main() {
+auto main() -> int {
 
   std::cout << "Main thread starts" << std::endl;
 
   std::vector<std::thread> threads;
+  threads.reserve(5);
   for (int i = 0; i < 5; i++) {
     threads.emplace_back(foo, i);
   }
