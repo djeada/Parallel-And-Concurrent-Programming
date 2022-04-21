@@ -136,9 +136,9 @@ Every process is documented in this table, along with the resources it employs a
 
 1. Running - The running state indicates that the process has all of the resources it requires for execution and that the operating system has granted it permission to use the processor. At any given moment, only one process can be in that state.
 
-2. Ready - awaiting authorization to use the CPU.
+2. Ready - It is awaiting authorization to use the CPU.
 
-3. Waiting - the process of waiting for an external event to occur, such as user input or disk access. 
+3. Waiting - The process of waiting for an external event to occur, such as user input or disk access. 
 
 ### Thread
 
@@ -283,6 +283,14 @@ I used the <code>GCC</code> compiler with the following flags to compile the exa
 
      g++ file_name.cpp -std=c++17 -pthread -o executable_name
 
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multithreading/raw_pthread.cpp">raw pthread</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multithreading/single_worker_thread.cpp">single worker thread</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multithreading/multiple_worker_threads.cpp">multiple worker threads</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multithreading/race_condition.cpp">race condition</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multithreading/mutex.cpp">mutex</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multithreading/semaphore.cpp">semaphore</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multithreading/merge_sort.cpp">merge sort</a>
+
 #### Examples in Python
 
 A global interpreter lock (GIL) is a technique used in programming language interpreters to synchronize thread execution such that only one native thread may run at any given moment. Even when running on a multi-core CPU, GIL permits only one native thread to execute at a time.
@@ -291,9 +299,21 @@ The natural question is if it even makes sense to use threads in Python? The ans
 
 The main module we'll be using is named <code>threading</code>. To spawn  a new thread, just create an object of <code>Thread</code> class and specify the function that you want to run in the new thread as the first parameter. The thread will not begin executing until you invoke the <code>start()</code> method. Call the <code>join()</code> method to suspend further program execution until the thread has completed its task. There are several other functions available that make it simple to work with threads. For example to see which thread is currently executing we can call <code>current_thread()</code>. We use <code>main_thread()</code> to obtain the main thread instance.
 
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/single_worker_thread.py">single worker thread</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/multiple worker threads.py">multiple_worker_threads</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/thread_subclass.py">thread subclass</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/race_condition.py">race condition</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/mutex.py">mutex</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/semaphore.py">semaphore</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/merge_sort.py">merge sort</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/fetch_parallel.py">fetch parallel</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/schedule_every_n_sec.py">schedule every n sec</a>
+
 #### Examples in JavaScript
 
 A Node.js application runs on a single thread. In this thread an event loop listens for events and then triggers the events associated callback function upon detection. By this simple illustration we can already see that Node.js does not support multithreading because each application is run on a single thread. 
+
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/nodejs/multithreading/single_worker_thread/main.js">single worker thread</a>
 
 ## Multiprocessing
 
@@ -388,7 +408,15 @@ How do you make a child process run a different program?
 I used the <code>GCC</code> compiler with the following flags to compile the examples:
 
      g++ file_name.cpp -std=c++17 -pthread -o executable_name
-     
+
+* <a href=""></a>
+* <a href=""></a>
+* <a href=""></a>
+* <a href=""></a>
+* <a href=""></a>
+* <a href=""></a>
+
+
 #### Examples in Python
 
 The <code>os</code> module supports the usage of pure <code>fork()</code>, which works in the same way that we discussed while discussing C++ examples. However, there are superior higher level abstraction alternatives. <code>Subprocess</code> and <code>multiprocessing</code> are two modules that may be used to create new processes from a Python script. 
@@ -400,6 +428,12 @@ Multiprocessing creates new processes as well, but these processes are meant to 
 Furthermore, multiprocessing has an API similar to that of the threading module. Use the <code>Process</code> class to start a new process. The first argument should be the callback function. Then, to begin the process execution, use the <code>start()</code> method. Similarly to threads, if you want the rest of your program to wait for the process to complete, use <code>join()</code>.
 
 Pool is another useful multiprocessing construction. It allows users to run one function in parallel with different sets of inputs.
+
+* <a href=""></a>
+* <a href=""></a>
+* <a href=""></a>
+* <a href=""></a>
+* <a href=""></a>
 
 #### Examples in JavaScript
 
@@ -428,6 +462,11 @@ There are also a number of potentially useful objects from childObject, which ar
         child.disconnect()
 
 Although multithreading is not supported there is a way to harness the power of a multicore system by using processes. Node.js has a module called cluster designed to support a multiprocessing alternative.
+
+* <a href=""></a>
+* <a href=""></a>
+* <a href=""></a>
+* <a href=""></a>
 
 ## Asynchrony
 
@@ -526,6 +565,11 @@ I used the <code>GCC</code> compiler with the following flags to compile the exa
 
      g++ file_name.cpp -std=c++17 -pthread -o executable_name
      
+* <a href=""></a>
+* <a href=""></a>
+* <a href=""></a>
+* <a href=""></a>
+
 #### Examples in Python
 
 Given threading is using multi-thread to maximize the performance of a I/O-bound task in Python, we wonder if using multi-thread is necessary. The answer is no, if you know when to switch the tasks. For example, for each thread in a Python program using threading, it will really stay idle between the request is sent and the result is returned. If somehow a thread could know the time I/O request has been sent, it could switch to do another task, without staying idle, and one thread should be sufficient to manage all these tasks. Without the thread management overhead, the execution should be faster for a I/O-bound task. Obviously, threading could not do it, but we have asyncio.
@@ -534,11 +578,19 @@ Using Python asyncio, we are also able to make better use of the CPU sitting idl
 
 The main module we'll be using is named <code>asyncio</code>. It is distinguished for its outstanding speed and simplicity of usage. It makes it easy to write single-threaded concurrent programs using corutines (stripped down version of threads). It conceals the complexities of concurrent programming from us by providing a plethora of different functions that implement numerous synchronization strategies for us.
 
-A coroutine can pause the execution of the function by using the yield yield from or await (python 3.5+) keywords in an expression. The function is paused until the yield statement actually gets a value. 
+A coroutine can pause the execution of the function by using the yield yield from or await (python 3.5+) keywords in an expression. The function is paused until the yield statement actually gets a value.
+
+* <a href=""></a>
+* <a href=""></a>
+* <a href=""></a>
+* <a href=""></a>
 
 #### Examples in JavaScript
 
-FUTURE = PROMISE
+* <a href=""></a>
+* <a href=""></a>
+* <a href=""></a>
+* <a href=""></a>
 
 ## MPI
 
