@@ -488,7 +488,7 @@ CAN BE STOPPED AND RESUMED
 
 #### Futures
 
-A Future is an object that is supposed to have a result in the future.
+A Future is an object that is supposed to store the result of a corutine it's associated with.
 
 Futures are objects that have the __await__() method implemented, and their job is to hold a certain state and result. The state can be one of the following:
 
@@ -534,7 +534,7 @@ Also, the cost task switches is very low. Calling a pure Python function has mor
 
 This means that async is very cheap.
 
-In return, you’ll need a non-blocking version of just about everything you do. Accordingly, the async world has a huge ecosystem of support tools. This increases the learning curve.
+In return, you’ll need a non-blocking version of just about everything you do. 
 
 FOR ASYnchrony you need asynchronous functions (called coruitnes) marked with async keyword. How are you going to interact with the massive world of functions written in a blocking way?
 
