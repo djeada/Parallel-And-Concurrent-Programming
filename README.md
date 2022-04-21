@@ -14,7 +14,7 @@ Unveiling the mysteries of parallel and concurrent programming.
     - [Thread](#Thread)
       - [The-role-of-the-OS](#The-role-of-the-OS)
     - [Process-vs-Thread](#Process-vs-Thread)
-    - [CPU-Bound-VS-I/O-Bound](#CPU-Bound-VS-I/O-Bound)
+    - [CPU-Bound-vs-I/O-Bound](#CPU-Bound-vs-I/O-Bound)
       - [CPU-Bound](#CPU-Bound)
       - [I/O-Bound](#I/O-Bound)
   - [Multithreading](#Multithreading)
@@ -179,7 +179,7 @@ Thread:
 * Operating system schedules threads for execution;
 * All threads within a single process share the same address space and other resources.
 
-### CPU-Bound VS I/O-Bound
+### CPU-Bound vs I/O-Bound
 
 To use concruency to speed up a software, we must first identify the bottleneck in our application. Depending on whether the slowdown is caused by I/O activities or an underused CPU, different solutions will be used. 
 
