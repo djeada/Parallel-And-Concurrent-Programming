@@ -478,25 +478,20 @@ For example, retrieving data from a database may take some time, but we don't wa
 ### Building blocks of asynchronous programming
 
 #### Event loop
-An event loop is a loop that can register tasks to be executed, execute them, delay or even cancel them and handle different events related to these operations. The loop runs one function, while that function waits for IO, it pauses it and runs another. 
+
+Although it is not always necessary, an event loop is frequently used in the implementation of asynchrony in programming languages. An event loop is a loop that may be used to register tasks to be executed, execute them, delay or cancel them, and handle other events linked to these tasks. The loop executes one function, then stops it and executes another while that function waits for IO. 
 
 #### Corutines
 
-Coroutines are functions that can be stopped and resumed while being run. In Python, they are defined using the async def keyword. Much like generators, they too use their own form of yield from which is await. 
-
-CAN BE STOPPED AND RESUMED
+Coroutines are functions that may be stopped and restarted while they are running. They are commonly defined with the <code>async</code> keyword. 
 
 #### Futures
 
-A Future is an object that is supposed to store the result of a corutine it's associated with.
+A Future is an item that is designed to hold the outcome of a corutine with which it is related. Future contains state information, which can typically be one of the following:
 
-Futures are objects that have the __await__() method implemented, and their job is to hold a certain state and result. The state can be one of the following:
-
-1. pending - the future has no outcome or exception set.
-2. cancelled - the future was cancelled. 
-3. finished - the future was completed, either by a result set or by an exception.
-
-The result, just like you have guessed, can either be a Python object, that will be returned, or an exception which may be raised.
+1. pending - there is no outcome or exception specified for the future.
+2. canceled - the future has been canceled.
+3. completed - the future was finished, either by a result set or by an exception. 
 
 ### Asynchrony vs multithreading
 
@@ -526,17 +521,7 @@ Asynchrony and multithreading often go hand in hand, but the concepts itself are
 
 ### Challenges
 
-Async switches cooperatively, so you do need to add explicit code “yield” or “await” to cause a task switch.
-
-Now you control when task switches occur, so locks and other synchronization are no longer needed.
-
-Also, the cost task switches is very low. Calling a pure Python function has more overhead than restarting a generator or awaitable.
-
-This means that async is very cheap.
-
-In return, you’ll need a non-blocking version of just about everything you do. 
-
-FOR ASYnchrony you need asynchronous functions (called coruitnes) marked with async keyword. How are you going to interact with the massive world of functions written in a blocking way?
+Asynchronous functions, unlike multithreading, switch cooperatively, hence the programmer is obliged to induce a task switch whenever it is thought suitable. Locks and other forms of synchronization are no longer required. Furthermore, the cost of task shifts is quite minimal. In most cases, calling a pure function incurs more cost than restarting a generator or awaitable. However, asynchronous functions (known as coruitnes) annotated with the async keyword are required. The challenge is, how will you deal with the vast world of functions written in a blocking manner? 
 
 ### Examples
 
