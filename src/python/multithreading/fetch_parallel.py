@@ -13,7 +13,7 @@ import queue
 def read_url(url, queue):
     try:
         data = urllib.request.urlopen(url, None, 15).read()
-        print("Fetched %s from %s" % (len(data), url))
+        print(f"Fetched {len(data)} from {url}")
         queue.put(data)
     except Exception as e:
         print(e)
@@ -34,8 +34,9 @@ urls = (
     "https://github.com/djeada/Od-C-do-Cpp#L-warto%C5%9Bci-i-r-warto%C5%9Bci",
     "https://github.com/djeada/Od-C-do-Cpp#L-warto%C5%9Bci-i-r-warto%C5%9Bci",
 )
-res = fetch_parallel(urls)
-reslist = []
-while not res.empty():
-    reslist.append(res.get_nowait())  # or get, doesn't matter here
-# print (reslist)
+
+fetched_sites = fetch_parallel(urls)
+result = list()
+
+while not fetched_sites.empty():
+    result.append(fetched_sites.get_nowait())
