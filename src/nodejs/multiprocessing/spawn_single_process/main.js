@@ -19,7 +19,6 @@ worker.on("error", (err) => {
 
 
 function main() {
-    console.log(`main thread id: ${Worker.threadId}`);
     console.log(`main thread process id: ${process.pid}`);
     worker.postMessage("message from main thread");
 }
