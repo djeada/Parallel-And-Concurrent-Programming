@@ -300,7 +300,7 @@ The natural question is if it even makes sense to use threads in Python? The ans
 The main module we'll be using is named <code>threading</code>. To spawn  a new thread, just create an object of <code>Thread</code> class and specify the function that you want to run in the new thread as the first parameter. The thread will not begin executing until you invoke the <code>start()</code> method. Call the <code>join()</code> method to suspend further program execution until the thread has completed its task. There are several other functions available that make it simple to work with threads. For example to see which thread is currently executing we can call <code>current_thread()</code>. We use <code>main_thread()</code> to obtain the main thread instance.
 
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/single_worker_thread.py">single worker thread</a>
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/multiple worker threads.py">multiple_worker_threads</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/multiple_worker_threads.py">multiple worker threads</a>
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/thread_subclass.py">thread subclass</a>
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/race_condition.py">race condition</a>
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/mutex.py">mutex</a>
@@ -311,9 +311,12 @@ The main module we'll be using is named <code>threading</code>. To spawn  a new 
 
 #### Examples in JavaScript
 
-A Node.js application runs on a single thread. In this thread an event loop listens for events and then triggers the events associated callback function upon detection. By this simple illustration we can already see that Node.js does not support multithreading because each application is run on a single thread. 
+By default, a NodeJs application operates on a single thread. An event loop in this thread listens for events and then calls the event's related callback function when one is detected. Since V10.5, the <code>worker threads</code> module can be used to spawn extra threads. 
+
+Be aware that NodeJS already handles I/O operations internally through the usage of a thread pool. As a result, spawning additional threads makes only sense for synchronous JS code. 
 
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/nodejs/multithreading/single_worker_thread/main.js">single worker thread</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/nodejs/multithreading/multiple_worker_threads/main.js">multiple worker threads</a>
 
 ## Multiprocessing
 
