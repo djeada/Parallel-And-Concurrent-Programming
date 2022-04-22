@@ -1,26 +1,7 @@
-const {Worker} = require("worker_threads");
+const spawn = require('child_process').spawn;
 
-const worker_script_path = "./worker_script.js";
+const ls = spawn('ls', ['-lh', '/usr']);
 
-const worker = new Worker(worker_script_path, {
-    workerData: "worker thread data"
+ls.stdout.on('data', (data) => {
+    console.log(`stdout: ${data}`);
 });
-
-worker.on("message", (message) => {
-    console.log(message);
-    worker.terminate();
-});
-
-
-worker.on("error", (err) => {
-    console.log(err);
-    worker.terminate();
-});
-
-
-function main() {
-    console.log(`main thread process id: ${process.pid}`);
-    worker.postMessage("message from main thread");
-}
-
-main();
