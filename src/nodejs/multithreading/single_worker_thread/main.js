@@ -7,6 +7,7 @@ const worker = new Worker(worker_script_path, {
 });
 
 worker.on("message", (message) => {
+    console.log(`Received a message from thread with id: ${ worker.threadId}`)
     console.log(message);
     worker.terminate();
 });
@@ -19,7 +20,6 @@ worker.on("error", (err) => {
 
 
 function main() {
-    console.log(`main thread id: ${Worker.threadId}`);
     console.log(`main thread process id: ${process.pid}`);
     worker.postMessage("message from main thread");
 }
