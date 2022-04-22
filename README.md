@@ -465,10 +465,8 @@ There are also a number of potentially useful objects from childObject, which ar
 
 Although multithreading is not supported there is a way to harness the power of a multicore system by using processes. Node.js has a module called cluster designed to support a multiprocessing alternative.
 
-* <a href=""></a>
-* <a href=""></a>
-* <a href=""></a>
-* <a href=""></a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/tree/master/src/nodejs/multiprocessing/spawn_single_process">spawn single process</a>
+* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/nodejs/multiprocessing/spawn_multiples_processes/main.js">spawn multiple processes</a>
 
 ## Asynchrony
 
@@ -559,13 +557,11 @@ I used the <code>GCC</code> compiler with the following flags to compile the exa
 
 #### Examples in Python
 
-Given threading is using multi-thread to maximize the performance of a I/O-bound task in Python, we wonder if using multi-thread is necessary. The answer is no, if you know when to switch the tasks. For example, for each thread in a Python program using threading, it will really stay idle between the request is sent and the result is returned. If somehow a thread could know the time I/O request has been sent, it could switch to do another task, without staying idle, and one thread should be sufficient to manage all these tasks. Without the thread management overhead, the execution should be faster for a I/O-bound task. Obviously, threading could not do it, but we have asyncio.
-
-Using Python asyncio, we are also able to make better use of the CPU sitting idle when waiting for the I/O. What’s different to threading is that, asyncio is single-process and single-thread. There is an event loop in asyncio which routinely measure the progress of the tasks. If the event loop has measured any progress, it would schedule another task for execution, therefore, minimizing the time spent on waiting I/O. This is also called cooperative multitasking. The tasks must cooperate by announcing when they are ready to be switched out. 
+When dealing with I/O operations, a multithreaded Python program that employs threading will be idle between the time the request is received and the time the answer is provided. If a thread knows when an I/O request has been delivered, it may switch to another task without becoming idle, and one thread should be sufficient to handle all of these jobs. Threading, obviously, would not be able to achieve this, but we have <code>asyncio</code>.
 
 The main module we'll be using is named <code>asyncio</code>. It is distinguished for its outstanding speed and simplicity of usage. It makes it easy to write single-threaded concurrent programs using corutines (stripped down version of threads). It conceals the complexities of concurrent programming from us by providing a plethora of different functions that implement numerous synchronization strategies for us.
 
-A coroutine can pause the execution of the function by using the yield yield from or await (python 3.5+) keywords in an expression. The function is paused until the yield statement actually gets a value.
+A coroutine can pause function execution by using the keywords <code>yield</code>, <code>yield from</code>, or <code>await</code> in an expression. The function is stopped until the yield statement returns a value.
 
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/asynchrony/loop_run_until_complete.py">loop run until complete</a>
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/asynchrony/loop_run_forever.py">loop run forever</a>
