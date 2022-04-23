@@ -18,7 +18,7 @@ Unveiling the mysteries of parallel and concurrent programming.
       - [CPU-Bound](#CPU-Bound)
       - [I/O-Bound](#I/O-Bound)
   - [Multithreading](#Multithreading)
-    - [Thread-pool-vs.-On-demand-thread](#Thread-pool-vs.-On-demand-thread)
+    - [Thread-pool-vs-On-demand-thread](#Thread-pool-vs-On-demand-thread)
     - [Worker-threads](#Worker-threads)
     - [Advantages-of-threads-over-processes](#Advantages-of-threads-over-processes)
     - [Challenges-with-multithreading](#Challenges-with-multithreading)
@@ -209,7 +209,7 @@ The phrase "I/O bound" refers to a situation in which the time it takes to finis
 
 Multithreading is a method of achieving concurrency by creating several threads within a single process. It is important to note that parallelism is not guaranteed by multithreading.
 
-### Thread pool vs. On-demand thread
+### Thread pool vs On-demand thread
 
 To reduce creation costs, a thread pool pre-spawns threads. Threads are created once rather than multiple times.
 
