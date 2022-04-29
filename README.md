@@ -374,7 +374,7 @@ What causes a deadlock to occur?
 
 ### Containers
 
-An alternative to a single multiprocess program is a microservice architecture using containers, each of which executes a single process program. There is a plethora of technologies available that make container orchestration as easy as ABC.
+An alternative to a single multiprocess program is a microservice architecture using containers, each of which executes a single process program. There is a plethora of technologies available that make container orchestration as easy as ABC. The obvious question is how long your child processes should live. If they are only supposed to live for a short time, this approach is excessive. 
 
 ### Examples
 
