@@ -653,7 +653,7 @@ Different ways of achieving parallelism:
 | **Shared Memory (SM)**      | GPU, Cell, SSE, AltiVec, Vector processor        | ManyCore/SMP system          |
 | **Distributed Memory (DM)** | processor-array systems, systolic arrays, Hadoop | cluster systems, MPP systems |
 
-## Bibliography
+## Refrences
 
 * https://www.personal.kent.edu/~rmuhamma/OpSystems/os.html
 * https://www.oreilly.com/library/view/the-art-of/9780596802424/
