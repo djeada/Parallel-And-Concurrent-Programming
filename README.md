@@ -1,6 +1,8 @@
 # Parallel and Concurrent Programming
 Unveiling the mysteries of parallel and concurrent programming.
 
+![Capture](https://user-images.githubusercontent.com/37275728/186123740-6148f448-856d-4249-a54d-714fcebc1b1c.PNG)
+
 ## Table of Contents
 <!--ts-->
 
