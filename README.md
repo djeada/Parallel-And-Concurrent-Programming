@@ -629,6 +629,7 @@ Different ways of achieving parallelism:
 
 * Intended to handle multithreading easily.
 * Hyper-threading was one of the early concepts for improving multithreading efficiency.
+* The idea is to use one physical core to run more than one thread at the same time.
 * The pipelines for the threads were being duplicated in hyper-threading (it was effectiveliy quicker but not everything could be executed in parallel).
 * The term "multi-core" refers to the fact that everything is replicated (pipeline and execution engine). 
 
