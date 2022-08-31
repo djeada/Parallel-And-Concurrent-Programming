@@ -315,7 +315,7 @@ The main module we'll be using is named <code>threading</code>. To spawn  a new 
 
 By default, a NodeJs application operates on a single thread. An event loop in this thread listens for events and then calls the event's related callback function when one is detected. Since V10.5, the <code>worker_threads</code> module can be used to spawn extra threads. 
 
-Be aware that NodeJS already handles I/O operations internally through the usage of a thread pool. As a result, spawning additional threads makes only sense for synchronous JS code. 
+Be aware that NodeJS already internally handles I/O operations through the usage of a thread pool. Spawning a thread makes only sense for a CPU-intensive work.
 
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/nodejs/multithreading/single_worker_thread/main.js">single worker thread</a>
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/nodejs/multithreading/multiple_worker_threads/main.js">multiple worker threads</a>
