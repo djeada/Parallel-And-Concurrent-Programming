@@ -482,7 +482,7 @@ For example, retrieving data from a database may take some time, but we don't wa
 
 #### Event loop
 
-Although it is not always necessary, an event loop is frequently used in the implementation of asynchrony in programming languages. An event loop is a loop that may be used to register tasks to be executed, execute them, delay or cancel them, and handle other events linked to these tasks. The loop executes one function, then stops it and executes another while that function waits for IO. 
+Although it is not always necessary, an event loop is frequently used in the implementation of asynchrony in programming languages. An event loop is a loop that may be used to register tasks to be executed, execute them, delay or cancel them, and handle other events linked to these tasks. The event loop blocks the main thread and manages execution of coroutines. It executes one function, then stops it and executes another while the first function waits for IO, then restores the paused functions. 
 
 #### Corutines
 
