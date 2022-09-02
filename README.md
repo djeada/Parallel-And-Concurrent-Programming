@@ -353,7 +353,7 @@ Message passing exchanges data via techniques known as inter-process communicati
    
 #### Shared Memory
 
-Shared memory enables programs to access and share data as though they were local to each process's address space. On the plus side, in a loop-back design, it may be more efficient for massive data. One disadvantage is that it does not generalize well to remote systems and may be more error-prone. 
+Shared memory enables programs to access and share data as though they were local to each process's address space. This, however, does not happen automatically, and we must explicitly request the OS to allow two processes to share memory. On the plus side, in a loop-back design, it may be more efficient for massive data. One disadvantage is that it does not generalize well to remote systems and may be more error-prone. 
 
 ### Challenges with multiprocessing
 
