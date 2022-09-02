@@ -239,14 +239,24 @@ The irony is that most multithreading challenges are coming from its biggest adv
 
 When in multithreaded program, the result is depndend on the order in which the threads are executed, then we refer to that stuation as 'race condition'. 
 
-Why does it happen? By defualt threads switch preemptively (you don't control when the threads switch, the os can make the switch at any time). This is useful since you don't have to manually code where the task should switch. The tradeoff of this convenience is that you must presume that a switch will occur at an inconvenient moment.
+Why does it happen? By defualt threads switch preemptively (you don't control when the threads switch, the os can make the switch at any time). This is useful since you don't have to manually code where the task should switch. The tradeoff of this convenience is that you must presume that a switch may occur at an inconvenient moment.
+
+Consider the following simple example: we have two functions, *funA()* and *funB()*, and *funB()* is dependent on the results of *funA()*.
+If we write a single threaded program, all we have to do is call the functions in the correct order:
+
+    funA()
+    funB()
+    
+If we delegate both functions to separate threads, this solution will fail.
+We don't know which function will be chosen to execute first, or whether they will run in parallel.
+In either case, our software will not function properly.
 
 When many threads use the same resources, the scenario becomes increasingly dangerous. Given the following:
 
 * At least two concurrent threads access the same memory address.
 * It's being modified by at least one thread.
 
-That section of memory may even get corrupted. As a result, crucial areas must be protected with locks. 
+That section of memory may even get corrupted. As a result, crucial areas must be protected with locks.
 
 #### Mutex
 
