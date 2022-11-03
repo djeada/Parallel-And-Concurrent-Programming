@@ -677,3 +677,11 @@ Different ways of achieving parallelism:
 * https://w3.cs.jmu.edu/kirkpams/OpenCSF/Books/csf/html/
 * https://lucumr.pocoo.org/2016/10/30/i-dont-understand-asyncio/
 * https://www.cs.unb.ca/~bremner/teaching/cs2613/books/nodejs-api/
+
+## Contributing
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
+Please make sure to update tests as appropriate.
+
+## License
+[MIT](https://choosealicense.com/licenses/mit/)
