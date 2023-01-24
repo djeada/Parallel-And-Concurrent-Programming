@@ -1,5 +1,5 @@
 # Parallel and Concurrent Programming
-Unveiling the mysteries of parallel and concurrent programming.
+Concurrent and parallel programming can seem intimidating, but this guide makes it easy to understand. From sequential vs non-sequential, to processes and threads, we'll cover the key concepts you need to know. You'll also find examples in popular languages like C++, Python and JavaScript, making it easy to apply what you learn to your own projects. 
 
 ![Capture](https://user-images.githubusercontent.com/37275728/186123740-6148f448-856d-4249-a54d-714fcebc1b1c.PNG)
 
