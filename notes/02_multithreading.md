@@ -1,30 +1,39 @@
 ## Multithreading
 
-Multithreading is a method of achieving concurrency by creating several threads within a single process. It is important to note that parallelism is not guaranteed by multithreading.
+* Multithreading is a way of achieving concurrency in software development.
+* It involves creating multiple threads within a single process to execute tasks concurrently.
+* Multithreading does not guarantee parallelism.
 
 ### Thread pool vs On-demand thread
 
-To reduce creation costs, a thread pool pre-spawns threads. Threads are created once rather than multiple times.
-
-In contrast, on-demand thread spawning reduces the waste of resources spent by idle prespawned threads. On the other side, it might cause the program to slow down when the threads are needed. 
+* Two ways to create threads in multithreading are: using a thread pool or on-demand thread spawning.
+* Thread pool pre-spawns threads to reduce creation costs, while on-demand thread spawning reduces resource wastage.
+* On-demand thread spawning may slow down the program when threads are needed.
 
 ### Worker threads
 
-In multithreading, we typically have one main thread that initiates all other threads. These new threads are referred to as "worker threads." They are named thus because they are waiting for a job and only do the task when it is allocated to them by someone else. To regulate and limit the number of worker threads, you may wish to employ a thread pool.
+* In multithreading, one thread initiates all other threads, known as worker threads.
+* Worker threads only perform tasks when allocated to them by another thread.
+* To regulate and limit the number of worker threads, a thread pool can be employed.
 
 A web server process, for example, receives a request and assigns it to a thread from its pool for processing. That thread obeys the main thread, completes the task, and returns to the pool. Until then, the main thread is free to do anything it wants. 
 
 ### Advantages of threads over processes
 
-1. Responsiveness: If a process is splited into threads, when one thread completes its execution, its output may be used instantly.
-
-2. Faster context transition: The time it takes to switch between threads is shorter than the time it takes to move between processes.
-
-3. Resource sharing: Code, data, and files can be shared across all threads within a process.
+1. Multithreading has several advantages over using multiple processes, such as:
+    - Better responsiveness.
+    - Faster context transitions.
+    - Improved resource sharing.
+2. Code, data, and files can be shared across all threads within a process.
 
 ### Challenges with multithreading
 
-The irony is that most multithreading challenges are coming from its biggest advantage. Threads are favored over processes because they share state with one another, making communication simple. This fact is also the reason for most common challenges when dealing with multithreading. 
+* Multithreading challenges arise from the fact that threads share state with one another, making communication simple.
+* The most common challenge when dealing with multithreading is data race.
+* Data race happens when the result of a multithreaded program depends on the order in which threads are executed.
+* This is because threads switch preemptively, meaning that you don't control when they switch, and a switch may occur at an inconvenient moment.
+* When multiple threads use the same resources, data race becomes increasingly dangerous.
+* Mutex and semaphore are mechanisms developed to prevent data race.
 
 #### Data race
 
@@ -35,35 +44,45 @@ Why does it happen? By defualt threads switch preemptively (you don't control wh
 Consider the following simple example: we have two functions, *funA()* and *funB()*, and *funB()* is dependent on the results of *funA()*.
 If we write a single threaded program, all we have to do is call the functions in the correct order:
 
-    funA()
-    funB()
-    
+```bash
+funA()
+funB()
+```
 If we delegate both functions to separate threads, this solution will fail.
 We don't know which function will be chosen to execute first, or whether they will run in parallel.
 In either case, our software will not function properly.
 
-When many threads use the same resources, the scenario becomes increasingly dangerous. Given the following:
+When many threads use the same resources, the scenario becomes increasingly dangerous.
 
-* At least two concurrent threads access the same memory address.
-* It's being modified by at least one thread.
+* Data race occurs when at least two concurrent threads access the same memory address that's being modified by at least one thread.
+* That section of memory may get corrupted, and crucial areas must be protected with locks.
 
-That section of memory may even get corrupted. As a result, crucial areas must be protected with locks.
+Analogy: Imagine a crowded restaurant kitchen where multiple chefs are working on the same dish at the same time, using the same ingredients and tools. If they are not coordinated properly, they might end up bumping into each other or accidentally using the same tool or ingredient at the same time, causing confusion and potentially ruining the dish. This is similar to what happens in a data race, where multiple threads are accessing the same memory location at the same time without proper synchronization, leading to unpredictable and potentially incorrect results.
 
 #### Mutex
 
-A mutex is a mechanism develop to prevent data races. Multiple threads (or processes) can take turns sharing the same resource without conflict.
-While one thread is allowed to use the resources, other requesting threads are put to sleep until thread exits the portion of code guarded by the mutex.
+* A mutex is a mechanism that prevents data race.
+* Multiple threads or processes can take turns sharing the same resource without conflict.
+* While one thread is allowed to use the resources, other requesting threads are put to sleep until the thread exits the portion of code guarded by the mutex.
+
+Analogy: Think of a public restroom with only one stall. If multiple people try to use the stall at the same time, chaos will ensue, with people pushing and shoving, and no one getting to use the restroom properly. To prevent this, a lock is installed on the door, which can only be opened by one person at a time. This ensures that only one person can use the stall at any given time, and others have to wait their turn. In the same way, a mutex is a lock that threads can use to access a shared resource in a mutually exclusive way.
 
 #### Semaphore
 
-Semaphores are used for synchronization (i.e "Hello there, function foo()! Did you know that something occurred just now?"). A semaphore is an integer variable that can only be accessed via two atomic operations: wait and signal. Changes to the sempahore value in the wait and signal actions must be carried out independently. That is, when one process changes a semaphore value, no other process can change the same semaphore value at that time.
-
+* A semaphore is an integer variable that can only be accessed via two atomic operations: wait and signal.
+* Semaphores are used for synchronization.
+* Changes to the semaphore value in the wait and signal actions must be carried out independently.
+* A binary semaphore should be used as a signaling technique, where the binary "producer" informs all of the "consumers" that what they were expecting has occurred.
+    
+Analogy: Imagine a busy street intersection with a traffic light. The traffic light controls the flow of traffic by changing colors at regular intervals, and different lanes of traffic have to take turns moving through the intersection. A semaphore works in a similar way, controlling access to a shared resource by allowing a certain number of threads to access it at a time, and blocking others until there is available capacity. The semaphore acts as a signal to the threads, letting them know when it is safe to access the shared resource.
+    
 #### Common miconceptions
 
-Because a binary semaphore can only accept one of two values, it serves the same function as a mutex. The prevalent misunderstanding is that they are the same thing.
-
-Mutex is used to gain exclusive access to a resource. A binary semaphore should be used as a signaling technique. The binary "producer" merely informs all of the "consumers" that what they were expecting has occurred. 
-
+* Binary semaphore and mutex are not the same thing: A binary semaphore can only accept one of two values, and it serves the same function as a mutex. However, the prevalent misunderstanding is that they are the same thing. A mutex is used to gain exclusive access to a resource, while a binary semaphore should be used as a signaling technique. The binary "producer" merely informs all of the "consumers" that what they were expecting has occurred.
+* Multithreading automatically improves performance: While multithreading can improve performance in certain scenarios, it does not always lead to faster execution times. In fact, if not implemented correctly, multithreading can even decrease performance due to increased overhead and synchronization costs.
+* More threads always means better performance: This is not necessarily true. Creating too many threads can actually lead to decreased performance due to increased context switching overhead and resource contention.
+* Multithreaded code is always more difficult to write and maintain: While writing correct and efficient multithreaded code can be challenging, it is not always more difficult than writing single-threaded code. Additionally, many modern programming languages and frameworks provide abstractions and tools to simplify multithreaded programming.
+    
 ### Examples
 
 #### Examples in C++
