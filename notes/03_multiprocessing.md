@@ -1,18 +1,17 @@
-
 ## Multiprocessing
 
-Multiprocessing is a method of achieving concurrency by creating several processes within a single program. It is important to note that parallelism is not guaranteed by multiprocessing. Processes, unlike threads, do not share any resources by default, hence it makes the most sense to use that approach when you wish to simulatenously complete unrelated tasks.
+Multiprocessing is a method of achieving concurrency by creating several processes within a single program. It is important to note that parallelism is not guaranteed by multiprocessing. Processes, unlike threads, do not share any resources by default, hence it makes the most sense to use that approach when you wish to simultaneously complete unrelated tasks.
 
-### Child processes 
+### Child Processes
 
 The process that spawns new processes is referred to as the parent process. The processes that have been spawned are known as child processes.
 
-The parent processe may:
+The parent process may:
 
-- wait till it's child is finished; 
-- check on the child's condition (it may be running, sleeping, stopped, or zombie); 
-- it may want to communicate with the child and request some data back from it; 
-- if it's taking too long, it may may just need to kill the child.
+- Wait for its child to finish;
+- Check on the child's condition (it may be running, sleeping, stopped, or zombie);
+- Communicate with the child and request some data back from it;
+- Terminate the child if it's taking too long.
 
 #### Zombie Process
 
@@ -20,78 +19,77 @@ A zombie process is one that has finished running but still has an entry in the 
 
 #### Orphan Process
 
-An orphan process is one whose parent process has finished execution or been terminated without waiting for its child process to finish. An orphan is alive and running, just like any other process; it just has a peculiar name. 
+An orphan process is one whose parent process has finished execution or been terminated without waiting for its child process to finish. An orphan is alive and running, just like any other process; it just has a peculiar name.
 
-### Communication between processes
+### Communication between Processes
 
-To fully take advantage of multiprocessing we need to have a way to communicate between the processes. 
+To fully take advantage of multiprocessing, we need to have a way to communicate between the processes.
 
 #### Message Passing
 
-Message passing exchanges data via techniques known as inter-process communication (IPC). On the plus side, it is applicable to both local and remote communication (multiprocessing programs can be distributed between remote machines). One disadvantage is a possible "loop-back" configuration, this may result in excessive overhead for big messages. 
-   
+Message passing exchanges data via techniques known as inter-process communication (IPC). On the plus side, it is applicable to both local and remote communication (multiprocessing programs can be distributed between remote machines). One disadvantage is a possible "loop-back" configuration, which may result in excessive overhead for large messages.
+
 #### Shared Memory
 
-Shared memory enables programs to access and share data as though they were local to each process's address space. This, however, does not happen automatically, and we must explicitly request the OS to allow two processes to share memory. On the plus side, in a loop-back design, it may be more efficient for massive data. One disadvantage is that it does not generalize well to remote systems and may be more error-prone. 
+Shared memory enables programs to access and share data as though they were local to each process's address space. This, however, does not happen automatically, and we must explicitly request the OS to allow two processes to share memory. On the plus side, in a loop-back design, it may be more efficient for large data. One disadvantage is that it does not generalize well to remote systems and may be more error-prone.
 
-### Challenges with multiprocessing
+### Challenges with Multiprocessing
 
-The independence of processes from one another is their strength. It's also its weakest point, because processes don't communicate easily with one another.
+The independence of processes from one another is their strength. It's also its weakest point because processes don't communicate easily with one another.
 
 #### Debugging
 
-Even for single-process applications, debugging may be a time-consuming operation. We often have to run the code line by line to figure out where the bug is hidden. The more processes there are, the more complex the whole operation becomes. Because the debugger can only track one process at a time, you must specify which one it should be. You may not be aware of which one is creating the issues. In that case you may need to repeat the operation  for each process.
+Even for single-process applications, debugging may be a time-consuming operation. We often have to run the code line by line to figure out where the bug is hidden. The more processes there are, the more complex the whole operation becomes. Because the debugger can only track one process at a time, you must specify which one it should be. You may not be aware of which one is causing the issues. In that case, you may need to repeat the operation for each process.
 
 #### Deadlocks
 
-A deadlock occurs when two or more processes wait for each other to complete and none of them ever do. Consider the following scenario: during the coronavirus pandemic, many places, including mask retailers, forced you to wear a mask. But what could you do if you didn't have a mask?To enter the shop, you must wear a mask, which you had to buy from the shop in the first place. 
+A deadlock occurs when two or more processes wait for each other to complete, and none of them ever do. Consider the following scenario: during the coronavirus pandemic, many places, including mask retailers, required you to wear a mask. But what could you do if you didn't have a mask? To enter the shop, you must wear a mask, which you had to buy from the shop in the first place.
 
 What causes a deadlock to occur?
 
 * Mutual exclusion occurs when a resource is not available for sharing.
 * A circular wait is a collection of processes that wait for each other in a circular pattern.
 * No preemption is the situation when the operating system may not recover a resource from a process until the process returns it.
-* Hold and wait refers to when a process holds at least one resource while waiting for another waiting process to hold another resource. 
+* Hold and wait refers to when a process holds at least one resource while waiting for another waiting process to hold another resource.
 
 ### Containers
 
-An alternative to a single multiprocess program is a microservice architecture using containers, each of which executes a single process program. There is a plethora of technologies available that make container orchestration as easy as ABC. The obvious question is how long your child processes should live. If they are only supposed to live for a short time, this approach is excessive. 
+An alternative to a single multiprocess program is a microservice architecture using containers, each of which executes a single-process program. There is a plethora of technologies available that make container orchestration as easy as ABC. The obvious question is how long your child processes should live. If they are only supposed to live for a short time, this approach is excessive.
+
+### Process Synchronization
+
+In a multiprocessing environment, multiple processes may need to access shared resources, such as files or memory. To prevent conflicts and ensure that the processes operate correctly, they must be properly synchronized. Synchronization techniques include the use of locks, semaphores, and monitors to control access to shared resources and ensure that only one process can access a resource at a time.
+
+### Load Balancing
+
+In a multiprocessing system, it's essential to distribute tasks evenly among the available processes to maximize resource utilization and minimize waiting time. Load balancing algorithms help to ensure that the workload is distributed evenly across the processes, taking into account factors such as the current load on each process, the priority of tasks, and the availability of resources.
+
+### Scalability
+
+One of the key advantages of multiprocessing is the ability to scale up an application to handle an increased workload. As more processes or computing resources are added, the application should be able to handle more tasks simultaneously, resulting in improved performance and throughput. Designing an application to scale effectively requires careful planning, including the choice of appropriate algorithms, data structures, and communication protocols.
+
 
 ### Examples
 
 #### Examples in C++
 
-How to create new processes? 
+To create new processes in C++, use operating system-specific APIs:
+* In Windows: `CreateProcess()`
+* In Linux: `fork()`
 
-The C++ standard library only defines concurrent execution synchronization for threads. We must use OS-specific API: 
+UNIX-based operating systems use a single process that spawns all other processes. When you call `fork()`, you create a clone of the current process. Everything is copied, except the process ID (PID).
 
-* In Windows: <code>CreateProcess()</code>
-* In Linux: <code>fork()</code>
+To make the parent process wait for the child process to complete, use the `waitpid` function.
 
-In every UNIX-based operating system, all processes are created from a single process. The first process is initiated when your system boots up. 
+To determine if a program is running in the child or parent process, check the return value of `fork()`. The child receives zero, while the parent receives the child's PID.
 
-All of the processes that are currently running on your machine are clones of that original process.
-When you call <code>fork()</code>', you are just requesting that a clone of your process be created. Everything is copied from the parent process, except for the PID. 
+To replace the child process with a different program, use the `exec*()` family of functions. The `exec()` function replaces the current process with the specified program.
 
-The function <code>waitpid</code> is commonly called in the parent process and causes a process to wait for the execution of a specified process to complete before continuing. 
+To compile the examples, use the GCC compiler with the following flags:
 
-How do we check if the program in use is the child or the parent?
-You may examine the <code>fork()</code>'s return value. It returns different results to the parent and the child. The child receives zero, whereas the parent receives the child's PID. 
-
-When creating a new process, you usually don't want it to do the same thing as the parent.
-You spawn the child process to perform a specific task while the parent is busy doing something else.
-
-How do you make a child process run a different program? 
-
-* <code>exec*()</code> family of functions is used to replace an existing process with a new program. 
-
-<code>exec()</code> does not create a new process and run the program in it; instead, it runs the program you provide by replacing it with the existing process. The current process has been terminated. The new one has the same PID as the previous one, but everything else is changed. 
-
-<code>exec()</code> will only return a value if the new program could not be launched for whatever reason. Otherwise, the caller program will simply stop existing, and the new program will run in its place. 
-
-I used the <code>GCC</code> compiler with the following flags to compile the examples:
-
-     g++ file_name.cpp -std=c++17 -pthread -o executable_name
+```
+g++ file_name.cpp -std=c++17 -pthread -o executable_name
+```
 
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multiprocessing/spawn_single_process.cpp">spawn single process</a>
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multiprocessing/spawn_multiple_processes.cpp">spawn multiple processes</a>
@@ -102,15 +100,13 @@ I used the <code>GCC</code> compiler with the following flags to compile the exa
 
 #### Examples in Python
 
-The <code>os</code> module supports the usage of pure <code>fork()</code>, which works in the same way that we discussed while discussing C++ examples. However, there are superior higher level abstraction alternatives. <code>subprocess</code> and <code>multiprocessing</code> are two modules that may be used to create new processes from a Python script. 
+In Python, you can use the `os`, `subprocess`, and `multiprocessing` modules to create and manage processes.
 
-Subprocess creates new processes, but you have no way of communicating with them except from stdin/stdout and any additional APIs the other program may use. Its primary use is to start processes that are fully independent of your own program.
+The `os` module provides the `fork()` function, while the `subprocess` module is used for creating independent processes. The `multiprocessing` module offers a higher level of abstraction and is used for running subtasks of your program and allowing them to communicate easily.
 
-Multiprocessing creates new processes as well, but these processes are meant to run some subtask of your program and easily communicate with one another. The multiprocessing module includes primitives for sharing values between processes.
+To start a new process in the `multiprocessing` module, use the `Process` class with the callback function as the first argument. Use the `start()` method to begin process execution, and the `join()` method to wait for process completion.
 
-Furthermore, multiprocessing has an API similar to that of the threading module. Use the <code>Process</code> class to start a new process. The first argument should be the callback function. Then, to begin the process execution, use the <code>start()</code> method. Similarly to threads, if you want the rest of your program to wait for the process to complete, use <code>join()</code>.
-
-Pool is another useful multiprocessing construction. It allows users to run one function in parallel with different sets of inputs.
+The `Pool` class in the `multiprocessing` module allows running a function in parallel with different sets of inputs.
 
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multiprocessing/spawn_single_process.py">spawn single process</a>
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multiprocessing/process_pool.py">process pool</a>
@@ -120,31 +116,11 @@ Pool is another useful multiprocessing construction. It allows users to run one 
 
 #### Examples in JavaScript
 
-In NodeJs, there are four functions for creating a child process: <code>spawn()</code>, <code>fork()</code>, <code>exec()</code>, and <code>execFile()</code>.
+In Node.js, you can create child processes using the following functions: `spawn()`, `fork()`, `exec()`, and `execFile()`.
 
-Spawn returns a <code>childObject</code>, which may later be used to listen for events. The following events are available: 
+The `spawn()` function returns a `childObject` that can be used to listen for events. The available events include 'error', 'exit', 'close', 'disconnect', and 'message'.
 
-     Class: ChildProcess
-        Event: 'error'
-        Event: 'exit'
-        Event: 'close'
-        Event: 'disconnect'
-        Event: 'message'
-
-There are also a number of potentially useful objects from childObject, which are as follows: 
-
-    Class: ChildProcess
-        child.stdin
-        child.stdout
-        child.stderr
-        child.stdio
-        child.pid
-        child.connected
-        child.kill([signal])
-        child.send(message[, sendHandle][, callback])
-        child.disconnect()
-
-Although multithreading is not supported there is a way to harness the power of a multicore system by using processes. Node.js has a module called cluster designed to support a multiprocessing alternative.
+To use multiprocessing in Node.js, you can leverage the `cluster` module. This module allows you to harness the power of multicore systems by using processes.
 
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/tree/master/src/nodejs/multiprocessing/spawn_single_process">spawn single process</a>
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/nodejs/multiprocessing/spawn_multiples_processes/main.js">spawn multiple processes</a>
