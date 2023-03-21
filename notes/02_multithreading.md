@@ -87,23 +87,25 @@ Analogy: Imagine a busy street intersection with a traffic light. The traffic li
 
 #### Examples in C++
 
-Every C++ application has one default main thread, which is represented by the <code>main()</code> function. Since C++11, we may spawn more threads by creating instances of the <code>std::thread</code> type. The constructor of that class receives a callback to the function to be called from the new thread as well as a list of arguments for that function. When an object is created, the thread begins executing.
+Every C++ application has one default main thread, which is represented by the `main()` function. Since C++11, we may spawn more threads by creating instances of the `std::thread` type. The constructor of that class receives a callback to the function to be called from the new thread as well as a list of arguments for that function. When an object is created, the thread begins executing.
 
-Then we have two alternatives. We have the option of joining or detaching the thread. 
+There are two alternatives for handling the created threads: joining or detaching them.
 
-When we use <code>join()</code>:
-
-* The program will wait for the thread to complete before continuing its execution. 
+When we use `join()`:
+* The program will wait for the thread to complete before continuing its execution.
 * Any resources belonging to the thread will be cleaned up.
 
-When we use <code>detach()</code>:
-
+When we use `detach()`:
 * The program does not wait for the threads to complete their execution before proceeding to the next instruction.
-* When the program terminates, all remaining detached threads are suspended and their objects are destroyed. 
+* When the program terminates, all remaining detached threads are suspended and their objects are destroyed.
 
-I used the <code>GCC</code> compiler with the following flags to compile the examples:
+To compile the C++ examples, use the `GCC` compiler with the following flags:
 
-     g++ file_name.cpp -std=c++17 -pthread -o executable_name
+```
+g++ file_name.cpp -std=c++17 -pthread -o executable_name
+```
+
+Here are some example code snippets demonstrating various aspects of multithreading in C++:
 
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multithreading/raw_pthread.cpp">raw pthread</a>
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multithreading/single_worker_thread.cpp">single worker thread</a>
@@ -117,9 +119,11 @@ I used the <code>GCC</code> compiler with the following flags to compile the exa
 
 A global interpreter lock (GIL) is a technique used in programming language interpreters to synchronize thread execution such that only one native thread may run at any given moment. Even when running on a multi-core CPU, GIL permits only one native thread to execute at a time.
 
-The natural question is if it even makes sense to use threads in Python? The answer is, it depends. We can still make greater use of the CPU that is idle while waiting for I/O by using multihreading. We can increase performance by overlapping the waiting time for requests. We should however look at multiprocessing if we want to split CPU-intensive activities over multiple CPU cores.
+The natural question is if it even makes sense to use threads in Python? The answer is, it depends. We can still make greater use of the CPU that is idle while waiting for I/O by using multithreading. We can increase performance by overlapping the waiting time for requests. We should however look at multiprocessing if we want to split CPU-intensive activities over multiple CPU cores.
 
-The main module we'll be using is named <code>threading</code>. To spawn  a new thread, just create an object of <code>Thread</code> class and specify the function that you want to run in the new thread as the first parameter. The thread will not begin executing until you invoke the <code>start()</code> method. Call the <code>join()</code> method to suspend further program execution until the thread has completed its task. There are several other functions available that make it simple to work with threads. For example to see which thread is currently executing we can call <code>current_thread()</code>. We use <code>main_thread()</code> to obtain the main thread instance.
+The main module we'll be using is named `threading`. To spawn a new thread, just create an object of `Thread` class and specify the function that you want to run in the new thread as the first parameter. The thread will not begin executing until you invoke the `start()` method. Call the `join()` method to suspend further program execution until the thread has completed its task. There are several other functions available that make it simple to work with threads. For example, to see which thread is currently executing, we can call `current_thread()`. We use `main_thread()` to obtain the main thread instance.
+
+Here are some example code snippets demonstrating various aspects of multithreading in Python:
 
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/single_worker_thread.py">single worker thread</a>
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/multiple_worker_threads.py">multiple worker threads</a>
@@ -131,11 +135,38 @@ The main module we'll be using is named <code>threading</code>. To spawn  a new 
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/fetch_parallel.py">fetch parallel</a>
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/schedule_every_n_sec.py">schedule every n sec</a>
 
-#### Examples in JavaScript
+#### Examples in JavaScript (Node.js)
 
-By default, a NodeJs application operates on a single thread. An event loop in this thread listens for events and then calls the event's related callback function when one is detected. Since V10.5, the <code>worker_threads</code> module can be used to spawn extra threads. 
+By default, a Node.js application operates on a single thread. An event loop in this thread listens for events and then calls the event's related callback function when one is detected. Since V10.5, the `worker_threads` module can be used to spawn extra threads. This module enables the use of threads that execute JavaScript in parallel.
 
-Be aware that NodeJS already internally handles I/O operations through the usage of a thread pool. Spawning a thread makes only sense for a CPU-intensive work.
+Be aware that Node.js already internally handles I/O operations through the usage of a thread pool. Spawning a thread makes sense only for CPU-intensive work.
+
+To use the `worker_threads` module, you need to create a separate JavaScript file containing the code to be executed in the worker thread. To create a worker thread, use the `Worker` constructor and pass the file path as its first parameter.
+
+```javascript
+const { Worker } = require('worker_threads');
+
+const worker = new Worker('./path/to/worker.js');
+```
+
+Inside the worker file, you can use the `parentPort` object to communicate with the main thread. For example, you can use the `postMessage()` method to send messages from the worker to the main thread.
+
+```javascript
+// worker.js
+const { parentPort } = require('worker_threads');
+
+parentPort.postMessage('Hello from the worker thread!');
+```
+
+In the main thread, you can listen for messages from the worker by attaching a listener to the message event.
+
+```javascript
+worker.on('message', (message) => {
+  console.log(`Received message from worker: ${message}`);
+});
+```
+
+Here are some example code snippets demonstrating various aspects of multithreading in JavaScript (Node.js):
 
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/nodejs/multithreading/single_worker_thread/main.js">single worker thread</a>
 * <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/nodejs/multithreading/multiple_worker_threads/main.js">multiple worker threads</a>
