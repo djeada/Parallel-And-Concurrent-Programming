@@ -1,39 +1,40 @@
+"""
+This example demonstrates how to run CPU-bound tasks concurrently using asyncio in combination with a ProcessPoolExecutor. This is useful when you want to achieve concurrency with asyncio but have CPU-bound tasks that would otherwise block the async event loop. The example shows how to offload these tasks to separate processes managed by the ProcessPoolExecutor, allowing the event loop to continue processing other async tasks without being blocked.
+"""
+
 import asyncio
 import concurrent.futures
 import time
 import numpy as np
 
 def blocking_function(i):
-    print(f'running blocking function {i}')
+    print(f'Running blocking function {i}')
     a = np.random.rand(1000, 1000)
     b = np.random.rand(1000, 1000)
     c = np.dot(a, b)
-    print(f'done running blocking function {i}')
+    print(f'Done running blocking function {i}')
     return i
 
 async def run_blocking_functions(executor, callback):
-    print('start run_blocking_functions')
+    print('Start run_blocking_functions')
 
     loop = asyncio.get_event_loop()
     blocking_tasks = [
         loop.run_in_executor(executor, callback, i)
         for i in range(6)
     ]
-    print('waiting for executor tasks')
-    completed, pending = await asyncio.wait(blocking_tasks)
+    print('Waiting for executor tasks')
+    completed, _ = await asyncio.wait(blocking_tasks)
     results = [task.result() for task in completed]
-    print(f'results: {results}')
-    print('end run_blocking_functions')
+    print(f'Results: {results}')
+    print('End run_blocking_functions')
 
 def main():
-  print('START main')
-  executor = concurrent.futures.ProcessPoolExecutor(max_workers=3)
-  
-  event_loop = asyncio.get_event_loop()
-  event_loop.run_until_complete(
-      run_blocking_functions(executor, blocking_function)
-  )
-  event_loop.close()
-  print("STOP main")
+    print('START main')
+    executor = concurrent.futures.ProcessPoolExecutor(max_workers=3)
 
-main()
+    asyncio.run(run_blocking_functions(executor, blocking_function))
+    print("STOP main")
+
+if __name__ == "__main__":
+    main()
