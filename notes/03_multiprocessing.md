@@ -108,11 +108,24 @@ To start a new process in the `multiprocessing` module, use the `Process` class 
 
 The `Pool` class in the `multiprocessing` module allows running a function in parallel with different sets of inputs.
 
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multiprocessing/spawn_single_process.py">spawn single process</a>
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multiprocessing/process_pool.py">process pool</a>
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multiprocessing/data_sharing_queue.py">data sharing queue</a>
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multiprocessing/single_pipe.py">single pipe</a>
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multiprocessing/deadlock.py">deadlock</a>
+| No. | Filename                           | Description                                           |
+|-----|------------------------------------|-------------------------------------------------------|
+| 1   | basic_process.py                   | Create and start a basic process                      |
+| 0  | multiple_processes.py  | Integrate multiple processes for a complex task       |
+| 12  | deadlock.py                        | Demonstrate a deadlock scenario in multiprocessing    |
+| 2   | process_pool.py                    | Use a process pool to manage concurrent tasks         |
+| 3   | queue_communication.py             | Communicate between processes using a Queue           |
+| 4   | pipe_communication.py              | Communicate between processes using a Pipe            |
+| 5   | shared_value.py                    | Use a shared value to store data between processes    |
+| 6   | shared_array.py                    | Use a shared array to store data between processes    |
+| 7   | manager.py                         | Use a manager to share complex data structures        |
+| 8   | process_lock.py                    | Use a lock to synchronize access to shared resources  |
+| 9   | process_semaphore.py               | Use a semaphore to control access to shared resources |
+| 10  | process_barrier.py                 | Use a barrier to synchronize multiple processes       |
+| 11  | producer_consumer_multiprocess.py  | Implement a producer-consumer pattern with processes  |
+| 13  | orphan.py                          | Demonstrate an orphan process scenario                |
+| 14  | zombie.py                          | Demonstrate a zombie process scenario                 |
+
 
 #### Examples in JavaScript
 

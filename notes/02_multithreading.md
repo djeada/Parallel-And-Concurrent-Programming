@@ -125,17 +125,27 @@ The main module we'll be using is named `threading`. To spawn a new thread, just
 
 Here are some example code snippets demonstrating various aspects of multithreading in Python:
 
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/single_worker_thread.py">single worker thread</a>
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/multiple_worker_threads.py">multiple worker threads</a>
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/thread_subclass.py">thread subclass</a>
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/race_condition.py">race condition</a>
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/mutex.py">mutex</a>
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/semaphore.py">semaphore</a>
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/merge_sort.py">merge sort</a>
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/fetch_parallel.py">fetch parallel</a>
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/python/multithreading/schedule_every_n_sec.py">schedule every n sec</a>
+| #  | Example                  | Description                                                                   |
+|----|--------------------------|-------------------------------------------------------------------------------|
+| 1  | single_worker_thread.py  | Introduce the concept of threads by creating a single worker thread.         |
+| 2  | thread_subclass.py       | Demonstrate how to create a custom thread class by subclassing `Thread`.     |
+| 3  | multiple_worker_threads.py | Show how to create and manage multiple worker threads.                      |
+| 4  | race_condition.py        | Explain race conditions and their impact on multi-threaded applications.      |
+| 5  | mutex.py                 | Illustrate the use of mutexes to protect shared resources and avoid race conditions. |
+| 6  | semaphore.py             | Demonstrate the use of semaphores to limit the number of concurrent threads accessing a shared resource. |
+| 7  | producer_consumer.py     | Present a classic multi-threading problem (Producer-Consumer) and its solution using synchronization mechanisms like mutexes and condition variables. |
+| 8  | fetch_parallel.py        | Showcase a practical application of multi-threading for parallel fetching of data from multiple sources. |
+| 9  | merge_sort.py            | Use multi-threading to parallelize a merge sort algorithm, demonstrating the potential for performance improvements. |
+| 10 | schedule_every_n_sec.py  | Show how to schedule tasks to run periodically at fixed intervals using threads. |
+| 11 | barrier.py               | Demonstrate the use of barriers to synchronize multiple threads at a specific point in the execution. |
+| 12 | thread_local_storage.py  | Illustrate the concept of Thread Local Storage (TLS) and how it can be used to store thread-specific data. |
+| 13 | thread_pool.py           | Show how to create and use a thread pool to efficiently manage a fixed number of worker threads for executing multiple tasks. |
+| 14 | reader_writer_lock.py    | Explain the concept of Reader-Writer Locks and their use for efficient access to shared resources with multiple readers and a single writer. |
+
 
 #### Examples in JavaScript (Node.js)
+
+Keep in mind that JavaScript is designed to be single-threaded, and while there are ways to spawn separate threads using Web Workers or child processes, the primary way to handle concurrency in JavaScript is through asynchronous programming using callbacks, Promises, and async/await.
 
 By default, a Node.js application operates on a single thread. An event loop in this thread listens for events and then calls the event's related callback function when one is detected. Since V10.5, the `worker_threads` module can be used to spawn extra threads. This module enables the use of threads that execute JavaScript in parallel.
 
