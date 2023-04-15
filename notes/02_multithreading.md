@@ -107,13 +107,23 @@ g++ file_name.cpp -std=c++17 -pthread -o executable_name
 
 Here are some example code snippets demonstrating various aspects of multithreading in C++:
 
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multithreading/raw_pthread.cpp">raw pthread</a>
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multithreading/single_worker_thread.cpp">single worker thread</a>
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multithreading/multiple_worker_threads.cpp">multiple worker threads</a>
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multithreading/race_condition.cpp">race condition</a>
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multithreading/mutex.cpp">mutex</a>
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multithreading/semaphore.cpp">semaphore</a>
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/cpp/multithreading/merge_sort.cpp">merge sort</a>
+
+| #  | Example                  | Description                                                                   |
+|----|--------------------------|-------------------------------------------------------------------------------|
+| 1  | <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/01_single_worker_thread.cpp">single_worker_thread</a>  | Introduce the concept of threads by creating a single worker thread.         |
+| 2  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/02_thread_subclass.cpp">thread_subclass</a>        | Demonstrate how to create a custom thread class by subclassing `Thread`.     |
+| 3  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/03_multiple_worker_threads.cpp">multiple_worker_threads</a>  | Show how to create and manage multiple worker threads.                      |
+| 4  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/04_race_condition.cpp">race_condition</a>        | Explain race conditions and their impact on multi-threaded applications.      |
+| 5  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/05_mutex.cpp">mutex</a>    | Illustrate the use of mutexes to protect shared resources and avoid race conditions. |
+| 6  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/06_semaphore.cpp">semaphore</a>           | Demonstrate the use of semaphores to limit the number of concurrent threads accessing a shared resource. |
+| 7  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/07_producer_consumer.cpp">producer_consumer</a>    | Present a classic multi-threading problem (Producer-Consumer) and its solution using synchronization mechanisms like mutexes and condition variables. |
+| 8  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/08_fetch_parallel.cpp">fetch_parallel</a>        | Showcase a practical application of multi-threading for parallel fetching of data from multiple sources. |
+| 9  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/09_merge_sort.cpp">merge_sort</a>           | Use multi-threading to parallelize a merge sort algorithm, demonstrating the potential for performance improvements. |
+| 10 |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/10_schedule_every_n_sec.cpp">schedule_every_n_sec</a>   | Show how to schedule tasks to run periodically at fixed intervals using threads. |
+| 11 |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/11_barrier.cpp">barrier          | Demonstrate the use of barriers to synchronize multiple threads at a specific point in the execution. |
+| 12 |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/12_thread_local_storage.cpp">thread_local_storage</a>   | Illustrate the concept of Thread Local Storage (TLS) and how it can be used to store thread-specific data. |
+| 13 |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/13_thread_pool.cpp">thread_pool</a>          | Show how to create and use a thread pool to efficiently manage a fixed number of worker threads for executing multiple tasks. |
+| 14 |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/14_reader_writer_lock.cpp">reader_writer_lock</a>   | Explain the concept of Reader-Writer Locks and their use for efficient access to shared resources with multiple readers and a single writer. |
 
 #### Examples in Python
 
@@ -127,21 +137,20 @@ Here are some example code snippets demonstrating various aspects of multithread
 
 | #  | Example                  | Description                                                                   |
 |----|--------------------------|-------------------------------------------------------------------------------|
-| 1  | single_worker_thread.py  | Introduce the concept of threads by creating a single worker thread.         |
-| 2  | thread_subclass.py       | Demonstrate how to create a custom thread class by subclassing `Thread`.     |
-| 3  | multiple_worker_threads.py | Show how to create and manage multiple worker threads.                      |
-| 4  | race_condition.py        | Explain race conditions and their impact on multi-threaded applications.      |
-| 5  | mutex.py                 | Illustrate the use of mutexes to protect shared resources and avoid race conditions. |
-| 6  | semaphore.py             | Demonstrate the use of semaphores to limit the number of concurrent threads accessing a shared resource. |
-| 7  | producer_consumer.py     | Present a classic multi-threading problem (Producer-Consumer) and its solution using synchronization mechanisms like mutexes and condition variables. |
-| 8  | fetch_parallel.py        | Showcase a practical application of multi-threading for parallel fetching of data from multiple sources. |
-| 9  | merge_sort.py            | Use multi-threading to parallelize a merge sort algorithm, demonstrating the potential for performance improvements. |
-| 10 | schedule_every_n_sec.py  | Show how to schedule tasks to run periodically at fixed intervals using threads. |
-| 11 | barrier.py               | Demonstrate the use of barriers to synchronize multiple threads at a specific point in the execution. |
-| 12 | thread_local_storage.py  | Illustrate the concept of Thread Local Storage (TLS) and how it can be used to store thread-specific data. |
-| 13 | thread_pool.py           | Show how to create and use a thread pool to efficiently manage a fixed number of worker threads for executing multiple tasks. |
-| 14 | reader_writer_lock.py    | Explain the concept of Reader-Writer Locks and their use for efficient access to shared resources with multiple readers and a single writer. |
-
+| 1  | <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/01_single_worker_thread.py">single_worker_thread</a>  | Introduce the concept of threads by creating a single worker thread.         |
+| 2  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/02_thread_subclass.py">thread_subclass</a>        | Demonstrate how to create a custom thread class by subclassing `Thread`.     |
+| 3  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/03_multiple_worker_threads.py">multiple_worker_threads</a>  | Show how to create and manage multiple worker threads.                      |
+| 4  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/04_race_condition.py">race_condition</a>        | Explain race conditions and their impact on multi-threaded applications.      |
+| 5  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/05_mutex.py">mutex</a>    | Illustrate the use of mutexes to protect shared resources and avoid race conditions. |
+| 6  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/06_semaphore.py">semaphore</a>           | Demonstrate the use of semaphores to limit the number of concurrent threads accessing a shared resource. |
+| 7  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/07_producer_consumer.py">producer_consumer</a>    | Present a classic multi-threading problem (Producer-Consumer) and its solution using synchronization mechanisms like mutexes and condition variables. |
+| 8  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/08_fetch_parallel.py">fetch_parallel</a>        | Showcase a practical application of multi-threading for parallel fetching of data from multiple sources. |
+| 9  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/09_merge_sort.py">merge_sort</a>           | Use multi-threading to parallelize a merge sort algorithm, demonstrating the potential for performance improvements. |
+| 10 |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/10_schedule_every_n_sec.py">schedule_every_n_sec</a>   | Show how to schedule tasks to run periodically at fixed intervals using threads. |
+| 11 |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/11_barrier.py">barrier          | Demonstrate the use of barriers to synchronize multiple threads at a specific point in the execution. |
+| 12 |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/12_thread_local_storage.py">thread_local_storage</a>   | Illustrate the concept of Thread Local Storage (TLS) and how it can be used to store thread-specific data. |
+| 13 |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/13_thread_pool.py">thread_pool</a>          | Show how to create and use a thread pool to efficiently manage a fixed number of worker threads for executing multiple tasks. |
+| 14 |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/14_reader_writer_lock.py">reader_writer_lock</a>   | Explain the concept of Reader-Writer Locks and their use for efficient access to shared resources with multiple readers and a single writer. |
 
 #### Examples in JavaScript (Node.js)
 
@@ -178,5 +187,21 @@ worker.on('message', (message) => {
 
 Here are some example code snippets demonstrating various aspects of multithreading in JavaScript (Node.js):
 
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/nodejs/multithreading/single_worker_thread/main.js">single worker thread</a>
-* <a href="https://github.com/djeada/Parallel-and-Concurrent-Programming/blob/master/src/nodejs/multithreading/multiple_worker_threads/main.js">multiple worker threads</a>
+
+| #  | Example                  | Description                                                                   |
+|----|--------------------------|-------------------------------------------------------------------------------|
+| 1  | <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/01_single_worker_thread.js">single_worker_thread</a>  | Introduce the concept of threads by creating a single worker thread.         |
+| 2  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/02_thread_subclass.js">thread_subclass</a>        | Demonstrate how to create a custom thread class by subclassing `Thread`.     |
+| 3  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/03_multiple_worker_threads.js">multiple_worker_threads</a>  | Show how to create and manage multiple worker threads.                      |
+| 4  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/04_race_condition.js">race_condition</a>        | Explain race conditions and their impact on multi-threaded applications.      |
+| 5  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/05_mutex.js">mutex</a>    | Illustrate the use of mutexes to protect shared resources and avoid race conditions. |
+| 6  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/06_semaphore.js">semaphore</a>           | Demonstrate the use of semaphores to limit the number of concurrent threads accessing a shared resource. |
+| 7  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/07_producer_consumer.js">producer_consumer</a>    | Present a classic multi-threading problem (Producer-Consumer) and its solution using synchronization mechanisms like mutexes and condition variables. |
+| 8  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/08_fetch_parallel.js">fetch_parallel</a>        | Showcase a practical application of multi-threading for parallel fetching of data from multiple sources. |
+| 9  |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/09_merge_sort.js">merge_sort</a>           | Use multi-threading to parallelize a merge sort algorithm, demonstrating the potential for performance improvements. |
+| 10 |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/10_schedule_every_n_sec.js">schedule_every_n_sec</a>   | Show how to schedule tasks to run periodically at fixed intervals using threads. |
+| 11 |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/11_barrier.js">barrier              | Demonstrate the use of barriers to synchronize multiple threads at a specific point in the execution. |
+| 12 |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/12_thread_local_storage.js">thread_local_storage</a>   | Illustrate the concept of Thread Local Storage (TLS) and how it can be used to store thread-specific data. |
+| 13 |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/13_thread_pool.js">thread_pool</a>          | Show how to create and use a thread pool to efficiently manage a fixed number of worker threads for executing multiple tasks. |
+| 14 |  <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/14_reader_writer_lock.js">reader_writer_lock</a>   | Explain the concept of Reader-Writer Locks and their use for efficient access to shared resources with multiple readers and a single writer. |
+
