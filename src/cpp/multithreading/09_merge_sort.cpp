@@ -1,56 +1,85 @@
 #include <iostream>
-#include <thread>
 #include <vector>
+#include <chrono>
+#include <thread>
+#include <algorithm>
+#include <random>
+#include <iterator>
 
-void merge(std::vector<int> &v, int left, int mid, int right) {
-  std::vector<int> temp(right - left + 1);
-  int i = left;
-  int j = mid + 1;
-  int k = 0;
-  while (i <= mid && j <= right) {
-    if (v[i] < v[j]) {
-      temp[k++] = v[i++];
-    } else {
-      temp[k++] = v[j++];
+const int numThreads = 10; // Change this value to control the number of threads used
+
+void merge(std::vector<int> &arr, int left, int mid, int right) {
+    int n1 = mid - left + 1;
+    int n2 = right - mid;
+
+    std::vector<int> L(n1);
+    std::vector<int> R(n2);
+
+    std::copy(arr.begin() + left, arr.begin() + mid + 1, L.begin());
+    std::copy(arr.begin() + mid + 1, arr.begin() + right + 1, R.begin());
+
+    int i = 0, j = 0, k = left;
+    while (i < n1 && j < n2) {
+        if (L[i] <= R[j]) {
+            arr[k] = L[i];
+            i++;
+        } else {
+            arr[k] = R[j];
+            j++;
+        }
+        k++;
     }
-  }
-  while (i <= mid) {
-    temp[k++] = v[i++];
-  }
-  while (j <= right) {
-    temp[k++] = v[j++];
-  }
-  for (unsigned int i = 0; i < temp.size(); i++) {
-    v[left + i] = temp[i];
-  }
+
+    while (i < n1) {
+        arr[k] = L[i];
+        i++;
+        k++;
+    }
+
+    while (j < n2) {
+        arr[k] = R[j];
+        j++;
+        k++;
+    }
 }
 
-void merge_sort(std::vector<int> &v, int left, int right) {
-  if (left < right) {
-    int mid = (left + right) / 2;
-    merge_sort(v, left, mid);
-    merge_sort(v, mid + 1, right);
-    merge(v, left, mid, right);
-  }
+void mergeSort(std::vector<int> &arr, int left, int right, int depth = 0) {
+    if (left < right) {
+        int mid = left + (right - left) / 2;
+        if (depth < numThreads) {
+            std::thread leftThread(mergeSort, std::ref(arr), left, mid, depth + 1);
+            std::thread rightThread(mergeSort, std::ref(arr), mid + 1, right, depth + 1);
+            leftThread.join();
+            rightThread.join();
+        } else {
+            mergeSort(arr, left, mid, depth + 1);
+            mergeSort(arr, mid + 1, right, depth + 1);
+        }
+        merge(arr, left, mid, right);
+    }
 }
 
-void merge_sort_thread(std::vector<int> &v, int left, int right) {
-  if (left < right) {
-    int mid = (left + right) / 2;
-    std::thread t1(merge_sort_thread, std::ref(v), left, mid);
-    std::thread t2(merge_sort_thread, std::ref(v), mid + 1, right);
-    t1.join();
-    t2.join();
-    merge(v, left, mid, right);
-  }
-}
+int main() {
+    int n = 100000;
+    std::vector<int> arr(n);
+    std::iota(arr.begin(), arr.end(), 1);
+    std::shuffle(arr.begin(), arr.end(), std::mt19937{std::random_device{}()});
 
-auto main() -> int {
-  std::vector<int> v = {4, 2, 1, 5, 3, 6, 7, 8, 9, 0};
-  merge_sort_thread(v, 0, v.size() - 1);
-  for (const auto elem : v) {
-    std::cout << elem << " ";
-  }
-  std::cout << std::endl;
-  return 0;
+    std::vector<int> arrCopy = arr;
+    
+    auto start = std::chrono::high_resolution_clock::now();
+    mergeSort(arr, 0, arr.size() - 1);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = end - start;
+
+    std::cout << "Threaded merge sort took: " << duration.count() << " seconds" << std::endl;
+
+    start = std::chrono::high_resolution_clock::now();
+    std::sort(arrCopy.begin(), arrCopy.end());
+    end = std::chrono::high_resolution_clock::now();
+    duration = end - start;
+
+    std::cout << "Non-threaded merge sort took: " << duration.count() << " seconds" << std::endl;
+
+    return 0;
 }
