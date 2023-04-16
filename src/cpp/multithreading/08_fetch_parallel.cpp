@@ -1,3 +1,4 @@
+//g++ -std=c++17 -o fetch_parallel fetch_parallel.cpp -lcurl && ./fetch_parallel
 #include <iostream>
 #include <string>
 #include <vector>
