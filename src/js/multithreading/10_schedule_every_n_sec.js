@@ -1,34 +1,32 @@
-import time
-from threading import Thread
+const { Worker, isMainThread, parentPort } = require('worker_threads');
 
+if (isMainThread) {
+  // Main thread
+  const worker = new Worker(__filename); // Execute the same file as a worker
 
-class Scheduler:
+  worker.on('message', (message) => {
+    console.log(message);
+  });
 
-    """
-    Every n seconds, start executing the given function.
-    """
+  worker.postMessage({ interval: 1000, start: true });
 
-    def __init__(self, n, function, *args, **kwargs):
-        def target():
-            while self.flag:
-                function(*args, **kwargs)
-                time.sleep(n)
+  setTimeout(() => {
+    worker.postMessage({ start: false });
+  }, 10000);
+} else {
+  // Worker thread
+  let timer;
 
-        self.flag = True
-        self.thread = Thread(target=target)
-        self.thread.start()
+  parentPort.on('message', (message) => {
+    const { interval, start } = message;
 
-    def stop(self):
-        """
-        Stop the new function calls from being scheduled.
-        If the previous function has not yet completed, it will not be terminated.
-        """
-        self.flag = False
-        self.thread.join()
-
-
-scheduler = Scheduler(1, print, "It works")
-
-# wait 10 seconds and stop the scheduler
-time.sleep(10)
-scheduler.stop()
+    if (start) {
+      timer = setInterval(() => {
+        parentPort.postMessage('It works');
+      }, interval);
+    } else {
+      clearInterval(timer);
+      parentPort.close();
+    }
+  });
+}
