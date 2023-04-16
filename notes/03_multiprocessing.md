@@ -92,21 +92,21 @@ g++ file_name.cpp -std=c++17 -pthread -o executable_name
 ```
 | No. | Filename                                          | Description                                           |
 |-----|---------------------------------------------------|-------------------------------------------------------|
-| 1   | [01_basic_process.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/01_basic_process.cpp) | Create and start a basic process                      |
-| 2   | [02_multiple_processes.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/02_multiple_processes.cpp) | Integrate multiple processes for a complex task       |
-| 3   | [03_deadlock.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/03_deadlock.cpp) | Demonstrate a deadlock scenario in multiprocessing    |
-| 4   | [04_process_pool.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/04_process_pool.cpp) | Use a process pool to manage concurrent tasks         |
-| 5   | [05_queue_communication.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/05_queue_communication.cpp) | Communicate between processes using a Queue           |
-| 6   | [06_pipe_communication.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/06_pipe_communication.cpp) | Communicate between processes using a Pipe            |
-| 7   | [07_shared_value.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/07_shared_value.cpp) | Use a shared value to store data between processes    |
-| 8   | [08_shared_array.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/08_shared_array.cpp) | Use a shared array to store data between processes    |
-| 9   | [09_manager.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/09_manager.cpp) | Use a manager to share complex data structures        |
-| 10  | [10_process_lock.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/10_process_lock.cpp) | Use a lock to synchronize access to shared resources  |
-| 11  | [11_process_semaphore.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/11_process_semaphore.cpp) | Use a semaphore to control access to shared resources |
-| 12  | [12_process_barrier.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/12_process_barrier.cpp) | Use a barrier to synchronize multiple processes       |
-| 13  | [13_producer_consumer_multiprocess.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/13_producer_consumer_multiprocess.cpp) | Implement a producer-consumer pattern with processes  |
-| 14  | [14_orphan.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/14_orphan.cpp) | Demonstrate an orphan process scenario                |
-| 15  | [15_zombie.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/15_zombie.cpp) | Demonstrate a zombie process scenario                 |
+| 1   | [basic_process.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/01_basic_process.cpp) | Create and start a basic process                      |
+| 2   | [multiple_processes.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/02_multiple_processes.cpp) | Integrate multiple processes for a complex task       |
+| 3   | [deadlock.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/03_deadlock.cpp) | Demonstrate a deadlock scenario in multiprocessing    |
+| 4   | [process_pool.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/04_process_pool.cpp) | Use a process pool to manage concurrent tasks         |
+| 5   | [queue_communication.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/05_queue_communication.cpp) | Communicate between processes using a Queue           |
+| 6   | [pipe_communication.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/06_pipe_communication.cpp) | Communicate between processes using a Pipe            |
+| 7   | [shared_value.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/07_shared_value.cpp) | Use a shared value to store data between processes    |
+| 8   | [shared_array.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/08_shared_array.cpp) | Use a shared array to store data between processes    |
+| 9   | [manager.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/09_manager.cpp) | Use a manager to share complex data structures        |
+| 10  | [process_lock.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/10_process_lock.cpp) | Use a lock to synchronize access to shared resources  |
+| 11  | [process_semaphore.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/11_process_semaphore.cpp) | Use a semaphore to control access to shared resources |
+| 12  | [process_barrier.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/12_process_barrier.cpp) | Use a barrier to synchronize multiple processes       |
+| 13  | [producer_consumer_multiprocess.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/13_producer_consumer_multiprocess.cpp) | Implement a producer-consumer pattern with processes  |
+| 14  | [orphan.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/14_orphan.cpp) | Demonstrate an orphan process scenario                |
+| 15  | [zombie.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/15_zombie.cpp) | Demonstrate a zombie process scenario                 |
 
 #### Examples in Python
 
@@ -120,21 +120,21 @@ The `Pool` class in the `multiprocessing` module allows running a function in pa
 
 | No. | Filename                                          | Description                                           |
 |-----|---------------------------------------------------|-------------------------------------------------------|
-| 1   | [01_basic_process.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/01_basic_process.py) | Create and start a basic process                      |
-| 2   | [02_multiple_processes.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/02_multiple_processes.py) | Integrate multiple processes for a complex task       |
-| 3   | [03_deadlock.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/03_deadlock.py) | Demonstrate a deadlock scenario in multiprocessing    |
-| 4   | [04_process_pool.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/04_process_pool.py) | Use a process pool to manage concurrent tasks         |
-| 5   | [05_queue_communication.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/05_queue_communication.py) | Communicate between processes using a Queue           |
-| 6   | [06_pipe_communication.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/06_pipe_communication.py) | Communicate between processes using a Pipe            |
-| 7   | [07_shared_value.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/07_shared_value.py) | Use a shared value to store data between processes    |
-| 8   | [08_shared_array.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/08_shared_array.py) | Use a shared array to store data between processes    |
-| 9   | [09_manager.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/09_manager.py) | Use a manager to share complex data structures        |
-| 10  | [10_process_lock.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/10_process_lock.py) | Use a lock to synchronize access to shared resources  |
-| 11  | [11_process_semaphore.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/11_process_semaphore.py) | Use a semaphore to control access to shared resources |
-| 12  | [12_process_barrier.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/12_process_barrier.py) | Use a barrier to synchronize multiple processes       |
-| 13  | [13_producer_consumer_multiprocess.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/13_producer_consumer_multiprocess.py) | Implement a producer-consumer pattern with processes  |
-| 14  | [14_orphan.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/14_orphan.py) | Demonstrate an orphan process scenario                |
-| 15  | [15_zombie.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/15_zombie.py) | Demonstrate a zombie process scenario                 |
+| 1   | [basic_process.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/01_basic_process.py) | Create and start a basic process                      |
+| 2   | [multiple_processes.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/02_multiple_processes.py) | Integrate multiple processes for a complex task       |
+| 3   | [deadlock.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/03_deadlock.py) | Demonstrate a deadlock scenario in multiprocessing    |
+| 4   | [process_pool.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/04_process_pool.py) | Use a process pool to manage concurrent tasks         |
+| 5   | [queue_communication.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/05_queue_communication.py) | Communicate between processes using a Queue           |
+| 6   | [pipe_communication.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/06_pipe_communication.py) | Communicate between processes using a Pipe            |
+| 7   | [shared_value.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/07_shared_value.py) | Use a shared value to store data between processes    |
+| 8   | [shared_array.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/08_shared_array.py) | Use a shared array to store data between processes    |
+| 9   | [manager.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/09_manager.py) | Use a manager to share complex data structures        |
+| 10  | [process_lock.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/10_process_lock.py) | Use a lock to synchronize access to shared resources  |
+| 11  | [process_semaphore.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/11_process_semaphore.py) | Use a semaphore to control access to shared resources |
+| 12  | [process_barrier.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/12_process_barrier.py) | Use a barrier to synchronize multiple processes       |
+| 13  | [producer_consumer_multiprocess.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/13_producer_consumer_multiprocess.py) | Implement a producer-consumer pattern with processes  |
+| 14  | [orphan.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/14_orphan.py) | Demonstrate an orphan process scenario                |
+| 15  | [zombie.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/15_zombie.py) | Demonstrate a zombie process scenario                 |
 
 #### Examples in JavaScript
 
@@ -146,18 +146,18 @@ To use multiprocessing in Node.js, you can leverage the `cluster` module. This m
 
 | No. | Filename                                          | Description                                           |
 |-----|---------------------------------------------------|-------------------------------------------------------|
-| 1   | [01_basic_process.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/01_basic_process.js) | Create and start a basic process                      |
-| 2   | [02_multiple_processes.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/02_multiple_processes.js) | Integrate multiple processes for a complex task       |
-| 3   | [03_deadlock.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/03_deadlock.js) | Demonstrate a deadlock scenario in multiprocessing    |
-| 4   | [04_process_pool.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/04_process_pool.js) | Use a process pool to manage concurrent tasks         |
-| 5   | [05_queue_communication.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/05_queue_communication.js) | Communicate between processes using a Queue           |
-| 6   | [06_pipe_communication.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/06_pipe_communication.js) | Communicate between processes using a Pipe            |
-| 7   | [07_shared_value.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/07_shared_value.js) | Use a shared value to store data between processes    |
-| 8   | [08_shared_array.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/08_shared_array.js) | Use a shared array to store data between processes    |
-| 9   | [09_manager.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/09_manager.js) | Use a manager to share complex data structures        |
-| 10  | [10_process_lock.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/10_process_lock.js) | Use a lock to synchronize access to shared resources  |
-| 11  | [11_process_semaphore.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/11_process_semaphore.js) | Use a semaphore to control access to shared resources |
-| 12  | [12_process_barrier.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/12_process_barrier.js) | Use a barrier to synchronize multiple processes       |
-| 13  | [13_producer_consumer_multiprocess.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/13_producer_consumer_multiprocess.js) | Implement a producer-consumer pattern with processes  |
-| 14  | [14_orphan.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/14_orphan.js) | Demonstrate an orphan process scenario                |
-| 15  | [15_zombie.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/15_zombie.js) | Demonstrate a zombie process scenario                 |
+| 1   | [basic_process.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/01_basic_process.js) | Create and start a basic process                      |
+| 2   | [multiple_processes.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/02_multiple_processes.js) | Integrate multiple processes for a complex task       |
+| 3   | [deadlock.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/03_deadlock.js) | Demonstrate a deadlock scenario in multiprocessing    |
+| 4   | [process_pool.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/04_process_pool.js) | Use a process pool to manage concurrent tasks         |
+| 5   | [queue_communication.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/05_queue_communication.js) | Communicate between processes using a Queue           |
+| 6   | [pipe_communication.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/06_pipe_communication.js) | Communicate between processes using a Pipe            |
+| 7   | [shared_value.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/07_shared_value.js) | Use a shared value to store data between processes    |
+| 8   | [shared_array.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/08_shared_array.js) | Use a shared array to store data between processes    |
+| 9   | [manager.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/09_manager.js) | Use a manager to share complex data structures        |
+| 10  | [process_lock.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/10_process_lock.js) | Use a lock to synchronize access to shared resources  |
+| 11  | [process_semaphore.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/11_process_semaphore.js) | Use a semaphore to control access to shared resources |
+| 12  | [process_barrier.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/12_process_barrier.js) | Use a barrier to synchronize multiple processes       |
+| 13  | [producer_consumer_multiprocess.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/13_producer_consumer_multiprocess.js) | Implement a producer-consumer pattern with processes  |
+| 14  | [orphan.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/14_orphan.js) | Demonstrate an orphan process scenario                |
+| 15  | [zombie.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/15_zombie.js) | Demonstrate a zombie process scenario                 |
