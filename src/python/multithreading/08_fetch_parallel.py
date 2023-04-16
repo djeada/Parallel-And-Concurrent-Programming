@@ -1,42 +1,66 @@
-import urllib.request
-import urllib.parse
-import urllib.error
-import pathlib
-import os
-import threading
-import concurrent.futures
+"""
+This script demonstrates how to use multithreading to fetch web pages in parallel
+and compares it with non-concurrent fetching.
+Multiple threads are created, each responsible for fetching a specific URL.
+
+Each thread runs a function `fetch_url`, which fetches the content of the URL and
+calculates its length. The results are stored in a shared dictionary, which is
+protected by a Lock to avoid race conditions.
+"""
+
+import requests
+from threading import Thread, Lock
 import time
-import urllib3
-import queue
+
+urls = [
+    "https://www.example.com",
+    "https://www.example.org",
+    "https://www.example.net",
+    "https://www.example.edu",
+]
+
+results = {}
+lock = Lock()
 
 
-def read_url(url, queue):
-    try:
-        data = urllib.request.urlopen(url, None, 15).read()
-        print(f"Fetched {len(data)} from {url}")
-        queue.put(data)
-    except Exception as e:
-        print(e)
+def fetch_url(url):
+    response = requests.get(url)
+    content_length = len(response.content)
+
+    with lock:
+        results[url] = content_length
+        print(f"URL: {url}, Content Length: {content_length}")
 
 
-def fetch_parallel(urls):
-    result = queue.Queue()
-    threads = [threading.Thread(target=read_url, args=(url, result)) for url in urls]
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join()
-    return result
+def non_concurrent_fetch():
+    non_concurrent_results = {}
+    start_time = time.time()
+
+    for url in urls:
+        response = requests.get(url)
+        content_length = len(response.content)
+        non_concurrent_results[url] = content_length
+        print(f"Non-concurrent - URL: {url}, Content Length: {content_length}")
+
+    print(f"Non-concurrent results: {non_concurrent_results}")
+    print(f"Non-concurrent time taken: {time.time() - start_time:.2f} seconds")
 
 
-urls = (
-    "https://github.com/djeada/Od-C-do-Cpp#L-warto%C5%9Bci-i-r-warto%C5%9Bci",
-    "https://github.com/djeada/Od-C-do-Cpp#L-warto%C5%9Bci-i-r-warto%C5%9Bci",
-    "https://github.com/djeada/Od-C-do-Cpp#L-warto%C5%9Bci-i-r-warto%C5%9Bci",
-)
+if __name__ == "__main__":
+    # Non-concurrent fetching
+    non_concurrent_fetch()
 
-fetched_sites = fetch_parallel(urls)
-result = list()
+    # Concurrent fetching
+    start_time = time.time()
+    threads = []
 
-while not fetched_sites.empty():
-    result.append(fetched_sites.get_nowait())
+    for url in urls:
+        thread = Thread(target=fetch_url, args=(url,))
+        thread.start()
+        threads.append(thread)
+
+    for thread in threads:
+        thread.join()
+
+    print(f"Concurrent results: {results}")
+    print(f"Concurrent time taken: {time.time() - start_time:.2f} seconds")
