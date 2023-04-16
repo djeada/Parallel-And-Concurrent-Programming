@@ -1,59 +1,61 @@
-const { Worker, isMainThread, parentPort } = require('worker_threads');
+const { Worker, isMainThread, parentPort } = require("worker_threads");
 
 if (isMainThread) {
-  // Main thread
-  const numWorkers = 4;
-  const workers = [];
-  const sharedCounter = new SharedArrayBuffer(4);
-  const counterView = new Int32Array(sharedCounter);
-  counterView[0] = 0;
+  const numThreads = 5;
+  const sharedBuffer = new SharedArrayBuffer(12);
+  const counterView = new Int32Array(sharedBuffer, 0, 1);
+  const mutexView = new Int32Array(sharedBuffer, 4, 1);
+  const doneCounterView = new Int32Array(sharedBuffer, 8, 1);
+  counterView[0] = 1;
+  mutexView[0] = 0;
 
-  for (let i = 0; i < numWorkers; i++) {
-    const worker = new Worker(__filename); // Use the same file as the worker
-    worker.on('message', (message) => {
-      if (message.type === 'print') {
+  const workers = [];
+
+  for (let i = 0; i < numThreads; i++) {
+    const worker = new Worker(__filename);
+    worker.on("message", (message) => {
+      if (message.type === "print") {
         console.log(message.text);
+      } else if (message.type === "done") {
+        doneCounterView[0]++;
+        if (doneCounterView[0] === numThreads) {
+          console.log(`The final value of COUNTER is: ${counterView[0]}`);
+        }
       }
     });
-    worker.on('error', (error) => console.error(error));
-    worker.postMessage({ type: 'init', id: i, sharedCounter });
+    worker.on("error", (error) => console.error(error));
+    worker.postMessage({ type: "init", id: i, sharedBuffer });
     workers.push(worker);
   }
-
-  let currentWorker = 0;
-  function grantMutex() {
-    workers[currentWorker].postMessage({ type: 'grantMutex' });
-    currentWorker = (currentWorker + 1) % numWorkers;
-  }
-
-  workers.forEach((worker, index) => {
-    worker.on('message', (msg) => {
-      if (msg.type === 'releaseMutex') {
-        grantMutex();
-      }
-    });
-  });
-
-  grantMutex(); // Grant mutex to the first worker
 } else {
-  // Worker thread
   let id;
-  let sharedCounter;
+  let sharedBuffer;
   let counterView;
+  let mutexView;
 
-  parentPort.on('message', async (message) => {
-    if (message.type === 'init') {
+  parentPort.on("message", (message) => {
+    if (message.type === "init") {
       id = message.id;
-      sharedCounter = message.sharedCounter;
-      counterView = new Int32Array(sharedCounter);
-      parentPort.postMessage({ type: 'requestMutex' });
-    } else if (message.type === 'grantMutex') {
-      for (let i = 0; i < 100; i++) {
-        parentPort.postMessage({ type: 'print', text: `Worker id: ${id}, Counter: ${counterView[0]}` });
-        Atomics.add(counterView, 0, 1);
-        await new Promise((resolve) => setTimeout(resolve, 50));
+      sharedBuffer = message.sharedBuffer;
+      counterView = new Int32Array(sharedBuffer, 0, 1);
+      mutexView = new Int32Array(sharedBuffer, 4, 1);
+
+      for (let i = 0; i < 10; i++) {
+        while (Atomics.compareExchange(mutexView, 0, 0, 1) === 1) {
+          Atomics.wait(mutexView, 0, 1);
+        }
+        const localCounter = counterView[0];
+        const multipliedCounter = localCounter * (id + 1);
+        parentPort.postMessage({
+          type: "print",
+          text: `The COUNTER gets multiplied by ${id + 1}`,
+        });
+        counterView[0] = multipliedCounter;
+        Atomics.store(mutexView, 0, 0);
+        Atomics.notify(mutexView, 0, 1);
       }
-      parentPort.postMessage({ type: 'releaseMutex' });
+
+      parentPort.postMessage({ type: "done" });
     }
   });
 }
