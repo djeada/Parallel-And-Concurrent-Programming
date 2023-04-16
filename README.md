@@ -3,6 +3,16 @@ Concurrent and parallel programming can seem intimidating, but this guide makes 
 
 ![white_big_thread_for_sewing__programmer_using_thread__dark_background__thinking_Seed-8130887_Steps-25_Guidance-7 5](https://user-images.githubusercontent.com/37275728/220352641-fb9487f6-e2a6-4433-943d-fffef4141c02.jpeg)
 
+## Notes
+
+| No. | Description                                                         | Markdown                                                            |
+| --- | ------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| 1   | Basic terminology for parallel and concurrent programming concepts | <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/notes/01_basic_terminology.md"><img src="https://img.icons8.com/color/344/markdown.png" height="50" /> </a> |
+| 2   | Covers the basics of multithreading, including how to create and manage threads, synchronization, and thread safety. | <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/notes/02_multithreading.md"><img src="https://img.icons8.com/color/344/markdown.png" height="50" /> </a> |
+| 3   | Introduces multiprocessing and covers the creation and management of processes, inter-process communication, and synchronization. | <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/notes/03_multiprocessing.md"><img src="https://img.icons8.com/color/344/markdown.png" height="50" /> </a> |
+| 4   | Covers the basics of asynchronous programming, including async/await syntax and asyncio library in Python. | <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/notes/04_asynchronous_programming.md"><img src="https://img.icons8.com/color/344/markdown.png" height="50" /> </a> |
+| 5   | Introduces Message Passing Interface (MPI), a standard for message-passing used in parallel computing. Covers its architecture, implementation, and basic concepts. | <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/notes/05_mpi.md"><img src="https://img.icons8.com/color/344/markdown.png" height="50" /> </a> |
+| 6   | Covers the hardware components and architectures used in parallel computing, including shared-memory and distributed-memory systems, clusters, and GPUs. | <a href="https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/notes/06_hardware.md"><img src="https://img.icons8.com/color/344/markdown.png" height="50" /> </a> |
 
 ## Refrences
 
