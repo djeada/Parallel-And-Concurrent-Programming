@@ -1,21 +1,25 @@
-import os
-import multiprocessing
-import threading
+const { fork } = require('child_process');
+const {
+  threadId,
+} = require("worker_threads");
 
+function foo() {
+  console.log('Worker function');
+  console.log(`Worker function process id: ${process.pid}`);
+  console.log(`Worker thread id: ${threadId}`);
 
-def foo():
-    print("Worker function")
-    print(f"Worker function process id: {os.getpid()}")
-    print(f"Worker thread id: {threading.currentThread().ident}")
-    print(f"Worker thread id: {threading.currentThread().getName()}")
+  console.log('Worker function finished');
+}
 
+if (process.argv[2] === 'worker') {
+  foo();
+} else {
+  console.log('Main function');
+  console.log(`Main function process id: ${process.pid}`);
+  console.log(`Main thread id: ${threadId}`);
 
-if __name__ == "__main__":
-
-    print(f"Main function process id: {os.getpid()}")
-    print(f"Main thread id: {threading.currentThread().ident}")
-    print(f"Main thread id: {threading.currentThread().getName()}")
-
-    process = multiprocessing.Process(target=foo)
-    process.start()
-    process.join()
+  const workerProcess = fork(__filename, ['worker']);
+  workerProcess.on('exit', () => {
+    console.log('Main function finished');
+  });
+}
