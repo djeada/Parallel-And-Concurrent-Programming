@@ -1,5 +1,14 @@
-import threading
+"""
+This script demonstrates the use of threads in Python.
+It shows how to create a worker thread, retrieve its ID, and print the process ID.
+
+When the script is executed, it will display the process ID and thread ID for both the main function
+and the worker function. It will also display the thread names, which can be useful for debugging
+and monitoring purposes.
+"""
+
 import os
+import threading
 from threading import Thread
 
 
