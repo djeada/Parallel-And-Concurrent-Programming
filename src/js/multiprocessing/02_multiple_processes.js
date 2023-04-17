@@ -1,21 +1,32 @@
-import os
-import multiprocessing
-import threading
+const { fork } = require('child_process');
+const {
+  threadId,
+} = require("worker_threads");
+const numProcesses = 3; // number of child processes to create
 
+function task(processNum) {
+  console.log(`Task ${processNum} started`);
+    console.log(`Worker function process id: ${process.pid}`);
+console.log(`Worker function thread id: ${threadId}`);
+  // Do some task here
+  console.log(`Task ${processNum} finished`);
+}
 
-def foo():
-    print("Worker function")
-    print(f"Worker function process id: {os.getpid()}")
-    print(f"Worker thread id: {threading.currentThread().ident}")
-    print(f"Worker thread id: {threading.currentThread().getName()}")
+if (process.argv[2] === 'worker') {
+  const processNum = process.argv[3];
+  task(processNum);
+} else {
+  console.log('Main function');
+  console.log(`Main function process id: ${process.pid}`);
+  console.log(`Main thread id: ${threadId}`);
 
-
-if __name__ == "__main__":
-
-    print(f"Main function process id: {os.getpid()}")
-    print(f"Main thread id: {threading.currentThread().ident}")
-    print(f"Main thread id: {threading.currentThread().getName()}")
-
-    process = multiprocessing.Process(target=foo)
-    process.start()
-    process.join()
+  for (let i = 1; i <= numProcesses; i++) {
+    const workerProcess = fork(__filename, ['worker', i.toString()]);
+    workerProcess.on('exit', () => {
+      console.log(`Worker ${i} finished`);
+      if (i === numProcesses) {
+        console.log('Main function finished');
+      }
+    });
+  }
+}
