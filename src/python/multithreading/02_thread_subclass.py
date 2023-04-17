@@ -1,3 +1,16 @@
+"""
+This module demonstrates the usage of custom threads in Python by implementing a
+`MyThread` class, which is a subclass of the built-in `Thread` class.
+
+The `MyThread` class is initialized with a function and automatically starts the
+thread upon instantiation. It then runs the given function and prints the start
+and finish status of the function.
+
+Two threads are created in the `main()` function, one with a custom function called
+`my_function` and another with a lambda function. Both threads are joined, and the
+main thread waits for them to finish before terminating.
+"""
+
 import time
 from threading import Thread
 
