@@ -1,16 +1,16 @@
-const { Thread, Worker, isMainThread, parentPort, workerData } = require("worker_threads");
+const { Worker, isMainThread, parentPort, workerData } = require("worker_threads");
 
-function foo(id) {
-  console.log("Function foo() starts, Thread id: ", id);
+function foo(x) {
+  console.log(`Function foo() starts, Thread id: ${workerData.threadId}, arg: ${x}`);
   setTimeout(() => {
-    console.log("Function foo() finishes, Thread id: ", id);
+    console.log(`Function foo() finishes, Thread id: ${workerData.threadId}, arg: ${x}`);
   }, 1000);
 }
 
-function bar(id) {
-  console.log("Function bar() starts, Thread id: ", id);
+function bar(x) {
+  console.log(`Function bar() starts, Thread id: ${workerData.threadId}, arg: ${x}`);
   setTimeout(() => {
-    console.log("Function bar() finishes, Thread id: ", id);
+    console.log(`Function bar() finishes, Thread id: ${workerData.threadId}, arg: ${x}`);
   }, 100);
 }
 
@@ -20,11 +20,11 @@ if (isMainThread) {
   const threads = [];
 
   for (let i = 0; i < 5; i++) {
-    threads.push(new Worker(__filename, { workerData: { target: foo, args: [i] } }));
+    threads.push(new Worker(__filename, { workerData: { functionName: "foo", args: [i], threadId: i } }));
   }
 
-  for (let i = 0; i < 5; i++) {
-    threads.push(new Worker(__filename, { workerData: { target: bar, args: [i] } }));
+  for (let i = 5; i < 10; i++) {
+    threads.push(new Worker(__filename, { workerData: { functionName: "bar", args: [i], threadId: i } }));
   }
 
   let finishedThreads = 0;
@@ -38,6 +38,11 @@ if (isMainThread) {
     });
   }
 } else {
-  const { target, args } = workerData;
-  target(...args);
+  const { functionName, args } = workerData;
+
+  if (functionName === "foo") {
+    foo(...args);
+  } else if (functionName === "bar") {
+    bar(...args);
+  }
 }
