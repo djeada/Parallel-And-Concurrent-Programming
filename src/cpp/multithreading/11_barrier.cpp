@@ -1,39 +1,68 @@
-#include <barrier>
 #include <iostream>
-#include <mutex>
 #include <thread>
 #include <vector>
+#include <chrono>
+#include <random>
+#include <mutex>
+#include <condition_variable>
+#include <atomic>
 
-std::mutex print_mutex;
+class Barrier {
+public:
+    explicit Barrier(size_t num_threads)
+        : num_threads_(num_threads), count_(0), generation_(0) {}
 
-void worker(std::barrier<> &sync_point, int thread_id) {
-  {
-    std::unique_lock<std::mutex> lock(print_mutex);
-    std::cout << "Thread " << thread_id << " is waiting at the barrier."
-              << std::endl;
-  }
+    void wait() {
+        std::unique_lock<std::mutex> lock(mutex_);
+        size_t gen = generation_;
 
-  sync_point.arrive_and_wait();
+        if (++count_ == num_threads_) {
+            generation_++;
+            count_ = 0;
+            cv_.notify_all();
+        } else {
+            cv_.wait(lock, [this, gen] { return gen != generation_; });
+        }
+    }
 
-  {
-    std::unique_lock<std::mutex> lock(print_mutex);
-    std::cout << "Thread " << thread_id << " has passed the barrier."
-              << std::endl;
-  }
+private:
+    std::mutex mutex_;
+    std::condition_variable cv_;
+    size_t num_threads_;
+    size_t count_;
+    size_t generation_;
+};
+
+void worker(Barrier& barrier, int thread_id) {
+    std::cout << "Thread " << thread_id << " is starting..." << std::endl;
+
+    // Simulate some work
+    std::mt19937 rng(std::random_device{}());
+    std::uniform_int_distribution<> dist(1, 3);
+    std::this_thread::sleep_for(std::chrono::seconds(dist(rng)));
+
+    std::cout << "Thread " << thread_id << " is waiting at the barrier..." << std::endl;
+
+    barrier.wait(); // Wait for all threads to reach the barrier
+
+    std::cout << "Thread " << thread_id << " is resuming after the barrier..." << std::endl;
 }
 
 int main() {
-  const int num_threads = 4;
-  std::barrier<> sync_point(num_threads);
-  std::vector<std::thread> threads;
+    size_t num_threads = 5;
+    Barrier barrier(num_threads);
 
-  for (int i = 0; i < num_threads; ++i) {
-    threads.emplace_back(worker, std::ref(sync_point), i);
-  }
+    std::vector<std::thread> threads;
 
-  for (auto &t : threads) {
-    t.join();
-  }
+    for (size_t i = 0; i < num_threads; ++i) {
+        threads.emplace_back(worker, std::ref(barrier), i);
+    }
 
-  return 0;
+    for (auto& thread : threads) {
+        thread.join();
+    }
+
+    std::cout << "All threads have passed the barrier." << std::endl;
+
+    return 0;
 }
