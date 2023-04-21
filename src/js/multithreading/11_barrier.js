@@ -1,37 +1,62 @@
-"""
-This script demonstrates the use of the threading.Barrier class in Python
-to synchronize multiple threads at a specific point in the execution. The worker
-threads perform some work, wait at the barrier, and then continue after all
-threads have reached the barrier.
-"""
+const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
+const EventEmitter = require('events');
 
-import threading
-import time
-import random
+class Barrier {
+  constructor(numThreads, sharedBuffer) {
+    this.numThreads = numThreads;
+    this.sharedBuffer = sharedBuffer;
+    this.count = new Int32Array(sharedBuffer, 0, 1);
+    this.emitter = new EventEmitter();
+  }
 
-def worker(barrier, thread_id):
-    print(f"Thread {thread_id} is starting...")
-    time.sleep(random.uniform(1, 3))  # Simulate some work
-    print(f"Thread {thread_id} is waiting at the barrier...")
+  wait() {
+    const count = Atomics.add(this.count, 0, 1);
 
-    barrier.wait()  # Wait for all threads to reach the barrier
+    if (count === this.numThreads - 1) {
+      this.emitter.emit('release');
+    } else {
+      return new Promise((resolve) => {
+        this.emitter.once('release', resolve);
+      });
+    }
+  }
+}
 
-    print(f"Thread {thread_id} is resuming after the barrier...")
+async function worker(barrier, threadId) {
+  console.log(`Thread ${threadId} is starting...`);
 
-def main():
-    num_threads = 5
-    barrier = threading.Barrier(num_threads)
+  const sleepDuration = Math.floor(Math.random() * 2000) + 1000;
+  setTimeout(async () => {
+    console.log(`Thread ${threadId} is waiting at the barrier...`);
 
-    threads = [threading.Thread(target=worker, args=(barrier, i)) for i in range(num_threads)]
+    await barrier.wait(); // Wait for all threads to reach the barrier
 
-    for thread in threads:
-        thread.start()
+    console.log(`Thread ${threadId} is resuming after the barrier...`);
+    parentPort.postMessage('done');
+  }, sleepDuration);
+}
 
-    for thread in threads:
-        thread.join()
+if (isMainThread) {
+  const numThreads = 5;
+  const sharedBuffer = new SharedArrayBuffer(4);
+  const barrier = new Barrier(numThreads, sharedBuffer);
+  const workers = [];
 
-    print("All threads have passed the barrier.")
+  let completedThreads = 0;
 
-if __name__ == "__main__":
-    main()
-
+  for (let i = 0; i < numThreads; i++) {
+    const worker = new Worker(__filename, { workerData: { sharedBuffer, threadId: i } });
+    workers.push(worker);
+    worker.on('message', (message) => {
+      if (message === 'done') {
+        completedThreads++;
+        if (completedThreads === numThreads) {
+          console.log('All threads have passed the barrier.');
+        }
+      }
+    });
+  }
+} else {
+  const barrier = new Barrier(workerData.numThreads, workerData.sharedBuffer);
+  worker(barrier, workerData.threadId);
+}
