@@ -1,33 +1,40 @@
-"""
-This script demonstrates the use of concurrent.futures.ThreadPoolExecutor to create
-and manage a thread pool, efficiently executing multiple tasks using a fixed number
-of worker threads.
-"""
+// thread_pool_example.js
+const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
 
-import concurrent.futures
-import random
-import time
+function worker(taskId) {
+  console.log(`Task ${taskId} is starting...`);
+  const sleepDuration = Math.floor(Math.random() * 3000) + 1000; // Simulate some work
+  setTimeout(() => {
+    const result = taskId * 2;
+    console.log(`Task ${taskId} is finished. Result: ${result}`);
+    parentPort.postMessage({ taskId, result });
+  }, sleepDuration);
+}
 
-def worker(task_id):
-    print(f"Task {task_id} is starting...")
-    time.sleep(random.uniform(1, 3))  # Simulate some work
-    result = task_id * 2
-    print(f"Task {task_id} is finished. Result: {result}")
-    return task_id, result
+if (isMainThread) {
+  const numTasks = 10;
+  const numWorkers = 3;
+  const taskQueue = Array.from({ length: numTasks }, (_, i) => i);
+  const workers = [];
+  let completedTasks = 0;
 
-def main():
-    num_tasks = 10
-    num_workers = 3
+  function createWorker() {
+    const taskId = taskQueue.shift();
+    if (taskId === undefined) return;
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
-        # Submit tasks to the executor and store the resulting Future objects
-        futures = [executor.submit(worker, i) for i in range(num_tasks)]
+    const worker = new Worker(__filename, { workerData: taskId });
+    worker.on('message', ({ taskId, result }) => {
+      console.log(`Task ${taskId} result collected: ${result}`);
+      completedTasks++;
+      if (completedTasks < numTasks) {
+        createWorker();
+      }
+    });
+  }
 
-        # Collect the results as the tasks complete
-        for future in concurrent.futures.as_completed(futures):
-            task_id, result = future.result()
-            print(f"Task {task_id} result collected: {result}")
-
-if __name__ == "__main__":
-    main()
-
+  for (let i = 0; i < numWorkers; i++) {
+    createWorker();
+  }
+} else {
+  worker(workerData);
+}
