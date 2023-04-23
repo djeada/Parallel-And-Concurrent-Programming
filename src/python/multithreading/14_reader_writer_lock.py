@@ -1,7 +1,20 @@
 """
 This script demonstrates the use of a Reader-Writer lock to manage concurrent access
-to shared data in a multi-threaded environment, allowing multiple readers to access
-the data simultaneously while preventing concurrent access by readers and writers.
+to shared data in a multi-threaded environment. The Reader-Writer lock allows multiple
+readers to access the shared data simultaneously, while preventing concurrent access
+by readers and writers. This can be particularly useful when read operations are more
+frequent than write operations, as it helps reduce contention between reader threads.
+
+In this example, we implement a simple Reader-Writer lock using two standard locks: one
+for managing the number of active readers and another for controlling access to the
+shared data. We create separate reader and writer threads, which repeatedly perform
+read and write operations on the shared data. The Reader-Writer lock ensures that
+writers have exclusive access to the shared data when writing, and that readers can
+read the data concurrently when there are no active writers.
+
+Alternative solutions include using specialized Reader-Writer lock implementations
+available in third-party libraries, or using other synchronization primitives such as
+semaphores or condition variables.
 """
 
 import threading
