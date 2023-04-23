@@ -1,34 +1,38 @@
 #include <iostream>
-#include <mutex>
 #include <thread>
 #include <vector>
 
-thread_local int thread_local_data = 0;
+// Declare a thread_local variable
+thread_local int thread_local_data;
 
-std::mutex print_mutex;
+void some_work() {
+    thread_local_data *= 2;
+}
 
 void worker(int thread_id) {
-  thread_local_data = thread_id;
+    // Store thread-local data
+    thread_local_data = thread_id;
 
-  // Simulate some work
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    // Simulate some work
+    some_work();
 
-  std::unique_lock<std::mutex> lock(print_mutex);
-  std::cout << "Thread " << thread_id
-            << " has thread-local data: " << thread_local_data << std::endl;
+    // Read thread-local data
+    std::cout << "Thread " << thread_id << " has value: " << thread_local_data << std::endl;
 }
 
 int main() {
-  const int num_threads = 5;
-  std::vector<std::thread> threads;
+    const int num_threads = 5;
+    std::vector<std::thread> threads;
 
-  for (int i = 0; i < num_threads; ++i) {
-    threads.emplace_back(worker, i);
-  }
+    // Create and start worker threads
+    for (int i = 0; i < num_threads; ++i) {
+        threads.push_back(std::thread(worker, i));
+    }
 
-  for (auto &t : threads) {
-    t.join();
-  }
+    // Join worker threads
+    for (auto& thread : threads) {
+        thread.join();
+    }
 
-  return 0;
+    return 0;
 }
