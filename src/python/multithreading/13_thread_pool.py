@@ -2,6 +2,20 @@
 This script demonstrates the use of concurrent.futures.ThreadPoolExecutor to create
 and manage a thread pool, efficiently executing multiple tasks using a fixed number
 of worker threads.
+
+In this script, a fixed number of worker threads are created using ThreadPoolExecutor,
+which manages the creation, execution, and completion of tasks. Each task is a function
+(worker) that simulates some work and then returns a result. The tasks are submitted
+to the ThreadPoolExecutor, which returns a Future object for each task. The Future
+objects allow us to collect the results of the tasks as they complete, without the need
+for manual thread management or synchronization.
+
+Using ThreadPoolExecutor is an efficient way to manage a thread pool, as it takes care
+of thread creation, work distribution, and resource management. Alternative approaches,
+such as manually creating and managing threads, can be more error-prone and less efficient.
+
+The main function in this script submits a fixed number of tasks to the ThreadPoolExecutor,
+collects the results as the tasks complete, and then prints the results.
 """
 
 import concurrent.futures
