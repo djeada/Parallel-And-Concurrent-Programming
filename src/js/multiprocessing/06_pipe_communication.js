@@ -1,24 +1,38 @@
-import multiprocessing
+const { spawn } = require('child_process');
+const { Readable } = require('stream');
 
+function random(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
-def spawn_numbers(pipe):
-    input_pipe, _ = pipe
-    for i in range(10):
-        input_pipe.send(i)
-    input_pipe.close()
+if (process.argv[2] === 'child') {
+  const readable = new Readable({
+    read(size) {}
+  });
 
+  for (let i = 0; i < 5; i++) {
+    const item = random(1, 10);
+    setTimeout(() => {
+      readable.push(`${item}\n`);
+    }, random(500, 1500));
+  }
 
-if __name__ == "__main__":
+  setTimeout(() => {
+    readable.push(null);
+  }, 3000);
 
-    pipe = multiprocessing.Pipe(True)
-    process = multiprocessing.Process(target=spawn_numbers, args=(pipe,))
-    process.start()
-    process.join()
+  readable.pipe(process.stdout);
+} else {
+  const childProcess = spawn(process.argv[0], [__filename, 'child'], {
+    stdio: [null, 'pipe', null]
+  });
 
-    _, output_pipe = pipe
+  childProcess.stdout.setEncoding('utf8');
+  childProcess.stdout.on('data', (chunk) => {
+    console.log(`Parent: Received ${chunk.trim()} from child process`);
+  });
 
-    try:
-        while 1:
-            print(output_pipe.recv())
-    except EOFError:
-        print("End")
+  childProcess.on('exit', () => {
+    console.log('Child process finished');
+  });
+}
