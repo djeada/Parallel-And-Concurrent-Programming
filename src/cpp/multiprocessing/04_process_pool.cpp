@@ -1,32 +1,79 @@
-import multiprocessing import time import random
+#include <algorithm>
+#include <chrono>
+#include <functional>
+#include <iostream>
+#include <sys/wait.h>
+#include <thread>
+#include <unistd.h>
+#include <vector>
+class ProcessPool {
+public:
+  ProcessPool(size_t num_workers) : num_workers(num_workers) {
+    worker_pids.reserve(num_workers);
+  }
 
-    def create_matrix(size) :matrix =[[random.randint(1, 1000) for i in range(size)] for j in range(size)]
+  void add_task(const std::function<void(int)> &task, int task_id) {
+    if (worker_pids.size() >= num_workers) {
+      // Wait for a worker process to finish
+      int status;
+      pid_t pid = wait(&status);
+      if (WIFEXITED(status)) {
+        int exit_status = WEXITSTATUS(status);
+        std::cout << "Task result collected: " << exit_status << std::endl;
+      }
 
-                                       for i in range(size) : for j in range(size) : if i - 1 >= 0 and j - 1 >= 0 and i + 1< size and j + 1 < size:
-                matrix[i][j] = (
-                    matrix[i][j]
-                    * matrix[(i - 1) % size][j]
-                    * matrix[(i + 1) % size][j]
-                    * matrix[i][(j - 1) % size]
-                    * matrix[i][(j + 1) % size]
-                )
+      // Remove the finished worker process from the list
+      auto it = std::find(worker_pids.begin(), worker_pids.end(), pid);
+      if (it != worker_pids.end()) {
+        worker_pids.erase(it);
+      }
+    }
 
-    return matrix
+    pid_t pid = fork();
 
+    if (pid == 0) {
+      // Child process
+      task(task_id);
+      exit(task_id * 2);
+    } else {
+      // Parent process
+      worker_pids.push_back(pid);
+    }
+  }
 
-if __name__ == "__main__":
+  ~ProcessPool() {
+    // Wait for all worker processes to finish
+    while (!worker_pids.empty()) {
+      int status;
+      pid_t pid = wait(&status);
+      if (WIFEXITED(status)) {
+        int exit_status = WEXITSTATUS(status);
+        std::cout << "Task result collected: " << exit_status << std::endl;
+      }
+      worker_pids.pop_back();
+    }
+  }
 
-    inputs = list(range(15))
-    start = time.time()
-    outputs = list(map(create_matrix, inputs))
-    end = time.time()
-    print(f"Time taken: {end - start}")
+private:
+  size_t num_workers;
+  std::vector<pid_t> worker_pids;
+};
 
-    start = time.time()
-#use multiprocessing pool
-    pool = multiprocessing.Pool(processes=4)
-    outputs = pool.map(create_matrix, inputs)
-    pool.close()
-    pool.join()
-    end = time.time()
-    print(f"Time taken: {end - start}")
+void worker_task(int task_id) {
+  std::cout << "Task " << task_id << " is starting..." << std::endl;
+  std::this_thread::sleep_for(std::chrono::seconds(2));
+  std::cout << "Task " << task_id << " is finished." << std::endl;
+}
+
+int main() {
+  const size_t num_tasks = 10;
+  const size_t num_workers = 3;
+
+  ProcessPool pool(num_workers);
+
+  for (size_t i = 0; i < num_tasks; ++i) {
+    pool.add_task(worker_task, i);
+  }
+
+  return 0;
+}
