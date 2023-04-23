@@ -1,72 +1,56 @@
-"""
-This script demonstrates the use of a Reader-Writer lock to manage concurrent access
-to shared data in a multi-threaded environment, allowing multiple readers to access
-the data simultaneously while preventing concurrent access by readers and writers.
-"""
+const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
 
-import threading
-import time
-import random
+if (isMainThread) {
+  const sharedArrayBuffer = new SharedArrayBuffer(4 * Int32Array.BYTES_PER_ELEMENT);
+  const sharedData = new Int32Array(sharedArrayBuffer);
+  sharedData[0] = 0; // data
+  sharedData[1] = 0; // readers
+  sharedData[2] = 0; // writers
+  sharedData[3] = 0; // waiting writers
 
-class SharedData:
-    def __init__(self):
-        self.data = 0
-        self.lock = threading.RLock()
-        self.readers = 0
-        self.readers_lock = threading.Lock()
+  const numReaders = 3;
+  const numWriters = 2;
 
-    def read(self, thread_id):
-        with self.readers_lock:
-            self.readers += 1
-            if self.readers == 1:
-                self.lock.acquire()
+  for (let i = 0; i < numReaders; i++) {
+    new Worker(__filename, { workerData: { type: 'reader', threadId: i, sharedArrayBuffer } });
+  }
 
-        print(f"Reader {thread_id} reads data: {self.data}")
-        time.sleep(random.uniform(0.5, 1))  # Simulate some work
+  for (let i = 0; i < numWriters; i++) {
+    new Worker(__filename, { workerData: { type: 'writer', threadId: i, sharedArrayBuffer } });
+  }
+} else {
+  const { type, threadId, sharedArrayBuffer } = workerData;
+  const sharedData = new Int32Array(sharedArrayBuffer);
 
-        with self.readers_lock:
-            self.readers -= 1
-            if self.readers == 0:
-                self.lock.release()
+  if (type === 'reader') {
+    while (true) {
+      while (Atomics.load(sharedData, 2) > 0) {
+        Atomics.wait(sharedData, 2, 0, 1000);
+      }
 
-    def write(self, thread_id):
-        with self.lock:
-            print(f"Writer {thread_id} is writing...")
-            self.data += 1
-            time.sleep(random.uniform(0.5, 1))  # Simulate some work
-            print(f"Writer {thread_id} finished writing. New data: {self.data}")
+      Atomics.add(sharedData, 1, 1);
+      console.log(`Reader ${threadId} reads data: ${sharedData[0]}`);
+      Atomics.add(sharedData, 1, -1);
+      Atomics.notify(sharedData, 2, 1);
 
-def reader(shared_data, thread_id):
-    while True:
-        shared_data.read(thread_id)
-        time.sleep(random.uniform(1, 2))
+      Atomics.wait(sharedData, 0, 0, 1000);
+    }
+  } else if (type === 'writer') {
+    while (true) {
+      Atomics.add(sharedData, 3, 1);
+      while (Atomics.load(sharedData, 2) > 0 || Atomics.load(sharedData, 1) > 0) {
+        Atomics.wait(sharedData, 3, 0, 1000);
+      }
+      Atomics.add(sharedData, 3, -1);
 
-def writer(shared_data, thread_id):
-    while True:
-        shared_data.write(thread_id)
-        time.sleep(random.uniform(1, 2))
+      Atomics.add(sharedData, 2, 1);
+      console.log(`Writer ${threadId} is writing...`);
+      sharedData[0]++;
+      console.log(`Writer ${threadId} finished writing. New data: ${sharedData[0]}`);
+      Atomics.add(sharedData, 2, -1);
+      Atomics.notify(sharedData, 3, 1);
 
-def main():
-    shared_data = SharedData()
-
-    num_readers = 3
-    num_writers = 2
-
-    threads = []
-
-    for i in range(num_readers):
-        t = threading.Thread(target=reader, args=(shared_data, i))
-        t.start()
-        threads.append(t)
-
-    for i in range(num_writers):
-        t = threading.Thread(target=writer, args=(shared_data, i))
-        t.start()
-        threads.append(t)
-
-    for t in threads:
-        t.join()
-
-if __name__ == "__main__":
-    main()
-
+      Atomics.wait(sharedData, 0, 0, 1000);
+    }
+  }
+}
