@@ -1,24 +1,36 @@
-import multiprocessing
+const { fork } = require('child_process');
 
+const SEMAPHORE_LIMIT = 3;
+let semaphore = SEMAPHORE_LIMIT;
 
-def spawn_numbers(pipe):
-    input_pipe, _ = pipe
-    for i in range(10):
-        input_pipe.send(i)
-    input_pipe.close()
+function sleep(ms, cb) {
+  setTimeout(cb, ms);
+}
 
+function worker(id) {
+  function tryAcquireSemaphore() {
+    if (semaphore <= 0) {
+      sleep(100, tryAcquireSemaphore);
+    } else {
+      semaphore--;
 
-if __name__ == "__main__":
+      console.log(`Worker ${id} starts working.`);
+      sleep(Math.floor(Math.random() * 1000) + 1000, () => {
+        console.log(`Worker ${id} finished working.`);
 
-    pipe = multiprocessing.Pipe(True)
-    process = multiprocessing.Process(target=spawn_numbers, args=(pipe,))
-    process.start()
-    process.join()
+        semaphore++;
+      });
+    }
+  }
 
-    _, output_pipe = pipe
+  tryAcquireSemaphore();
+}
 
-    try:
-        while 1:
-            print(output_pipe.recv())
-    except EOFError:
-        print("End")
+if (process.argv[2] === 'worker') {
+  worker(parseInt(process.argv[3]));
+} else {
+  const numWorkers = 5;
+  for (let i = 0; i < numWorkers; i++) {
+    fork(__filename, ['worker', i]);
+  }
+}
