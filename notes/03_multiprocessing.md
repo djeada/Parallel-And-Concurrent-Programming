@@ -104,9 +104,8 @@ g++ file_name.cpp -std=c++17 -pthread -o executable_name
 | 10  | [process_lock.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/10_process_lock.cpp) | Use a lock to synchronize access to shared resources  |
 | 11  | [process_semaphore.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/11_process_semaphore.cpp) | Use a semaphore to control access to shared resources |
 | 12  | [process_barrier.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/12_process_barrier.cpp) | Use a barrier to synchronize multiple processes       |
-| 13  | [producer_consumer_multiprocess.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/13_producer_consumer_multiprocess.cpp) | Implement a producer-consumer pattern with processes  |
-| 14  | [orphan.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/14_orphan.cpp) | Demonstrate an orphan process scenario                |
-| 15  | [zombie.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/15_zombie.cpp) | Demonstrate a zombie process scenario                 |
+| 13  | [orphan.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/13_orphan.cpp) | Demonstrate an orphan process scenario                |
+| 14  | [zombie.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/14_zombie.cpp) | Demonstrate a zombie process scenario                 |
 
 #### Examples in Python
 
@@ -132,9 +131,8 @@ The `Pool` class in the `multiprocessing` module allows running a function in pa
 | 10  | [process_lock.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/10_process_lock.py) | Use a lock to synchronize access to shared resources  |
 | 11  | [process_semaphore.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/11_process_semaphore.py) | Use a semaphore to control access to shared resources |
 | 12  | [process_barrier.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/12_process_barrier.py) | Use a barrier to synchronize multiple processes       |
-| 13  | [producer_consumer_multiprocess.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/13_producer_consumer_multiprocess.py) | Implement a producer-consumer pattern with processes  |
-| 14  | [orphan.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/14_orphan.py) | Demonstrate an orphan process scenario                |
-| 15  | [zombie.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/15_zombie.py) | Demonstrate a zombie process scenario                 |
+| 13  | [orphan.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/13_orphan.py) | Demonstrate an orphan process scenario                |
+| 14  | [zombie.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/14_zombie.py) | Demonstrate a zombie process scenario                 |
 
 #### Examples in JavaScript
 
@@ -158,6 +156,5 @@ To use multiprocessing in Node.js, you can leverage the `cluster` module. This m
 | 10  | [process_lock.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/10_process_lock.js) | Use a lock to synchronize access to shared resources  |
 | 11  | [process_semaphore.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/11_process_semaphore.js) | Use a semaphore to control access to shared resources |
 | 12  | [process_barrier.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/12_process_barrier.js) | Use a barrier to synchronize multiple processes       |
-| 13  | [producer_consumer_multiprocess.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/13_producer_consumer_multiprocess.js) | Implement a producer-consumer pattern with processes  |
-| 14  | [orphan.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/14_orphan.js) | Demonstrate an orphan process scenario                |
-| 15  | [zombie.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/15_zombie.js) | Demonstrate a zombie process scenario                 |
+| 13  | [orphan.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/13_orphan.js) | Demonstrate an orphan process scenario                |
+| 14  | [zombie.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/14_zombie.js) | Demonstrate a zombie process scenario                 |
