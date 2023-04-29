@@ -1,41 +1,56 @@
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
-import time
+/*
+This script demonstrates how to pause and resume function execution using
+std::thread, std::mutex, and std::condition_variable in C++. It consists of two main parts:
+1. A long-running function that periodically prints its progress.
+2. A button handler that listens for user input to toggle pause and resume.
 
-executor = ThreadPoolExecutor()
+The script shows how to use C++ threading and synchronization primitives to
+effectively pause and resume the execution of the long-running function.
+*/
 
-pause_event = asyncio.Event()
+#include <iostream>
+#include <mutex>
+#include <condition_variable>
+#include <thread>
+#include <chrono>
 
+std::mutex mtx;
+std::condition_variable cv;
+bool paused = false;
 
-async def long_function():
-    i = 0
-    while True:
-        if pause_event.is_set():
-            while pause_event.is_set():
-                await asyncio.sleep(0.1)
-        print(f"Executing step {i}")
-        i += 1
-        await asyncio.sleep(1)
+void long_function() {
+    int i = 0;
+    while (true) {
+        std::unique_lock<std::mutex> lock(mtx);
+        cv.wait(lock, [] { return !paused; });
 
+        std::cout << "Executing step " << i << std::endl;
+        i++;
 
-async def button_handler():
-    loop = asyncio.get_event_loop()
-    while True:
-        await loop.run_in_executor(
-            executor, input, "Press ENTER to toggle pause/resume:"
-        )
-        if pause_event.is_set():
-            pause_event.clear()
-        else:
-            pause_event.set()
+        lock.unlock();
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+}
 
+void button_handler() {
+    while (true) {
+        std::cin.get();
 
-async def main():
-    task1 = asyncio.create_task(long_function())
-    task2 = asyncio.create_task(button_handler())
+        std::unique_lock<std::mutex> lock(mtx);
+        paused = !paused;
+        cv.notify_all();
 
-    await asyncio.gather(task1, task2)
+        std::string state = paused ? "paused" : "resumed";
+        std::cout << "Function " << state << std::endl;
+    }
+}
 
+int main() {
+    std::thread long_function_thread(long_function);
+    std::thread button_handler_thread(button_handler);
 
-if __name__ == "__main__":
-    asyncio.run(main())
+    long_function_thread.join();
+    button_handler_thread.join();
+
+    return 0;
+}
