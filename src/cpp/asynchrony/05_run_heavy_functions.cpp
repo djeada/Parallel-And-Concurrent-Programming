@@ -1,41 +1,54 @@
-"""
-This example demonstrates how to run CPU-bound tasks concurrently using asyncio in combination with a ProcessPoolExecutor. This is useful when you want to achieve concurrency with asyncio but have CPU-bound tasks that would otherwise block the async event loop. The example shows how to offload these tasks to separate processes managed by the ProcessPoolExecutor, allowing the event loop to continue processing other async tasks without being blocked.
-"""
+#include <iostream>
+#include <chrono>
+#include <random>
+#include <future>
+#include <thread>
+#include <vector>
+#include <string>
 
-import asyncio
-import concurrent.futures
-import time
-import numpy as np
+int blocking_function(int i) {
+    std::cout << "Running blocking function " << i << std::endl;
 
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dis(0, 1);
 
-def blocking_function(i):
-    print(f"Running blocking function {i}")
-    a = np.random.rand(1000, 1000)
-    b = np.random.rand(1000, 1000)
-    c = np.dot(a, b)
-    print(f"Done running blocking function {i}")
-    return i
+    // Simulate a heavy computation using sleep
+    std::this_thread::sleep_for(std::chrono::seconds(10));
 
+    std::cout << "Done running blocking function " << i << std::endl;
+    return i;
+}
 
-async def run_blocking_functions(executor, callback):
-    print("Start run_blocking_functions")
+void user_input() {
+    std::string user_text;
+    while (true) {
+        std::cout << "Enter some text: ";
+        std::getline(std::cin, user_text);
+        std::cout << "User input: " << user_text << std::endl;
+    }
+}
 
-    loop = asyncio.get_event_loop()
-    blocking_tasks = [loop.run_in_executor(executor, callback, i) for i in range(6)]
-    print("Waiting for executor tasks")
-    completed, _ = await asyncio.wait(blocking_tasks)
-    results = [task.result() for task in completed]
-    print(f"Results: {results}")
-    print("End run_blocking_functions")
+int main() {
+    std::vector<std::future<int>> blocking_tasks;
+    for (int i = 0; i < 6; ++i) {
+        blocking_tasks.push_back(std::async(std::launch::async, blocking_function, i));
+    }
 
+    std::thread input_thread(user_input);
 
-def main():
-    print("START main")
-    executor = concurrent.futures.ProcessPoolExecutor(max_workers=3)
+    std::vector<int> results;
+    for (auto &task : blocking_tasks) {
+        results.push_back(task.get());
+    }
 
-    asyncio.run(run_blocking_functions(executor, blocking_function))
-    print("STOP main")
+    std::cout << "Results: ";
+    for (const auto &result : results) {
+        std::cout << result << " ";
+    }
+    std::cout << std::endl;
 
+    input_thread.join();
 
-if __name__ == "__main__":
-    main()
+    return 0;
+}
