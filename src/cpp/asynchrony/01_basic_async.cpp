@@ -1,44 +1,63 @@
-import asyncio
-import sys
+/*
+This program demonstrates the difference between synchronous and asynchronous
+approaches to handling I/O-bound tasks using C++. The synchronous version
+runs the tasks sequentially, while the asynchronous version takes advantage of
+std::async to run the tasks concurrently. This allows for better resource utilization
+and improved performance when dealing with I/O-bound tasks.
 
-# coroutine that sets the result directly in the future object
-async def sum_n_numbers(future, n):
-    result = 0
-    for i in range(n):
-        result += i + 1
-    future.set_result(f"Sum of n integers result = {result}")
+The program contains two functions, sync_main() and async_main(), which
+demonstrate the synchronous and asynchronous approaches, respectively. The
+execution time for each approach is measured and displayed to show the performance
+difference.
+*/
 
+#include <iostream>
+#include <chrono>
+#include <thread>
+#include <future>
 
-# coroutine that returns the result like normal function
-async def second_coroutine(n):
-    result = 1
-    for i in range(n - 1):
-        result *= i + 2
+void sync_task(int task_id, int sleep_time) {
+    std::cout << "Task " << task_id << " started." << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(sleep_time));
+    std::cout << "Task " << task_id << " finished." << std::endl;
+}
 
-    return f"{n}! = {result}"
+void sync_main() {
+    auto start_time = std::chrono::steady_clock::now();
 
+    sync_task(1, 2);
+    sync_task(2, 1);
 
-def display_result(future):
-    print(future.result())
+    auto elapsed_time = std::chrono::steady_clock::now() - start_time;
+    std::cout << "Synchronous execution took "
+              << std::chrono::duration_cast<std::chrono::seconds>(elapsed_time).count()
+              << " seconds." << std::endl;
+}
 
+void async_task(int task_id, int sleep_time) {
+    std::cout << "Task " << task_id << " started." << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(sleep_time));
+    std::cout << "Task " << task_id << " finished." << std::endl;
+}
 
-if __name__ == "__main__":
+void async_main() {
+    auto start_time = std::chrono::steady_clock::now();
 
-    n = 5
+    auto future1 = std::async(std::launch::async, async_task, 1, 2);
+    auto future2 = std::async(std::launch::async, async_task, 2, 1);
 
-    loop = asyncio.get_event_loop()
-    future = asyncio.Future()
+    future1.wait();
+    future2.wait();
 
-    # create tasks from coroutines
-    task1 = loop.create_task(sum_n_numbers(future, n))
-    task2 = loop.create_task(second_coroutine(n))
+    auto elapsed_time = std::chrono::steady_clock::now() - start_time;
+    std::cout << "Asynchronous execution took "
+              << std::chrono::duration_cast<std::chrono::seconds>(elapsed_time).count()
+              << " seconds." << std::endl;
+}
 
-    # callback will be called when the task is completed
-    # task1.add_done_callback(display_result)
-    task2.add_done_callback(display_result)
+int main() {
+    sync_main();
+    async_main();
 
-    loop.run_until_complete(asyncio.wait((task1, task2)))
-
-    display_result(future)
-
-    loop.close()
+    return 0;
+}
