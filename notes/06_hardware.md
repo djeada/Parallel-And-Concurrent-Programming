@@ -1,6 +1,6 @@
 ## Hardware in Parallel Computing
 
-Parallel computing is the process of breaking a task into smaller parts that can be processed simultaneously by multiple processors. This document explores the different ways of achieving parallelism in hardware and their impact on parallel computing performance.
+Parallel computing is the process of breaking a task into smaller parts that can be processed simultaneously by multiple processors. These notes explore the different ways of achieving parallelism in hardware and their impact on parallel computing performance.
 
 ## Ways of Achieving Parallelism
 
