@@ -1,3 +1,13 @@
+"""
+This script demonstrates how to pause and resume function execution using
+asyncio in Python. It consists of two main parts:
+1. A long-running function that periodically prints its progress.
+2. A button handler that listens for user input to toggle pause and resume.
+
+The script shows how to use asyncio and events to effectively pause and resume
+the execution of the long-running function.
+"""
+
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import time
