@@ -1,29 +1,66 @@
+"""
+This script demonstrates the use of asyncio.Future when working with async
+functions in Python. It shows how to create a future, set a result, and
+retrieve the result from a future.
+
+The script contains a synchronous function and an async function, both simulating
+a slow computation. We first run the synchronous version and measure the time taken.
+Then, we run the asynchronous version with futures and measure the time taken.
+
+This example shows the differences between synchronous and asynchronous approaches
+and the effective use of futures to handle results from async functions.
+"""
+
 import asyncio
 import time
 
-"""
-Create a task to start a coroutine in the background.
-Two options:
-- ensure_future() - high level should be used by default
-- create_task() - low level when customizing the loop
-"""
+
+def slow_square_sync(x):
+    print(f"Starting slow square computation for {x}")
+    time.sleep(2)
+    result = x * x
+    print(f"Finished slow square computation for {x}")
+    return result
 
 
-async def example_task():
-    print("example task")
-    await asyncio.sleep(1)
+async def slow_square_async(x):
+    print(f"Starting slow square computation for {x}")
+    await asyncio.sleep(2)
+    result = x * x
+    print(f"Finished slow square computation for {x}")
+    return result
 
 
-async def task_generator():
-    for i in range(5):
-        asyncio.ensure_future(example_task())
-    pending = asyncio.all_tasks()
-    for p in pending:
-        print(p)
+def synchronous_execution():
+    start_time = time.time()
+
+    result1 = slow_square_sync(3)
+    result2 = slow_square_sync(4)
+
+    elapsed_time = time.time() - start_time
+    print(f"\nSynchronous execution took {elapsed_time} seconds.")
+    print(f"Results: {result1}, {result2}")
 
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(task_generator())
-loop.close()
+async def asynchronous_execution():
+    start_time = time.time()
 
-print("The End")
+    future1 = asyncio.Future()
+    future2 = asyncio.Future()
+
+    task1 = asyncio.create_task(slow_square_async(3))
+    task2 = asyncio.create_task(slow_square_async(4))
+
+    future1.set_result(await task1)
+    future2.set_result(await task2)
+
+    results = await asyncio.gather(future1, future2)
+
+    elapsed_time = time.time() - start_time
+    print(f"\nAsynchronous execution took {elapsed_time} seconds.")
+    print(f"Results: {results}")
+
+
+if __name__ == "__main__":
+    synchronous_execution()
+    asyncio.run(asynchronous_execution())
