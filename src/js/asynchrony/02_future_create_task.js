@@ -1,29 +1,45 @@
-import asyncio
-import time
+const { performance } = require('perf_hooks');
 
-"""
-Create a task to start a coroutine in the background.
-Two options:
-- ensure_future() - high level should be used by default
-- create_task() - low level when customizing the loop
-"""
+function slowSquareSync(x) {
+    console.log(`Starting slow square computation for ${x}`);
+    const startTime = new Date();
+    while (new Date() - startTime < 2000) {}
+    const result = x * x;
+    console.log(`Finished slow square computation for ${x}`);
+    return result;
+}
 
+async function slowSquareAsync(x) {
+    console.log(`Starting slow square computation for ${x}`);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const result = x * x;
+    console.log(`Finished slow square computation for ${x}`);
+    return result;
+}
 
-async def example_task():
-    print("example task")
-    await asyncio.sleep(1)
+function synchronousExecution() {
+    const start_time = performance.now();
 
+    const result1 = slowSquareSync(3);
+    const result2 = slowSquareSync(4);
 
-async def task_generator():
-    for i in range(5):
-        asyncio.ensure_future(example_task())
-    pending = asyncio.all_tasks()
-    for p in pending:
-        print(p)
+    const elapsed_time = performance.now() - start_time;
+    console.log(`\nSynchronous execution took ${elapsed_time / 1000} seconds.`);
+    console.log(`Results: ${result1}, ${result2}`);
+}
 
+async function asynchronousExecution() {
+    const start_time = performance.now();
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(task_generator())
-loop.close()
+    const promise1 = slowSquareAsync(3);
+    const promise2 = slowSquareAsync(4);
 
-print("The End")
+    const results = await Promise.all([promise1, promise2]);
+
+    const elapsed_time = performance.now() - start_time;
+    console.log(`\nAsynchronous execution took ${elapsed_time / 1000} seconds.`);
+    console.log(`Results: ${results}`);
+}
+
+synchronousExecution();
+asynchronousExecution();
