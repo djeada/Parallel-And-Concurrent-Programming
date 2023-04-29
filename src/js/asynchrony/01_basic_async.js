@@ -1,44 +1,53 @@
-import asyncio
-import sys
+/*
+This program demonstrates the difference between synchronous and asynchronous
+approaches to handling I/O-bound tasks using Node.js. The synchronous version
+runs the tasks sequentially using blocking functions, while the asynchronous
+version takes advantage of Promises and async/await to run the tasks concurrently.
+This allows for better resource utilization and improved performance when dealing
+with I/O-bound tasks.
 
-# coroutine that sets the result directly in the future object
-async def sum_n_numbers(future, n):
-    result = 0
-    for i in range(n):
-        result += i + 1
-    future.set_result(f"Sum of n integers result = {result}")
+The program contains two functions, syncMain() and asyncMain(), which
+demonstrate the synchronous and asynchronous approaches, respectively. The
+execution time for each approach is measured and displayed to show the performance
+difference.
+*/
 
+const { promisify } = require('util');
+const sleep = promisify(setTimeout);
 
-# coroutine that returns the result like normal function
-async def second_coroutine(n):
-    result = 1
-    for i in range(n - 1):
-        result *= i + 2
+function syncTask(taskId, sleepTime) {
+  console.log(`Task ${taskId} started.`);
+  const start = Date.now();
+  while (Date.now() - start < sleepTime * 1000);
+  console.log(`Task ${taskId} finished.`);
+}
 
-    return f"{n}! = {result}"
+function syncMain() {
+  const startTime = Date.now();
 
+  syncTask(1, 2);
+  syncTask(2, 1);
 
-def display_result(future):
-    print(future.result())
+  const elapsedTime = (Date.now() - startTime) / 1000;
+  console.log(`Synchronous execution took ${elapsedTime} seconds.`);
+}
 
+async function asyncTask(taskId, sleepTime) {
+  console.log(`Task ${taskId} started.`);
+  await sleep(sleepTime * 1000);
+  console.log(`Task ${taskId} finished.`);
+}
 
-if __name__ == "__main__":
+async function asyncMain() {
+  const startTime = Date.now();
 
-    n = 5
+  const task1 = asyncTask(1, 2);
+  const task2 = asyncTask(2, 1);
+  await Promise.all([task1, task2]);
 
-    loop = asyncio.get_event_loop()
-    future = asyncio.Future()
+  const elapsedTime = (Date.now() - startTime) / 1000;
+  console.log(`Asynchronous execution took ${elapsedTime} seconds.`);
+}
 
-    # create tasks from coroutines
-    task1 = loop.create_task(sum_n_numbers(future, n))
-    task2 = loop.create_task(second_coroutine(n))
-
-    # callback will be called when the task is completed
-    # task1.add_done_callback(display_result)
-    task2.add_done_callback(display_result)
-
-    loop.run_until_complete(asyncio.wait((task1, task2)))
-
-    display_result(future)
-
-    loop.close()
+syncMain();
+asyncMain();
