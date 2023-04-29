@@ -114,16 +114,18 @@ Thread:
 * Operating system schedules threads for execution;
 * All threads within a single process share the same address space and other resources.
 
-## CPU-Bound vs I/O-Bound
+## Understanding CPU-Bound vs I/O-Bound
 
-To use concruency to speed up a software, we must first identify the bottleneck in our application. Depending on whether the slowdown is caused by I/O activities or an underused CPU, different solutions will be used. 
+To optimize a software program's performance, it's important to identify the primary source of slowdown or the bottleneck. This could be either due to I/O (input/output) activities or an underutilized CPU. Different strategies can be applied based on the cause of the bottleneck.
 
 ### CPU-Bound
 
-CPU-bound refers to a situation in which the time required to accomplish a task is mostly dictated by the speed of the central processor.
+When a task's completion time mainly depends on the speed of the CPU, it is considered CPU-bound. In simpler terms, the CPU's processing power determines how quickly the task finishes.
 
-* Software solution: Parallelism is required for the improvement of software speed.
-* Hardware solution: The higher the clock rate of our CPU, the better the performance of our software. 
+- To speed up a CPU-bound software, you can use parallelism, which involves dividing a task into smaller subtasks and processing them simultaneously.
+- On the hardware side, having a CPU with a higher clock rate can improve your software's performance.
+
+Here's an example that illustrates a CPU-bound scenario:
 
 ```bash
 I/O waiting
@@ -132,10 +134,12 @@ CPU Processing  ----Task 1---->----Task 2---->
 
 ### I/O-Bound
 
-The phrase "I/O bound" refers to a situation in which the time it takes to finish a task is mostly dictated by the time spent waiting for input/output operations to complete.
+A task is I/O-bound when its completion time mostly relies on the time spent waiting for input/output operations to finish. In simpler terms, the efficiency of I/O components determines how fast the task is completed.
 
-* Software solution: Concurrency without parallelism may be sufficient to cause improvement.
-* Hardware solution: Faster I/O, such as faster memory I/O, hard disk I/O, network I/O, and so on.
+- In software, you can improve the performance of I/O-bound tasks by using concurrency without necessarily using parallelism. Concurrency allows multiple tasks to be executed in overlapping time periods.
+- For hardware improvements, focus on faster I/O components, such as quicker memory I/O, hard disk I/O, or network I/O.
+
+Here's an example that illustrates an I/O-bound scenario:
 
 ```bash
 I/O waiting         -----request----->     ------request------>     ------request------>
