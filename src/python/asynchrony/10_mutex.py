@@ -1,32 +1,38 @@
+"""
+This script demonstrates the use of asyncio.Lock (a.k.a. async mutex) to protect
+access to shared resources in an asynchronous environment. In this example, we
+simulate a bank account with two coroutines attempting to transfer money concurrently.
+The use of an async mutex (lock) is crucial to prevent race conditions that could lead
+to incorrect account balances.
+"""
+
 import asyncio
-import random
 
+class BankAccount:
+    def __init__(self, balance: int):
+        self.balance = balance
+        self.lock = asyncio.Lock()
 
-async def critical_section(id):
-    print(f"Worker {id} is entering the critical section")
-    await asyncio.sleep(random.uniform(0.5, 2))
-    print(f"Worker {id} is leaving the critical section")
+    async def transfer(self, amount: int):
+        async with self.lock:
+            print(f"Transferring {amount}...")
+            await asyncio.sleep(0.1)  # Simulate some processing time
+            self.balance += amount
+            print(f"Transfer of {amount} complete. New balance: {self.balance}")
 
-
-async def foo(lock, id):
-    for _ in range(3):
-        async with lock:
-            await critical_section(id)
-        await asyncio.sleep(random.uniform(0.5, 1))
-    print(f"End of worker {id} function")
-
-
-async def task_generator():
-    lock = asyncio.Lock()
-    n_workers = 3
-    await asyncio.gather(*[foo(lock, i) for i in range(n_workers)])
-
+async def transfer_money(account: BankAccount, amounts: list):
+    for amount in amounts:
+        await account.transfer(amount)
 
 async def main():
-    await task_generator()
+    account = BankAccount(100)
 
+    transfer1 = asyncio.create_task(transfer_money(account, [50, -20, 30]))
+    transfer2 = asyncio.create_task(transfer_money(account, [-10, 60, -10]))
+
+    await asyncio.gather(transfer1, transfer2)
+
+    print(f"Final account balance: {account.balance}")
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-print("The End")
