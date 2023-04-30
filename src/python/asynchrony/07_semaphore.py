@@ -1,36 +1,33 @@
 """
-This example demonstrates how to use asyncio.Semaphore to limit the number of concurrent tasks running in an async environment. It simulates a scenario where multiple worker tasks need to access a shared resource or perform an operation with limited capacity. The asyncio.Semaphore is used to ensure that only a specified number of workers can execute the resource-limited operation concurrently.
+This Python script demonstrates the use of an async semaphore to control access
+to a limited resource in an asynchronous context. Async semaphores work similarly
+to threading semaphores but are specifically designed for use with async functions
+and coroutines.
+
+In this example, we simulate multiple tasks attempting to access a limited resource
+simultaneously. The resource can only handle three concurrent accesses. We use
+an async semaphore to ensure that no more than three tasks access the resource at
+the same time.
 """
 
 import asyncio
 import random
 
-
-async def resource_limited_operation(id):
-    print(f"Worker {id} is entering the resource-limited operation")
-    await asyncio.sleep(random.uniform(0.5, 2))
-    print(f"Worker {id} is leaving the resource-limited operation")
+# The limited resource can only handle three concurrent accesses.
+resource_semaphore = asyncio.Semaphore(3)
 
 
-async def worker(sem, id):
-    for _ in range(3):
-        async with sem:
-            await resource_limited_operation(id)
-        await asyncio.sleep(random.uniform(0.5, 1))
-    print(f"End of worker {id} function")
-
-
-async def task_generator():
-    sem = asyncio.Semaphore(value=2)  # Limit concurrency to 2
-    n_workers = 5
-    await asyncio.gather(*[worker(sem, i) for i in range(n_workers)])
+async def limited_resource(task_id):
+    async with resource_semaphore:
+        print(f"Task {task_id} is using the limited resource.")
+        await asyncio.sleep(random.uniform(0.5, 2))
+        print(f"Task {task_id} is done using the limited resource.")
 
 
 async def main():
-    await task_generator()
+    tasks = [asyncio.create_task(limited_resource(i)) for i in range(10)]
+    await asyncio.gather(*tasks)
 
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-print("The End")
