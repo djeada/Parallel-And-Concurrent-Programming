@@ -1,36 +1,56 @@
-"""
-This example demonstrates how to use asyncio.Semaphore to limit the number of concurrent tasks running in an async environment. It simulates a scenario where multiple worker tasks need to access a shared resource or perform an operation with limited capacity. The asyncio.Semaphore is used to ensure that only a specified number of workers can execute the resource-limited operation concurrently.
-"""
+#include <iostream>
+#include <mutex>
+#include <chrono>
+#include <thread>
+#include <vector>
+#include <future>
+#include <queue>
+#include <condition_variable>
+#include <shared_mutex>
+#include <random>
 
-import asyncio
-import random
+class Semaphore {
+public:
+    explicit Semaphore(int count) : count(count) {}
 
+    void acquire() {
+        std::unique_lock<std::mutex> lock(mtx);
+        cv.wait(lock, [&]() { return count > 0; });
+        --count;
+    }
 
-async def resource_limited_operation(id):
-    print(f"Worker {id} is entering the resource-limited operation")
-    await asyncio.sleep(random.uniform(0.5, 2))
-    print(f"Worker {id} is leaving the resource-limited operation")
+    void release() {
+        std::unique_lock<std::mutex> lock(mtx);
+        ++count;
+        cv.notify_one();
+    }
 
+private:
+    std::mutex mtx;
+    std::condition_variable cv;
+    int count;
+};
 
-async def worker(sem, id):
-    for _ in range(3):
-        async with sem:
-            await resource_limited_operation(id)
-        await asyncio.sleep(random.uniform(0.5, 1))
-    print(f"End of worker {id} function")
+Semaphore resource_semaphore(3);
 
+void limited_resource(int task_id) {
+    resource_semaphore.acquire();
+    std::cout << "Task " << task_id << " is using the limited resource.\n";
+    std::this_thread::sleep_for(std::chrono::milliseconds(std::rand() % 2000 + 500));
+    std::cout << "Task " << task_id << " is done using the limited resource.\n";
+    resource_semaphore.release();
+}
 
-async def task_generator():
-    sem = asyncio.Semaphore(value=2)  # Limit concurrency to 2
-    n_workers = 5
-    await asyncio.gather(*[worker(sem, i) for i in range(n_workers)])
+int main() {
+    std::vector<std::future<void>> tasks;
 
+    for (int i = 0; i < 10; ++i) {
+        tasks.push_back(std::async(std::launch::async, limited_resource, i));
+    }
 
-async def main():
-    await task_generator()
+    for (auto &task : tasks) {
+        task.wait();
+    }
 
-
-if __name__ == "__main__":
-    asyncio.run(main())
-
-print("The End")
+    return 0;
+}
