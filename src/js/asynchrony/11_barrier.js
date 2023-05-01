@@ -1,28 +1,37 @@
-import asyncio
+class AsyncBarrier {
+  constructor(numTasks) {
+    this.numTasks = numTasks;
+    this.counter = 0;
+    this.resolveBarrier = null;
+    this.barrierPromise = new Promise((resolve) => {
+      this.resolveBarrier = resolve;
+    });
+  }
 
+  async wait() {
+    this.counter++;
+    if (this.counter >= this.numTasks) {
+      this.resolveBarrier();
+    }
+    await this.barrierPromise;
+  }
+}
 
-async def foo():
-    for i in range(5):
-        print("foo")
-        await asyncio.sleep(1)
+async function task(id, barrier) {
+  console.log(`Task ${id} starting...`);
+  await new Promise((resolve) => setTimeout(resolve, Math.random() * 1000));
+  console.log(`Task ${id} finished...`);
 
+  await barrier.wait();
+  console.log(`Task ${id} after the barrier...`);
+}
 
-async def bar():
-    for i in range(10):
-        print("bar")
-        await asyncio.sleep(1)
+async function main() {
+  const numTasks = 5;
+  const barrier = new AsyncBarrier(numTasks);
 
+  const tasks = Array.from({ length: numTasks }, (_, i) => task(i, barrier));
+  await Promise.all(tasks);
+}
 
-loop = asyncio.get_event_loop()
-
-try:
-    asyncio.ensure_future(foo())
-    asyncio.ensure_future(bar())
-    loop.run_forever()
-except KeyboardInterrupt:
-    # use Ctrl+C to close the program
-    pass
-finally:
-    loop.close()
-
-print("The End")
+main();
