@@ -43,9 +43,10 @@ class Scheduler:
 def sample_function(message):
     print(message)
 
+
 if __name__ == "__main__":
-  scheduler = Scheduler(1, sample_function, "It works!")
-  
-  # Wait 10 seconds and stop the scheduler
-  time.sleep(10)
-  scheduler.stop()
+    scheduler = Scheduler(1, sample_function, "It works!")
+
+    # Wait 10 seconds and stop the scheduler
+    time.sleep(10)
+    scheduler.stop()

@@ -1,5 +1,10 @@
-const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
-const EventEmitter = require('events');
+const {
+  Worker,
+  isMainThread,
+  parentPort,
+  workerData,
+} = require("worker_threads");
+const EventEmitter = require("events");
 
 class Barrier {
   constructor(numThreads, sharedBuffer) {
@@ -13,10 +18,10 @@ class Barrier {
     const count = Atomics.add(this.count, 0, 1);
 
     if (count === this.numThreads - 1) {
-      this.emitter.emit('release');
+      this.emitter.emit("release");
     } else {
       return new Promise((resolve) => {
-        this.emitter.once('release', resolve);
+        this.emitter.once("release", resolve);
       });
     }
   }
@@ -32,7 +37,7 @@ async function worker(barrier, threadId) {
     await barrier.wait(); // Wait for all threads to reach the barrier
 
     console.log(`Thread ${threadId} is resuming after the barrier...`);
-    parentPort.postMessage('done');
+    parentPort.postMessage("done");
   }, sleepDuration);
 }
 
@@ -45,13 +50,15 @@ if (isMainThread) {
   let completedThreads = 0;
 
   for (let i = 0; i < numThreads; i++) {
-    const worker = new Worker(__filename, { workerData: { sharedBuffer, threadId: i } });
+    const worker = new Worker(__filename, {
+      workerData: { sharedBuffer, threadId: i },
+    });
     workers.push(worker);
-    worker.on('message', (message) => {
-      if (message === 'done') {
+    worker.on("message", (message) => {
+      if (message === "done") {
         completedThreads++;
         if (completedThreads === numThreads) {
-          console.log('All threads have passed the barrier.');
+          console.log("All threads have passed the barrier.");
         }
       }
     });

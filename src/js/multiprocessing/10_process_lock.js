@@ -7,19 +7,19 @@ to a shared counter variable, ensuring that only one process can increment the c
 This prevents race conditions and ensures that the final value of the counter is correct.
 */
 
-const fs = require('fs');
-const { fork } = require('child_process');
+const fs = require("fs");
+const { fork } = require("child_process");
 
-const counterFile = 'counter.txt';
-const lockFile = 'counter.lock';
+const counterFile = "counter.txt";
+const lockFile = "counter.lock";
 
 function lock() {
   while (true) {
     try {
-      fs.writeFileSync(lockFile, '');
+      fs.writeFileSync(lockFile, "");
       break;
     } catch (error) {
-      if (error.code !== 'EEXIST') {
+      if (error.code !== "EEXIST") {
         throw error;
       }
       // Wait a moment and try again
@@ -42,7 +42,9 @@ function worker() {
   console.log(`Process ${process.pid} is starting...`);
   sleep(1000); // Simulate some work
 
-  const counter = fs.existsSync(counterFile) ? Number(fs.readFileSync(counterFile)) : 0;
+  const counter = fs.existsSync(counterFile)
+    ? Number(fs.readFileSync(counterFile))
+    : 0;
   const newValue = counter + 1;
   fs.writeFileSync(counterFile, newValue);
 
@@ -50,29 +52,30 @@ function worker() {
   unlock();
 }
 
-if (process.argv[2] === 'worker') {
+if (process.argv[2] === "worker") {
   worker();
 } else {
   const numProcesses = 4;
   const children = [];
 
   // Initialize the counter file
-  fs.writeFileSync(counterFile, '0');
+  fs.writeFileSync(counterFile, "0");
 
   for (let i = 0; i < numProcesses; i++) {
-    children.push(fork(__filename, ['worker']));
+    children.push(fork(__filename, ["worker"]));
   }
 
   // Wait for all child processes to finish
-  Promise.all(children.map(child => new Promise(resolve => child.on('exit', resolve))))
-    .then(() => {
-      const finalCounter = Number(fs.readFileSync(counterFile));
-      console.log(`Final counter value: ${finalCounter}`);
+  Promise.all(
+    children.map((child) => new Promise((resolve) => child.on("exit", resolve)))
+  ).then(() => {
+    const finalCounter = Number(fs.readFileSync(counterFile));
+    console.log(`Final counter value: ${finalCounter}`);
 
-      // Cleanup
-      fs.unlinkSync(counterFile);
-      if (fs.existsSync(lockFile)) {
-        fs.unlinkSync(lockFile);
-      }
-    });
+    // Cleanup
+    fs.unlinkSync(counterFile);
+    if (fs.existsSync(lockFile)) {
+      fs.unlinkSync(lockFile);
+    }
+  });
 }

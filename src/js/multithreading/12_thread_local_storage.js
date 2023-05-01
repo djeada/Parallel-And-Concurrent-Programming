@@ -1,5 +1,10 @@
 // worker_threads_example.js
-const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
+const {
+  Worker,
+  isMainThread,
+  parentPort,
+  workerData,
+} = require("worker_threads");
 
 let globalData;
 

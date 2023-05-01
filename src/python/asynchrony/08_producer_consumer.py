@@ -7,6 +7,7 @@ This pattern is useful when you want to separate the creation and processing of 
 import asyncio
 import random
 
+
 async def producer(queue, producer_id):
     for i in range(5):
         item = f"Item {i} from producer {producer_id}"

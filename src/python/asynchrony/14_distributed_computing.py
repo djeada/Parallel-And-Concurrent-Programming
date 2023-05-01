@@ -25,6 +25,7 @@ import argparse
 import asyncio
 import random
 
+
 class TaskServer:
     def __init__(self, host, port):
         self.host = host
@@ -46,6 +47,7 @@ class TaskServer:
             await writer.drain()
             await asyncio.sleep(1)
 
+
 class Worker:
     async def perform_task(self, host, port):
         reader, writer = await asyncio.open_connection(host, port)
@@ -59,6 +61,7 @@ class Worker:
             result = task * 2
             print(f"Completed task: {task}, result: {result}")
 
+
 class Client:
     async def receive_results(self, host, port):
         reader, writer = await asyncio.open_connection(host, port)
@@ -68,6 +71,7 @@ class Client:
             message = data.decode().strip()
             result = int(message.split()[1])
             print(f"Client received result: {result}")
+
 
 async def main(role):
     host = "localhost"
@@ -82,6 +86,7 @@ async def main(role):
     elif role == "client":
         client = Client()
         await client.receive_results(host, port)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

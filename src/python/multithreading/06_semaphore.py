@@ -14,6 +14,7 @@ import time
 COUNTER = 1
 semaphore = Semaphore(1)
 
+
 def foo(multiplier):
     global COUNTER
     for _ in range(10):
@@ -23,6 +24,7 @@ def foo(multiplier):
             local_counter *= multiplier
             print(f"The COUNTER gets multiplied by {multiplier}")
             COUNTER = local_counter
+
 
 if __name__ == "__main__":
     threads = []

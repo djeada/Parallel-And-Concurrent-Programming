@@ -11,12 +11,14 @@ that the operations on the shared value are synchronized and prevent race condit
 import multiprocessing
 import time
 
+
 def incrementer(shared_value, lock):
     for _ in range(5):
         with lock:
             shared_value.value += 1
             print(f"Incrementer: Increased shared value to {shared_value.value}")
         time.sleep(0.1)
+
 
 def decrementer(shared_value, lock):
     for _ in range(5):
@@ -25,12 +27,19 @@ def decrementer(shared_value, lock):
             print(f"Decrementer: Decreased shared value to {shared_value.value}")
         time.sleep(0.1)
 
+
 def main():
-    shared_value = multiprocessing.Value('i', 0)  # Initialize an integer shared value with the initial value of 0
+    shared_value = multiprocessing.Value(
+        "i", 0
+    )  # Initialize an integer shared value with the initial value of 0
     lock = multiprocessing.Lock()
 
-    incrementer_process = multiprocessing.Process(target=incrementer, args=(shared_value, lock))
-    decrementer_process = multiprocessing.Process(target=decrementer, args=(shared_value, lock))
+    incrementer_process = multiprocessing.Process(
+        target=incrementer, args=(shared_value, lock)
+    )
+    decrementer_process = multiprocessing.Process(
+        target=decrementer, args=(shared_value, lock)
+    )
 
     incrementer_process.start()
     decrementer_process.start()
@@ -39,6 +48,7 @@ def main():
     decrementer_process.join()
 
     print(f"Final shared value: {shared_value.value}")
+
 
 if __name__ == "__main__":
     main()

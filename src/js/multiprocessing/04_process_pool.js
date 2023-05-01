@@ -10,8 +10,8 @@
  * are completed.
  */
 
-const { fork } = require('child_process');
-const os = require('os');
+const { fork } = require("child_process");
+const os = require("os");
 
 function worker(taskId) {
   return new Promise((resolve, reject) => {
@@ -30,19 +30,20 @@ function worker(taskId) {
       });
     `;
 
-    const worker = fork('', {
-      execArgv: ['-e', workerScript],
+    const worker = fork("", {
+      execArgv: ["-e", workerScript],
     });
 
     worker.send({ taskId });
 
-    worker.on('message', (result) => {
+    worker.on("message", (result) => {
       resolve(result);
     });
 
-    worker.on('error', reject);
-    worker.on('exit', (code) => {
-      if (code !== 0) reject(new Error(`Worker stopped with exit code ${code}`));
+    worker.on("error", reject);
+    worker.on("exit", (code) => {
+      if (code !== 0)
+        reject(new Error(`Worker stopped with exit code ${code}`));
     });
   });
 }
@@ -58,7 +59,7 @@ function main() {
   function processNextTask() {
     if (taskQueue.length === 0) {
       if (runningWorkers.size === 0) {
-        console.log('All tasks completed.');
+        console.log("All tasks completed.");
       }
       return;
     }
@@ -76,7 +77,7 @@ function main() {
         console.log(`Task ${result.taskId} result collected: ${result.result}`);
       })
       .catch((error) => {
-        console.error('Error:', error);
+        console.error("Error:", error);
       })
       .finally(() => {
         runningWorkers.delete(taskPromise);

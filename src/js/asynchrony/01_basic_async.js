@@ -12,7 +12,7 @@ execution time for each approach is measured and displayed to show the performan
 difference.
 */
 
-const { promisify } = require('util');
+const { promisify } = require("util");
 const sleep = promisify(setTimeout);
 
 function syncTask(taskId, sleepTime) {

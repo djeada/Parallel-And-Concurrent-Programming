@@ -7,15 +7,18 @@ Each function has a different execution time, and each thread is given an ID to 
 import time
 from threading import Thread
 
+
 def foo(id):
     print(f"Function foo() starts, Thread id: {id}")
     time.sleep(1)
     print(f"Function foo() finishes, Thread id: {id}")
 
+
 def bar(id):
     print(f"Function bar() starts, Thread id: {id}")
     time.sleep(0.1)
     print(f"Function bar() finishes, Thread id: {id}")
+
 
 if __name__ == "__main__":
     print("Main thread starts")

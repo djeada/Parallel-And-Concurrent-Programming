@@ -1,4 +1,4 @@
-const { fork } = require('child_process');
+const { fork } = require("child_process");
 
 const SEMAPHORE_LIMIT = 3;
 let semaphore = SEMAPHORE_LIMIT;
@@ -26,11 +26,11 @@ function worker(id) {
   tryAcquireSemaphore();
 }
 
-if (process.argv[2] === 'worker') {
+if (process.argv[2] === "worker") {
   worker(parseInt(process.argv[3]));
 } else {
   const numWorkers = 5;
   for (let i = 0; i < numWorkers; i++) {
-    fork(__filename, ['worker', i]);
+    fork(__filename, ["worker", i]);
   }
 }

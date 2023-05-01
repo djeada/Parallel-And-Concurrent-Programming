@@ -34,8 +34,12 @@ if __name__ == "__main__":
     num_producers = 3
     num_consumers = 3
 
-    producers = [Thread(target=producer, args=(buffer, i + 1)) for i in range(num_producers)]
-    consumers = [Thread(target=consumer, args=(buffer, i + 1)) for i in range(num_consumers)]
+    producers = [
+        Thread(target=producer, args=(buffer, i + 1)) for i in range(num_producers)
+    ]
+    consumers = [
+        Thread(target=consumer, args=(buffer, i + 1)) for i in range(num_consumers)
+    ]
 
     for producer in producers:
         producer.start()

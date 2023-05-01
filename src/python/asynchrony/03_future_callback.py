@@ -13,14 +13,17 @@ how they can help decouple parts of your code.
 import asyncio
 import time
 
+
 async def slow_square(x):
     print(f"Starting slow square computation for {x}")
     await asyncio.sleep(1)
     print(f"Finished slow square computation for {x}")
     return x * x
 
+
 def square_callback(future):
     print(f"Square callback called with result: {future.result()}")
+
 
 async def main():
     start = time.perf_counter()
@@ -38,5 +41,6 @@ async def main():
 
     end = time.perf_counter()
     print(f"Asynchronous approach time: {end - start}")
+
 
 asyncio.run(main())

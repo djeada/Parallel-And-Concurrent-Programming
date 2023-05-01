@@ -17,10 +17,12 @@ in the `if __name__ == "__main__":` block.
 import time
 import asyncio
 
+
 def sync_task(task_id, sleep_time):
     print(f"Task {task_id} started.")
     time.sleep(sleep_time)  # Simulate an I/O-bound task
     print(f"Task {task_id} finished.")
+
 
 def sync_main():
     start_time = time.time()
@@ -31,10 +33,12 @@ def sync_main():
     elapsed_time = time.time() - start_time
     print(f"Synchronous execution took {elapsed_time:.2f} seconds.")
 
+
 async def async_task(task_id, sleep_time):
     print(f"Task {task_id} started.")
     await asyncio.sleep(sleep_time)  # Simulate an I/O-bound task
     print(f"Task {task_id} finished.")
+
 
 async def async_main():
     start_time = time.time()
@@ -47,6 +51,7 @@ async def async_main():
 
     elapsed_time = time.time() - start_time
     print(f"Asynchronous execution took {elapsed_time:.2f} seconds.")
+
 
 if __name__ == "__main__":
     sync_main()

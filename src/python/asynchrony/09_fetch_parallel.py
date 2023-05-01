@@ -21,6 +21,7 @@ URLS = [
     "https://www.example.com",
 ]
 
+
 def fetch_sync(url):
     url_parsed = urlparse(url)
     conn = http.client.HTTPSConnection(url_parsed.netloc, timeout=10)
@@ -30,13 +31,15 @@ def fetch_sync(url):
     print(f"Synchronously fetched content from {url}")
     return content.decode("utf-8")
 
+
 def fetch_all_sync(urls):
     return [fetch_sync(url) for url in urls]
+
 
 async def fetch_async(url):
     url_parsed = urlparse(url)
     conn = http.client.HTTPSConnection(url_parsed.netloc, timeout=10)
-    
+
     async with asyncio.Lock():
         conn.request("GET", url_parsed.path)
         response = conn.getresponse()
@@ -44,9 +47,11 @@ async def fetch_async(url):
         print(f"Async fetched content from {url}")
         return content.decode("utf-8")
 
+
 async def fetch_all_async(urls):
     tasks = [asyncio.create_task(fetch_async(url)) for url in urls]
     return await asyncio.gather(*tasks)
+
 
 def main():
     start_time_sync = time.time()
@@ -58,6 +63,7 @@ def main():
     contents_async = asyncio.run(fetch_all_async(URLS))
     elapsed_time_async = time.time() - start_time_async
     print(f"\nAsynchronous execution took {elapsed_time_async} seconds.\n")
+
 
 if __name__ == "__main__":
     main()

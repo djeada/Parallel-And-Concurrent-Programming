@@ -8,6 +8,7 @@ import random
 import time
 from concurrent.futures import ThreadPoolExecutor
 
+
 def merge_sort(arr):
     if len(arr) <= 1:
         return arr
@@ -53,13 +54,17 @@ def threaded_merge_sort(arr, depth=0, max_depth=2):
 
     if depth < max_depth:
         with ThreadPoolExecutor(max_workers=8) as executor:
-            left_future = executor.submit(threaded_merge_sort, left, depth+1, max_depth)
-            right_future = executor.submit(threaded_merge_sort, right, depth+1, max_depth)
+            left_future = executor.submit(
+                threaded_merge_sort, left, depth + 1, max_depth
+            )
+            right_future = executor.submit(
+                threaded_merge_sort, right, depth + 1, max_depth
+            )
             left = left_future.result()
             right = right_future.result()
     else:
-        left = threaded_merge_sort(left, depth+1, max_depth)
-        right = threaded_merge_sort(right, depth+1, max_depth)
+        left = threaded_merge_sort(left, depth + 1, max_depth)
+        right = threaded_merge_sort(right, depth + 1, max_depth)
 
     return merge(left, right)
 

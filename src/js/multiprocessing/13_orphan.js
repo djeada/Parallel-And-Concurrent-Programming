@@ -10,18 +10,20 @@ commands like 'ps' or 'top') to see that the child process is still running and 
 been reparented to the init or systemd process (PID 1).
 */
 
-const { fork } = require('child_process');
+const { fork } = require("child_process");
 
-if (process.argv[2] === 'child') {
-    // Child process
-    console.log(`Child process (PID: ${process.pid}) started.`);
-    setTimeout(() => {
-        console.log(`Child process (PID: ${process.pid}) finished.`);
-    }, 10000);
+if (process.argv[2] === "child") {
+  // Child process
+  console.log(`Child process (PID: ${process.pid}) started.`);
+  setTimeout(() => {
+    console.log(`Child process (PID: ${process.pid}) finished.`);
+  }, 10000);
 } else {
-    // Parent process
-    console.log(`Parent process (PID: ${process.pid}) started.`);
-    const child = fork(__filename, ['child']);
-    console.log(`Parent process (PID: ${process.pid}) is exiting, leaving the child process orphaned.`);
-    process.exit();
+  // Parent process
+  console.log(`Parent process (PID: ${process.pid}) started.`);
+  const child = fork(__filename, ["child"]);
+  console.log(
+    `Parent process (PID: ${process.pid}) is exiting, leaving the child process orphaned.`
+  );
+  process.exit();
 }

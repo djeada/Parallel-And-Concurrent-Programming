@@ -1,5 +1,5 @@
-const { Worker, isMainThread, parentPort } = require('worker_threads');
-const os = require('os');
+const { Worker, isMainThread, parentPort } = require("worker_threads");
+const os = require("os");
 const numCPUs = os.cpus().length;
 
 function mergeSort(arr) {
@@ -40,9 +40,9 @@ async function threadedMergeSort(arr) {
     return new Promise((resolve) => {
       const worker = new Worker(__filename);
       worker.postMessage(chunk);
-      worker.on('message', resolve);
-      worker.on('error', (error) => {
-        console.error('Worker error:', error);
+      worker.on("message", resolve);
+      worker.on("error", (error) => {
+        console.error("Worker error:", error);
       });
     });
   });
@@ -53,7 +53,9 @@ async function threadedMergeSort(arr) {
 }
 
 if (isMainThread) {
-  const arr = Array.from({ length: 10000 }, () => Math.floor(Math.random() * 10000));
+  const arr = Array.from({ length: 10000 }, () =>
+    Math.floor(Math.random() * 10000)
+  );
 
   const start = Date.now();
   const sortedArr = mergeSort(arr);
@@ -63,10 +65,14 @@ if (isMainThread) {
   const startThreaded = Date.now();
   threadedMergeSort(arr.slice()).then((sortedArrThreaded) => {
     const endThreaded = Date.now();
-    console.log(`Threaded merge sort time: ${(endThreaded - startThreaded) / 1000} seconds`);
+    console.log(
+      `Threaded merge sort time: ${
+        (endThreaded - startThreaded) / 1000
+      } seconds`
+    );
   });
 } else {
-  parentPort.once('message', (arr) => {
+  parentPort.once("message", (arr) => {
     const sortedArr = mergeSort(arr);
     parentPort.postMessage(sortedArr);
   });

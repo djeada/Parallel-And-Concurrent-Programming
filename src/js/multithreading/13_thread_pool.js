@@ -1,5 +1,10 @@
 // thread_pool_example.js
-const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
+const {
+  Worker,
+  isMainThread,
+  parentPort,
+  workerData,
+} = require("worker_threads");
 
 function worker(taskId) {
   console.log(`Task ${taskId} is starting...`);
@@ -23,7 +28,7 @@ if (isMainThread) {
     if (taskId === undefined) return;
 
     const worker = new Worker(__filename, { workerData: taskId });
-    worker.on('message', ({ taskId, result }) => {
+    worker.on("message", ({ taskId, result }) => {
       console.log(`Task ${taskId} result collected: ${result}`);
       completedTasks++;
       if (completedTasks < numTasks) {

@@ -8,7 +8,7 @@ The script shows how to use Node.js setInterval and clearInterval to
 effectively pause and resume the execution of the long-running function.
 */
 
-const readline = require('readline');
+const readline = require("readline");
 
 let paused = false;
 let intervalId;
@@ -23,10 +23,10 @@ const togglePause = () => {
   paused = !paused;
   if (paused) {
     clearInterval(intervalId);
-    console.log('Function paused');
+    console.log("Function paused");
   } else {
     intervalId = setInterval(longFunction, 1000);
-    console.log('Function resumed');
+    console.log("Function resumed");
   }
 };
 
@@ -38,7 +38,7 @@ const main = () => {
     output: process.stdout,
   });
 
-  rl.on('line', () => {
+  rl.on("line", () => {
     togglePause();
   });
 };

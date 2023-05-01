@@ -14,58 +14,60 @@ lockstep or to ensure that certain resources are not accessed before all
 processes are ready.
 */
 
-#include <iostream>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <semaphore.h>
-#include <fcntl.h>
-#include <ctime>
 #include <cstdlib>
+#include <ctime>
+#include <fcntl.h>
+#include <iostream>
+#include <semaphore.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
-void worker(sem_t* barrier, int worker_id) {
-    // Simulate some work
-    int sleep_time = rand() % 3 + 1;
-    sleep(sleep_time);
-    std::cout << "Worker " << worker_id << " finished initial work and is waiting at the barrier...\n";
+void worker(sem_t *barrier, int worker_id) {
+  // Simulate some work
+  int sleep_time = rand() % 3 + 1;
+  sleep(sleep_time);
+  std::cout << "Worker " << worker_id
+            << " finished initial work and is waiting at the barrier...\n";
 
-    // Wait at the barrier
-    sem_wait(barrier);
-    sem_post(barrier);
+  // Wait at the barrier
+  sem_wait(barrier);
+  sem_post(barrier);
 
-    std::cout << "Worker " << worker_id << " passed the barrier and is continuing execution...\n";
+  std::cout << "Worker " << worker_id
+            << " passed the barrier and is continuing execution...\n";
 }
 
 int main() {
-    srand(time(0));
-    const int num_workers = 5;
+  srand(time(0));
+  const int num_workers = 5;
 
-    // Create a barrier with num_workers as the number of participants
-    sem_t* barrier = sem_open("/barrier", O_CREAT | O_EXCL, 0644, num_workers);
-    if (barrier == SEM_FAILED) {
-        perror("sem_open");
-        return 1;
+  // Create a barrier with num_workers as the number of participants
+  sem_t *barrier = sem_open("/barrier", O_CREAT | O_EXCL, 0644, num_workers);
+  if (barrier == SEM_FAILED) {
+    perror("sem_open");
+    return 1;
+  }
+
+  // Start worker processes
+  for (int i = 0; i < num_workers; i++) {
+    pid_t pid = fork();
+    if (pid == 0) { // Child process
+      worker(barrier, i);
+      return 0;
+    } else if (pid < 0) { // Fork failed
+      perror("fork");
+      return 1;
     }
+  }
 
-    // Start worker processes
-    for (int i = 0; i < num_workers; i++) {
-        pid_t pid = fork();
-        if (pid == 0) { // Child process
-            worker(barrier, i);
-            return 0;
-        } else if (pid < 0) { // Fork failed
-            perror("fork");
-            return 1;
-        }
-    }
+  // Wait for worker processes to finish
+  for (int i = 0; i < num_workers; i++) {
+    wait(NULL);
+  }
 
-    // Wait for worker processes to finish
-    for (int i = 0; i < num_workers; i++) {
-        wait(NULL);
-    }
+  // Cleanup
+  sem_close(barrier);
+  sem_unlink("/barrier");
 
-    // Cleanup
-    sem_close(barrier);
-    sem_unlink("/barrier");
-
-    return 0;
+  return 0;
 }

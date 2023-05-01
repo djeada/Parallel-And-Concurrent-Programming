@@ -27,14 +27,16 @@ import threading
 import time
 import random
 
+
 def worker(barrier, thread_id):
     print(f"Thread {thread_id} is starting...")
-    time.sleep(random.uniform(1, 3)) # Simulate some work
+    time.sleep(random.uniform(1, 3))  # Simulate some work
     print(f"Thread {thread_id} is waiting at the barrier...")
 
     barrier.wait()  # Wait for all threads to reach the barrier
 
     print(f"Thread {thread_id} is resuming after the barrier...")
+
 
 def main():
     num_threads = 5
@@ -51,6 +53,7 @@ def main():
         thread.join()
 
     print("All threads have passed the barrier.")
+
 
 if name == "main":
     main()

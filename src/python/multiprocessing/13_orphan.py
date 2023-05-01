@@ -25,7 +25,9 @@ def main():
     else:
         # Parent process
         print(f"Parent process (PID: {os.getpid()}) started.")
-        print(f"Parent process (PID: {os.getpid()}) is exiting, leaving the child process orphaned.")
+        print(
+            f"Parent process (PID: {os.getpid()}) is exiting, leaving the child process orphaned."
+        )
 
 
 if __name__ == "__main__":

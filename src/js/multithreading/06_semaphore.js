@@ -24,7 +24,14 @@ if (isMainThread) {
       }
     });
     worker.on("error", (error) => console.error(error));
-    worker.postMessage({ type: "init", id: i, sharedCounter, sharedSemaphore, sharedDoneCounter, numWorkers });
+    worker.postMessage({
+      type: "init",
+      id: i,
+      sharedCounter,
+      sharedSemaphore,
+      sharedDoneCounter,
+      numWorkers,
+    });
     workers.push(worker);
   }
 } else {
@@ -54,7 +61,10 @@ if (isMainThread) {
           Atomics.sub(semaphoreView, 0, 1);
           const localCounter = counterView[0];
           const newCounter = localCounter * (id + 1);
-          parentPort.postMessage({ type: "print", text: `The COUNTER gets multiplied by ${id + 1}` });
+          parentPort.postMessage({
+            type: "print",
+            text: `The COUNTER gets multiplied by ${id + 1}`,
+          });
           counterView[0] = newCounter;
           Atomics.add(semaphoreView, 0, 1);
           Atomics.notify(semaphoreView, 0, 1);
@@ -62,7 +72,10 @@ if (isMainThread) {
           if (i === 9) {
             Atomics.add(doneCounterView, 0, 1);
             if (Atomics.load(doneCounterView, 0) === numWorkers) {
-              parentPort.postMessage({ type: "print", text: `The final value of COUNTER is: ${counterView[0]}` });
+              parentPort.postMessage({
+                type: "print",
+                text: `The final value of COUNTER is: ${counterView[0]}`,
+              });
             }
           }
         }, 100 * i);

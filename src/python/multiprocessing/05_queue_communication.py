@@ -18,12 +18,14 @@ import multiprocessing
 import time
 import random
 
+
 def producer(queue):
     for i in range(5):
         item = random.randint(1, 10)
         print(f"Producer: Adding {item} to the queue")
         queue.put(item)
         time.sleep(random.uniform(0.5, 1))
+
 
 def consumer(queue):
     while True:
@@ -33,6 +35,7 @@ def consumer(queue):
 
         print(f"Consumer: Processing {item}")
         time.sleep(random.uniform(0.5, 1))
+
 
 def main():
     # Create a Queue to share data between the producer and consumer processes
@@ -54,6 +57,7 @@ def main():
 
     # Wait for the consumer process to finish
     consumer_process.join()
+
 
 if __name__ == "__main__":
     main()

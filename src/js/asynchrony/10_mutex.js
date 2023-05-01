@@ -6,7 +6,7 @@ The use of an async mutex (lock) is crucial to prevent race conditions that coul
 to incorrect account balances.
 */
 
-const AsyncLock = require('async-lock');
+const AsyncLock = require("async-lock");
 const lock = new AsyncLock();
 
 class BankAccount {
@@ -15,11 +15,13 @@ class BankAccount {
   }
 
   async transfer(amount) {
-    await lock.acquire('balance', async () => {
+    await lock.acquire("balance", async () => {
       console.log(`Transferring ${amount}...`);
       await new Promise((resolve) => setTimeout(resolve, 100)); // Simulate some processing time
       this.balance += amount;
-      console.log(`Transfer of ${amount} complete. New balance: ${this.balance}`);
+      console.log(
+        `Transfer of ${amount} complete. New balance: ${this.balance}`
+      );
     });
   }
 }

@@ -8,6 +8,7 @@ to incorrect account balances.
 
 import asyncio
 
+
 class BankAccount:
     def __init__(self, balance: int):
         self.balance = balance
@@ -20,9 +21,11 @@ class BankAccount:
             self.balance += amount
             print(f"Transfer of {amount} complete. New balance: {self.balance}")
 
+
 async def transfer_money(account: BankAccount, amounts: list):
     for amount in amounts:
         await account.transfer(amount)
+
 
 async def main():
     account = BankAccount(100)
@@ -33,6 +36,7 @@ async def main():
     await asyncio.gather(transfer1, transfer2)
 
     print(f"Final account balance: {account.balance}")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -1,6 +1,6 @@
-const net = require('net');
-const readline = require('readline');
-const { ArgumentParser } = require('argparse');
+const net = require("net");
+const readline = require("readline");
+const { ArgumentParser } = require("argparse");
 
 class TaskServer {
   constructor(host, port) {
@@ -27,8 +27,8 @@ class Worker {
     const client = net.createConnection({ host, port }, async () => {
       const rl = readline.createInterface({ input: client });
 
-      rl.on('line', async (line) => {
-        const task = parseInt(line.split(' ')[1], 10);
+      rl.on("line", async (line) => {
+        const task = parseInt(line.split(" ")[1], 10);
         console.log(`Performing task: ${task}`);
         await sleep(Math.random() * 1500 + 500);
         const result = task * 2;
@@ -43,8 +43,8 @@ class Client {
     const client = net.createConnection({ host, port }, async () => {
       const rl = readline.createInterface({ input: client });
 
-      rl.on('line', (line) => {
-        const result = parseInt(line.split(' ')[1], 10);
+      rl.on("line", (line) => {
+        const result = parseInt(line.split(" ")[1], 10);
         console.log(`Client received result: ${result}`);
       });
     });
@@ -56,23 +56,23 @@ async function sleep(ms) {
 }
 
 async function main(role) {
-  const host = 'localhost';
+  const host = "localhost";
   const port = 8888;
 
-  if (role === 'server') {
+  if (role === "server") {
     const taskServer = new TaskServer(host, port);
     taskServer.dispatchTasks();
-  } else if (role === 'worker') {
+  } else if (role === "worker") {
     const worker = new Worker();
     await worker.performTask(host, port);
-  } else if (role === 'client') {
+  } else if (role === "client") {
     const client = new Client();
     await client.receiveResults(host, port);
   }
 }
 
 const parser = new ArgumentParser();
-parser.add_argument('role', { choices: ['server', 'worker', 'client'] });
+parser.add_argument("role", { choices: ["server", "worker", "client"] });
 const args = parser.parse_args();
 
 main(args.role);

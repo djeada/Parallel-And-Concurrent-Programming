@@ -33,7 +33,9 @@ def main():
     else:
         # Parent process
         print(f"Parent process (PID: {os.getpid()}) started.")
-        print(f"Parent process (PID: {os.getpid()}) is NOT waiting for the child process to terminate.")
+        print(
+            f"Parent process (PID: {os.getpid()}) is NOT waiting for the child process to terminate."
+        )
         print(f"Child process (PID: {pid}) will become a zombie after termination.")
         time.sleep(10)
         print(f"Parent process (PID: {os.getpid()}) finished.")

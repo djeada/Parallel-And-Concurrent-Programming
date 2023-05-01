@@ -1,4 +1,9 @@
-const { Worker, isMainThread, threadId, parentPort } = require('worker_threads');
+const {
+  Worker,
+  isMainThread,
+  threadId,
+  parentPort,
+} = require("worker_threads");
 
 function main() {
   console.log(`Main function process id: ${process.pid}`);
@@ -6,12 +11,12 @@ function main() {
 
   const worker = new Worker(__filename);
 
-  worker.on('message', (message) => {
+  worker.on("message", (message) => {
     console.log(message);
   });
 
-  worker.on('exit', () => {
-    console.log('Worker thread exited.');
+  worker.on("exit", () => {
+    console.log("Worker thread exited.");
   });
 }
 

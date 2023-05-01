@@ -38,7 +38,10 @@ def main():
     barrier = multiprocessing.Barrier(num_workers)
 
     # Start worker processes
-    processes = [multiprocessing.Process(target=worker, args=(barrier, i)) for i in range(num_workers)]
+    processes = [
+        multiprocessing.Process(target=worker, args=(barrier, i))
+        for i in range(num_workers)
+    ]
 
     for p in processes:
         p.start()

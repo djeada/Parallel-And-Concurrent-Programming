@@ -1,4 +1,4 @@
-const { Sema } = require('async-sema');
+const { Sema } = require("async-sema");
 
 const resourceSemaphore = new Sema(3);
 

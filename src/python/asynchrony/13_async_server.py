@@ -40,7 +40,9 @@ class AsyncHTTPRequestHandler:
         await self.writer.drain()
 
     def send_response(self, code, message=None):
-        self.writer.write(f"HTTP/1.1 {code} {message or HTTPStatus(code).phrase}\r\n".encode("latin1"))
+        self.writer.write(
+            f"HTTP/1.1 {code} {message or HTTPStatus(code).phrase}\r\n".encode("latin1")
+        )
 
     def send_header(self, keyword, value):
         self.headers.append(f"{keyword}: {value}\r\n".encode("latin1"))
@@ -49,11 +51,13 @@ class AsyncHTTPRequestHandler:
         self.writer.write(b"".join(self.headers))
         self.writer.write(b"\r\n")
 
+
 async def serve(reader, writer):
     handler = AsyncHTTPRequestHandler(reader, writer)
     await handler.handle_request()
     writer.close()
     await writer.wait_closed()
+
 
 async def main():
     server = await asyncio.start_server(serve, "localhost", 8080)
@@ -61,6 +65,7 @@ async def main():
 
     async with server:
         await server.serve_forever()
+
 
 if __name__ == "__main__":
     try:

@@ -1,5 +1,5 @@
-const { spawn } = require('child_process');
-const fs = require('fs');
+const { spawn } = require("child_process");
+const fs = require("fs");
 
 class Manager {
   constructor(numProcesses) {
@@ -14,17 +14,20 @@ class Manager {
   }
 
   createWorker(id) {
-    const worker = spawn('node', ['-e', `console.log("Process ${id} is writing to the shared file.");`]);
-    worker.stdout.on('data', (data) => {
-      fs.appendFileSync('shared_data.txt', data.toString());
+    const worker = spawn("node", [
+      "-e",
+      `console.log("Process ${id} is writing to the shared file.");`,
+    ]);
+    worker.stdout.on("data", (data) => {
+      fs.appendFileSync("shared_data.txt", data.toString());
       this.checkCompletion();
     });
 
-    worker.stderr.on('data', (data) => {
+    worker.stderr.on("data", (data) => {
       console.error(`Worker ${id} stderr: ${data}`);
     });
-    
-    worker.on('exit', (code) => {
+
+    worker.on("exit", (code) => {
       if (code !== 0) {
         console.error(`Worker ${id} exited with code ${code}`);
       } else {
@@ -41,8 +44,10 @@ class Manager {
   }
 
   printResults() {
-    console.log('All processes have completed. The contents of the shared file are:');
-    const data = fs.readFileSync('shared_data.txt', 'utf-8');
+    console.log(
+      "All processes have completed. The contents of the shared file are:"
+    );
+    const data = fs.readFileSync("shared_data.txt", "utf-8");
     console.log(data);
   }
 }

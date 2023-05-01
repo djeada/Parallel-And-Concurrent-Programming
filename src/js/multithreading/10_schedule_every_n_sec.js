@@ -1,10 +1,10 @@
-const { Worker, isMainThread, parentPort } = require('worker_threads');
+const { Worker, isMainThread, parentPort } = require("worker_threads");
 
 if (isMainThread) {
   // Main thread
   const worker = new Worker(__filename); // Execute the same file as a worker
 
-  worker.on('message', (message) => {
+  worker.on("message", (message) => {
     console.log(message);
   });
 
@@ -17,12 +17,12 @@ if (isMainThread) {
   // Worker thread
   let timer;
 
-  parentPort.on('message', (message) => {
+  parentPort.on("message", (message) => {
     const { interval, start } = message;
 
     if (start) {
       timer = setInterval(() => {
-        parentPort.postMessage('It works');
+        parentPort.postMessage("It works");
       }, interval);
     } else {
       clearInterval(timer);

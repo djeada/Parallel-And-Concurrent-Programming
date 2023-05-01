@@ -13,17 +13,19 @@ lockstep or to ensure that certain resources are not accessed before all
 processes are ready.
 */
 
-const { fork } = require('child_process');
-const fs = require('fs');
+const { fork } = require("child_process");
+const fs = require("fs");
 
 const numWorkers = 5;
-const barrierPath = 'barrier.txt';
+const barrierPath = "barrier.txt";
 
 function worker(workerId) {
   // Simulate some work
   const sleepTime = Math.floor(Math.random() * 3) + 1;
   setTimeout(() => {
-    console.log(`Worker ${workerId} finished initial work and is waiting at the barrier...`);
+    console.log(
+      `Worker ${workerId} finished initial work and is waiting at the barrier...`
+    );
 
     // Wait at the barrier
     fs.readFile(barrierPath, (err, data) => {
@@ -37,7 +39,9 @@ function worker(workerId) {
           });
         }
 
-        console.log(`Worker ${workerId} passed the barrier and is continuing execution...`);
+        console.log(
+          `Worker ${workerId} passed the barrier and is continuing execution...`
+        );
       });
     });
   }, sleepTime * 1000);
@@ -51,7 +55,7 @@ if (!fs.existsSync(barrierPath)) {
 if (process.argv.length === 2) {
   // Start worker processes
   for (let i = 0; i < numWorkers; i++) {
-    fork(__filename, ['worker', i]);
+    fork(__filename, ["worker", i]);
   }
 } else {
   const workerId = parseInt(process.argv[3]);

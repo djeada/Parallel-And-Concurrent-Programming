@@ -15,9 +15,9 @@ the parent process after running the program to avoid having a zombie process li
 on your system.
 */
 
-const { spawn } = require('child_process');
+const { spawn } = require("child_process");
 
-if (process.argv[2] === 'child') {
+if (process.argv[2] === "child") {
   // Child process
   console.log(`Child process (PID: ${process.pid}) started.`);
   setTimeout(() => {
@@ -26,15 +26,19 @@ if (process.argv[2] === 'child') {
   }, 2000);
 } else {
   // Parent process
-  const child = spawn(process.execPath, [__filename, 'child'], {
+  const child = spawn(process.execPath, [__filename, "child"], {
     detached: true,
-    stdio: 'inherit'
+    stdio: "inherit",
   });
 
   console.log(`Parent process (PID: ${process.pid}) started.`);
-  console.log(`Parent process (PID: ${process.pid}) is NOT waiting for the child process to terminate.`);
-  console.log(`Child process (PID: ${child.pid}) will become a zombie after termination.`);
-  
+  console.log(
+    `Parent process (PID: ${process.pid}) is NOT waiting for the child process to terminate.`
+  );
+  console.log(
+    `Child process (PID: ${child.pid}) will become a zombie after termination.`
+  );
+
   setTimeout(() => {
     console.log(`Parent process (PID: ${process.pid}) finished.`);
   }, 10000);

@@ -14,12 +14,14 @@ processes in Python using shared memory.
 import multiprocessing
 import time
 
+
 def increment_array(shared_array):
     while True:
         for i in range(len(shared_array)):
             shared_array[i] += 1
         print(f"Array incremented: {[x for x in shared_array]}")
         time.sleep(1)
+
 
 def decrement_array(shared_array):
     while True:
@@ -28,8 +30,9 @@ def decrement_array(shared_array):
         print(f"Array decremented: {[x for x in shared_array]}")
         time.sleep(1)
 
+
 def main():
-    shared_array = multiprocessing.Array('i', [0, 0, 0])
+    shared_array = multiprocessing.Array("i", [0, 0, 0])
 
     process1 = multiprocessing.Process(target=increment_array, args=(shared_array,))
     process2 = multiprocessing.Process(target=decrement_array, args=(shared_array,))
@@ -45,6 +48,7 @@ def main():
         process2.terminate()
         process1.join()
         process2.join()
+
 
 if __name__ == "__main__":
     main()

@@ -16,15 +16,20 @@ def worker(mutex, counter):
         print(f"Process {multiprocessing.current_process().name} is starting...")
         time.sleep(1)  # Simulate some work
         counter.value += 1
-        print(f"Process {multiprocessing.current_process().name} is finished. Counter: {counter.value}")
+        print(
+            f"Process {multiprocessing.current_process().name} is finished. Counter: {counter.value}"
+        )
 
 
 def main():
     num_processes = 4
-    counter = multiprocessing.Value('i', 0)  # Shared counter variable
+    counter = multiprocessing.Value("i", 0)  # Shared counter variable
     mutex = multiprocessing.Lock()  # Mutex to protect access to the counter
 
-    processes = [multiprocessing.Process(target=worker, args=(mutex, counter)) for _ in range(num_processes)]
+    processes = [
+        multiprocessing.Process(target=worker, args=(mutex, counter))
+        for _ in range(num_processes)
+    ]
 
     for process in processes:
         process.start()
