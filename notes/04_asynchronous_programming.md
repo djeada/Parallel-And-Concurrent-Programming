@@ -34,7 +34,7 @@ async def fetch_data():
     return "Data fetched"
 ```
 
-### Corutines
+### Futures
 
 A Future is an object that represents the result of a coroutine. It contains state information, such as pending, canceled, or completed. Futures act as placeholders for the result of a computation that may not have completed yet.
 
