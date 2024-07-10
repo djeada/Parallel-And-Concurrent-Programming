@@ -130,25 +130,32 @@ Below is a table comparing CPUs and GPUs, emphasizing their unique features and 
 - For GPUs, having more threads to work on simultaneously is beneficial, akin to having many assembly lines in a factory to produce multiple products at once.
 - For CPUs, fewer threads are better because they function like a master craftsman focusing on one project at a time, ensuring it's completed as quickly and efficiently as possible.
 
-## Shared Memory Architectures
+## Parallel Computing Architectures
 
-Shared memory architectures enable multiple processors to access a common global address space, facilitating communication and data sharing among processors. This means that any changes made to a memory location by one processor are immediately visible to all other processors. There are two primary types of shared memory architectures:
+```
+#
+                            Parallel Computer Architectures
+                                        |
+      --------------------------------------------------------------------------------------------------
+      |                                 |                              |                               |
+    SISD                               SIMD                           MISD                            MIMD
+    (Von Neumann)                       |                              ?                               |
+                                        |                                                              |
+                           ---------------------------                              -----------------------------
+                          |                          |                              |                           |
+                       Vector                     Array                    Multiprocessors            Multicomputers
+                      Processor               Processor                          |                           |
+                                                                 ------------------------                 ------------------
+                                                                 |            |          |                |                |
+                                                                UMA         COMA        NUMA             MPP              COW
+                                                                 |                       |                |                
+                                                           ------------              -----------          ----------
+                                                           |          |              |         |          |        |
+                                                          Bus      Switched       CC-NUMA    NC-NUMA    Grid    Hypercube
 
-I. Uniform Memory Access (UMA)
+```
 
-- In **UMA**, all processors have equal access time to all memory locations.
-- **Characteristics** include uniform memory access latency, regardless of which processor accesses which memory module.
-- This architecture is typically used in Symmetric Multiprocessing (SMP) systems, where multiple processors share a single, uniform memory.
-- An **example** of UMA is traditional SMP systems, where processors are connected to a single memory controller, ensuring equal memory access times.
-
-II. Non-Uniform Memory Access (NUMA)
-
-- In **NUMA**, the memory access time varies depending on the memory location relative to a processor.
-- **Characteristics** include memory being physically divided into regions, with each region being closer to some processors than others. Processors have faster access to their local memory compared to remote memory, leading to non-uniform memory access times. This architecture is typically implemented using a processor interconnection network and local memories.
-- **Cache-Coherent NUMA (CC-NUMA)** ensures consistency between the caches of different processors, so that all processors have a coherent view of memory. This is fully implemented in hardware and is commonly found in recent x86 chips.
-- An **example** of NUMA is modern server architectures and high-performance computing systems, where memory is divided across multiple processors, each with its local memory.
-
-## Types of Parallelism: Data Parallelism vs Task Parallelism
+### Types of Parallelism: Data Parallelism vs Task Parallelism
 
 Parallelism can be broadly classified into two types, based on how tasks are divided and executed:
 
@@ -170,17 +177,35 @@ II. Task Parallelism / MIMD (Multiple Instruction, Multiple Data)
 - **Distributed Systems** such as Hadoop, cluster systems, and MPP (Massively Parallel Processing) systems distribute tasks across multiple machines, enabling the handling of large-scale data processing.
 - An **example use case** is a web server handling multiple client requests simultaneously, where each request is an independent task.
 
+### Shared Memory Architectures
+
+Shared memory architectures enable multiple processors to access a common global address space, facilitating communication and data sharing among processors. This means that any changes made to a memory location by one processor are immediately visible to all other processors. There are two primary types of shared memory architectures:
+
+I. Uniform Memory Access (UMA)
+
+- In **UMA**, all processors have equal access time to all memory locations.
+- **Characteristics** include uniform memory access latency, regardless of which processor accesses which memory module.
+- This architecture is typically used in Symmetric Multiprocessing (SMP) systems, where multiple processors share a single, uniform memory.
+- An **example** of UMA is traditional SMP systems, where processors are connected to a single memory controller, ensuring equal memory access times.
+
+II. Non-Uniform Memory Access (NUMA)
+
+- In **NUMA**, the memory access time varies depending on the memory location relative to a processor.
+- **Characteristics** include memory being physically divided into regions, with each region being closer to some processors than others. Processors have faster access to their local memory compared to remote memory, leading to non-uniform memory access times. This architecture is typically implemented using a processor interconnection network and local memories.
+- **Cache-Coherent NUMA (CC-NUMA)** ensures consistency between the caches of different processors, so that all processors have a coherent view of memory. This is fully implemented in hardware and is commonly found in recent x86 chips.
+- An **example** of NUMA is modern server architectures and high-performance computing systems, where memory is divided across multiple processors, each with its local memory.
+
 ### Comparison of UMA, NUMA, SIMD, and MIMD:
 
 Here's a summary table that outlines the relevance of shared memory, UMA, NUMA, SIMD, and MIMD to both CPUs and GPUs:
 
 | Concept              | CPUs                                                                 | GPUs                                                                     |
 |----------------------|----------------------------------------------------------------------|-------------------------------------------------------------------------|
+| **SIMD (Single Instruction, Multiple Data)** | Used in vector processors and CPU instructions like SSE, AVX for parallel data processing. | Inherently SIMD, executing the same instruction on multiple data points in parallel. |
+| **MIMD (Multiple Instruction, Multiple Data)** | Modern multi-core CPUs execute different instructions on different data independently. | Primarily SIMD, but also exhibits MIMD characteristics with different threads or blocks executing different instructions. |
 | **Shared Memory**    | Multiple processors can access the same physical memory space.      | On-chip memory accessible by all threads within a block for fast exchange. |
 | **UMA (Uniform Memory Access)** | Processors share physical memory uniformly with equal access time. | Shared memory architecture in integrated systems, simplifying programming model. |
 | **NUMA (Non-Uniform Memory Access)** | Memory access time depends on the memory location relative to the processor, improving scalability. | Less common, but can be implemented in high-end systems for large-scale parallel processing. |
-| **SIMD (Single Instruction, Multiple Data)** | Used in vector processors and CPU instructions like SSE, AVX for parallel data processing. | Inherently SIMD, executing the same instruction on multiple data points in parallel. |
-| **MIMD (Multiple Instruction, Multiple Data)** | Modern multi-core CPUs execute different instructions on different data independently. | Primarily SIMD, but also exhibits MIMD characteristics with different threads or blocks executing different instructions. |
 
 ## Distributed Computing and Cluster Computing Architectures
 
