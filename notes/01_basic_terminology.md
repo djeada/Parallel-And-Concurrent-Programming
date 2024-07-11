@@ -173,13 +173,26 @@ Key Differences Between Processes and Threads:
 
 | Aspect                  | Process                                 | Thread                                  |
 |-------------------------|-----------------------------------------|-----------------------------------------|
-| Independence            | Independent instance                    | Subset of a process                     |
-| Memory                  | Separate address space                  | Shared address space within the process |
-| Communication           | Inter-Process Communication required    | Direct memory access within the process |
-| State Information       | Carries considerable state information  | Minimal state information               |
-| Resource Sharing        | Does not share resources directly       | Shares resources and data with other threads |
-| Creation Overhead       | Higher (requires more resources)        | Lower (less resource-intensive)         |
-| Context Switching       | More overhead (due to separate memory)  | Less overhead (shared memory space)     |
+| **Independence**        | Processes are independent instances that run in separate address spaces. | Threads are subsets of a process and run within the same address space as the process. |
+| **Memory**              | Processes have separate address spaces, meaning each process has its own memory area. | Threads share the address space of their parent process, allowing them to access the same memory and data. |
+| **Communication**       | Processes require Inter-Process Communication (IPC) mechanisms like pipes, message queues, or shared memory to communicate with each other. | Threads can communicate directly by accessing shared memory within the process. |
+| **State Information**   | Processes carry considerable state information, including process ID, process state, memory information, and more. | Threads maintain minimal state information, typically just a thread ID, program counter, register set, and stack. |
+| **Resource Sharing**    | Processes do not share resources directly with each other; each process has its own resources. | Threads share resources such as code, data, and open files with other threads within the same process. |
+| **Creation Overhead**   | Process creation has higher overhead because it involves allocating a separate memory space and other resources. | Thread creation has lower overhead since threads share resources and memory with the parent process. |
+| **Context Switching**   | Context switching between processes involves more overhead due to switching separate memory spaces and state information. | Context switching between threads is faster and involves less overhead because they share the same memory space and resources. |
+
+Here's a table comparing the life cycle stages of threads and processes:
+
+| Life Cycle Stage       | Thread Life Cycle                        | Process Life Cycle                     |
+|------------------------|------------------------------------------|----------------------------------------|
+| **New**                | Thread is in the process of being created. | Process is in the process of being created. |
+| **Ready**              | Thread is ready to run when CPU is available. | Process is ready to execute when CPU is available. |
+| **Running**            | Thread is actively executing instructions. | Process is actively executing instructions. |
+| **Waiting/Blocked**    | Thread is waiting for resources or I/O.  | Process is waiting for resources or I/O. |
+| **Timed Waiting**      | Thread is waiting for a specified time.  | (Not typically a separate state, but can be considered under waiting) |
+| **Terminated**         | Thread has completed execution or is aborted. | Process has completed execution or is terminated. |
+| **Ready Suspended**    | (Not typically a separate state, but can be inferred from 'Ready' and 'Blocked') | Process is in secondary storage and ready to execute when moved to main memory. |
+| **Blocked Suspended**  | (Not typically a separate state, but can be inferred from 'Blocked') | Process is in secondary storage and waiting for an event before moving to main memory. |
 
 Practical Implications:
 
