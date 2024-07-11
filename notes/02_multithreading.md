@@ -82,6 +82,12 @@ Analogy: Imagine a busy street intersection with a traffic light. The traffic li
 * Multithreading automatically improves performance: While multithreading can improve performance in certain scenarios, it does not always lead to faster execution times. In fact, if not implemented correctly, multithreading can even decrease performance due to increased overhead and synchronization costs.
 * More threads always means better performance: This is not necessarily true. Creating too many threads can actually lead to decreased performance due to increased context switching overhead and resource contention.
 * Multithreaded code is always more difficult to write and maintain: While writing correct and efficient multithreaded code can be challenging, it is not always more difficult than writing single-threaded code. Additionally, many modern programming languages and frameworks provide abstractions and tools to simplify multithreaded programming.
+
+## DEADLOCK
+
+WE WANT TO USE A LOCK
+LOCK IS ALREADY IN USE
+WE WAIT TILL IT'S RELEASED
     
 ### Examples
 
