@@ -269,7 +269,9 @@ II. Minimize Communication:
 
 Granularity in parallel computing refers to the ratio of computation to communication in a task or set of tasks. It indicates the amount of work done between communication events.
 
-\[ \text{Granularity} = \frac{\text{computation}}{\text{communication}} \]
+$$
+\text{Granularity} = \frac{\text{computation}}{\text{communication}}
+$$
 
 - **Fine-grained parallelism** is characterized by a high frequency of communication compared to computation, which results in low granularity.
 - **Coarse-grained parallelism**, on the other hand, is characterized by a low frequency of communication compared to computation, which results in high granularity.
