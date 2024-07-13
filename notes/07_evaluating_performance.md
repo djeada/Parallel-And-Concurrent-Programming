@@ -101,14 +101,13 @@ Practical Implications:
 - Amdahl’s Law is crucial in system design, helping to predict and enhance the performance of parallel systems by minimizing the sequential portion of tasks.
 - It aids in cost-benefit analysis, helping to understand the trade-offs between the cost of adding more processors and the expected performance improvement.
 
-##
-# Visual Representation of Amdahl's Law
+### Visual Representation of Amdahl's Law
 
 ![Speedup vs. Number of Processors](https://github.com/user-attachments/assets/f94b018d-9741-46ee-80ae-ecfb52141fba)
 
 The graph titled "Speedup vs. Number of Processors" illustrates the relationship between speedup (y-axis) and the number of processors (x-axis) for varying values of the parallelizable portion $P$. As the value of $P$ increases, the speedup improves, but eventually reaches a plateau, highlighting the diminishing returns when additional processors are added. This visual representation underscores the impact of the sequential portion of a task on the overall performance improvement.
 
-#### Performance Measurement Techniques
+## Performance Measurement Techniques
 
 I. Profiling
 
