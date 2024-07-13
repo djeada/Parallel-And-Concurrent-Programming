@@ -11,7 +11,7 @@ I. Throughput
 - Calculated as:
   
 $$
-\text{Throughput} = \frac{\#\text{tasks}}{\text{time}}
+\text{Throughput} = \frac{\text{number of tasks}}{\text{time}}
 $$
 
 II. Latency
