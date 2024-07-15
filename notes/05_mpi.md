@@ -1,94 +1,16 @@
 ## Message Passing Interface (MPI)
 
-MPI is a standardized and portable message-passing system designed to enable parallelism in distributed-memory systems, where each process has its own memory. It facilitates communication between processes through message passing, allowing programs to run concurrently on multiple processors or computers connected via a network.
-
-### Key Concepts
-
-#### MPI Environment
-
-- MPI_Init: Initializes the MPI environment and must be called before any other MPI functions.
-- MPI_Finalize: Cleans up the MPI environment and must be called before a program exits.
-
-#### Communicators and Ranks
-
-- Communicator: A group of MPI processes that can communicate with each other.
-- Rank: A unique identifier assigned to each process within a communicator.
-
-#### Point-to-Point Communication
-
-- MPI_Send: Sends a message from one process to another.
-- MPI_Recv: Receives a message from another process.
-- Blocking and non-blocking communication: Blocking communication waits for the message to be sent or received before continuing, while non-blocking communication allows the program to continue executing while the message is being sent or received.
-
-#### Collective Communication
-
-- MPI_Barrier: Synchronizes all processes within a communicator, ensuring that all processes reach the barrier before continuing.
-- MPI_Bcast: Broadcasts a message from one process (the root) to all other processes in a communicator.
-- MPI_Scatter: Distributes an array of data from the root process to all other processes in a communicator.
-- MPI_Gather: Gathers data from all processes in a communicator and stores it in an array on the root process.
-- MPI_Reduce: Performs a reduction operation (e.g., sum, product) on data from all processes in a communicator and stores the result on the root process.
-
-### Best Practices
-
-When using MPI, consider the following best practices:
-
-1. Minimize communication overhead: Limit the number and size of messages to reduce the time spent on communication.
-2. Use non-blocking communication when possible: This allows the program to continue executing while messages are being sent or received.
-3. Use collective communication operations for efficient communication among multiple processes.
-4. Design your program to scale well with an increasing number of processes, ensuring that each process has enough work to do without waiting for others.
-5. Implement load balancing to distribute work evenly among processes, avoiding situations where some processes are idle while others are overloaded.
-
-### Examples
-
-#### C/C++ MPI
-
-1. Install an MPI implementation, such as OpenMPI or MPICH.
-2. Compile your C/C++ MPI program using the provided wrapper scripts:
-   - For C: `mpicc mpi_program.c -o mpi_program`
-   - For C++: `mpiCC mpi_program.cpp -o mpi_program`
-3. Run your MPI program using the provided `mpiexec` or `mpirun` command:
-   - `mpiexec -n <number_of_processes> ./mpi_program`
-   - `mpirun -n <number_of_processes> ./mpi_program`
-
-
-The following C/C++ examples demonstrate different aspects of MPI:
-
-* [MPI Hello World](https://github.com/wesleykendall/mpitutorial/blob/gh-pages/tutorials/mpi-hello-world/code/mpi_hello_world.c)
-* [MPI Send and Receive](https://github.com/wesleykendall/mpitutorial/blob/gh-pages/tutorials/mpi-send-and-receive/code/send_recv.c)
-* [MPI Broadcast](https://github.com/wesleykendall/mpitutorial/blob/gh-pages/tutorials/mpi-broadcast/code/bcast.c)
-* [MPI Scatter and Gather](https://github.com/wesleykendall/mpitutorial/blob/gh-pages/tutorials/mpi-scatter-gather-and-allgather/code/scatter_gather.c)
-
-#### Python MPI
-
-1. Install the `mpi4py` library and an MPI implementation, such as OpenMPI or MPICH.
-2. Run your Python MPI program using the provided `mpiexec` or `mpirun` command:
-   - `mpiexec -n <number_of_processes> python mpi_program.py`
-   - `mpirun -n <number_of_processes> python mpi_program.py`
-
-The following Python examples demonstrate different aspects of MPI:
-
-* [MPI Hello World](https://mpi4py.readthedocs.io/en/stable/tutorial.html#mpi-hello-world)
-* [MPI Send and Receive](https://mpi4py.readthedocs.io/en/stable/tutorial.html#point-to-point-communication)
-* [MPI Broadcast](https://mpi4py.readthedocs.io/en/stable/tutorial.html#collective-communication)
-* [MPI Scatter and Gather](https://mpi4py.readthedocs.io/en/stable/tutorial.html#scatter-and-gather)
-
-
-
-
-
-
-## Message Passing Interface (MPI) Overview
-
-### Introduction to Message Passing Interface (MPI)
 The Message Passing Interface (MPI) is a standardized and portable message-passing system designed to function on parallel computing architectures. MPI allows a collection of processes to execute programs in a standard sequential language, augmented with functions for sending and receiving messages. This system is central to parallel programming and can adapt designs developed using traditional techniques.
 
 ### Key Concepts of MPI
+
 - **Message-Passing Programming**: Involves processes communicating through library calls to send and receive messages.
 - **Standardization**: MPI is the de facto standard for message-passing libraries.
 - **Broad Applicability**: Techniques in MPI are applicable to other systems like p4, PVM, Express, and PARMACS.
 - **Focus on Essentials**: MPI consists of 129 functions, but a subset of 24 functions covers most applications.
 
 ### MPI Programming Model
+
 - **Process Communication**: Processes communicate by sending and receiving messages via library routines.
 - **Fixed Processes**: Typically, a fixed set of processes is created at initialization, with one process per processor.
 - **Multiple Programs**: Different programs can execute on different processes, referred to as the Multiple Program Multiple Data (MPMD) model.
@@ -99,11 +21,13 @@ The Message Passing Interface (MPI) is a standardized and portable message-passi
 - **Modular Programming**: Uses communicators to define modules that encapsulate internal communication structures.
 
 ### Implementing Parallel Algorithms with MPI
+
 - **Direct Implementation**: Algorithms with one task per processor use point-to-point or collective communication.
 - **Refinement Needed**: Dynamic task creation or concurrent task execution needs refinement for MPI.
 - **Branch-and-Bound Example**: Dynamic search task creation must be refined to create a fixed set of worker processes.
 
 ### MPI Basics
+
 While MPI is complex, many problems can be solved using just six core functions. These functions initiate and terminate computations, identify processes, and send and receive messages.
 
 | **Function**       | **Purpose**                            | **Parameters**                                                                                   | **Returns**                              |
@@ -115,19 +39,19 @@ While MPI is complex, many problems can be solved using just six core functions.
 | **MPI_SEND**       | Send a message.                        | **IN**: `buf` (address of send buffer) <br> **IN**: `count` (number of elements to send) <br> **IN**: `datatype` (datatype of send buffer elements) <br> **IN**: `dest` (destination process id) <br> **IN**: `tag` (message tag) <br> **IN**: `comm` (communicator handle). | None |
 | **MPI_RECV**       | Receive a message.                     | **IN**: `count` (size of receive buffer in elements) <br> **IN**: `datatype` (datatype of receive buffer elements) <br> **IN**: `source` (source process id or `MPI_ANY_SOURCE`) <br> **IN**: `tag` (message tag or `MPI_ANY_TAG`) <br> **IN**: `comm` (communicator handle) | **OUT**: `buf` (address of receive buffer) <br> **OUT**: `status` (status object). |
 
+#### Introduction to MPI Communicators
 
-## Message Passing Interface (MPI) Details
-
-### Introduction to MPI Communicators
 - **Communicator Handle**: Most MPI functions (except MPI_INIT and MPI_FINALIZE) require a communicator handle. A communicator defines the process group and context for operations.
 - **MPI_COMM_WORLD**: The default communicator, representing all processes involved in a computation.
 - **Modular Programs**: Communicators help in identifying process subsets and ensuring that messages for different purposes are not confused.
 
-### MPI Initialization and Finalization
+#### MPI Initialization and Finalization
+
 - **MPI_INIT()**: Must be called once per process to initiate an MPI computation.
 - **MPI_FINALIZE()**: Shuts down an MPI computation; no MPI functions can be called afterward.
 
-### Determining Process Information
+#### Determining Process Information
+
 - **MPI_COMM_SIZE(comm, size)**: Determines the number of processes in the computation.
   - **comm**: Communicator handle.
   - **size**: Number of processes in the communicator's group.
@@ -135,7 +59,8 @@ While MPI is complex, many problems can be solved using just six core functions.
   - **comm**: Communicator handle.
   - **pid**: Process ID in the communicator's group.
 
-### Example Program
+#### Example Program
+
 The following example program illustrates basic MPI functions. It initializes MPI, determines the number of processes and their identifiers, prints a message, and finalizes the computation.
 
 ```text
@@ -149,7 +74,8 @@ begin
 end
 ```
 
-### Execution and Output
+#### Execution and Output
+
 - **Program Execution**: Typically started with a command like `myprog -n 4`, where `myprog` is the executable, and `-n 4` specifies four processes.
 - **Sample Output**: If executed by four processes, the output may look like:
   ```text
@@ -159,7 +85,8 @@ end
   I am 2 of 4
   ```
 
-### Sending and Receiving Messages
+#### Sending and Receiving Messages
+
 - **MPI_SEND(buf, count, datatype, dest, tag, comm)**: Sends a message.
   - **buf**: Address of the send buffer.
   - **count**: Number of elements to send.
@@ -177,7 +104,8 @@ end
   - **comm**: Communicator handle.
   - **status**: Status object.
 
-### Example Program with MPI_SEND and MPI_RECV
+#### Example Program with MPI_SEND and MPI_RECV
+
 This example program demonstrates the use of MPI_SEND and MPI_RECV to implement a bridge construction algorithm. Two processes execute different tasks: the first process (foundry) sends messages, and the second process (bridge) receives them.
 
 ```text
@@ -216,14 +144,12 @@ begin
 end
 ```
 
-### Explanation
+ Explanation
+ 
 - **Process 0 (foundry)**: Sends 100 integer messages to Process 1 and a shutdown message (−1).
 - **Process 1 (bridge)**: Receives messages from Process 0 until the shutdown message is received. 
 
 This program demonstrates how different tasks can be coordinated using MPI_SEND and MPI_RECV within an MPI computation.
-
-
-## MPI Language Bindings and Determinism
 
 ### Language Bindings
 
@@ -351,13 +277,10 @@ main(int *argc, char *argv[]) {
 
 This program may suffer from nondeterminism because it uses `MPI_ANY_SOURCE` and `MPI_ANY_TAG`, which can lead to unexpected message order. To ensure determinism, specific sources and tags should be used where possible.
 
-
-## MPI Global Operations
-
-### Overview
+### MPI Global Operations
 Parallel algorithms often require coordinated communication among multiple processes. MPI provides specialized collective communication functions to facilitate these operations efficiently. These functions include synchronization, data distribution, and reduction operations.
 
-### Key MPI Collective Communication Functions
+#### Key MPI Collective Communication Functions
 
 
 | **Function**          | **Purpose**                                                            | **Parameters**                                                                                                                                 | **Returns**                          |
@@ -369,37 +292,7 @@ Parallel algorithms often require coordinated communication among multiple proce
 | **MPI_REDUCE**        | Combines values from all processes using a specified operation.        | **IN**: `inbuf` (address of input buffer) <br> **IN**: `count` (number of elements in input buffer) <br> **IN**: `type` (datatype of input buffer elements) <br> **IN**: `op` (reduction operation) <br> **IN**: `root` (process ID of root process) <br> **IN**: `comm` (communicator handle)  | **OUT**: `outbuf` (address of output buffer) |
 | **MPI_ALLREDUCE**     | Similar to MPI_REDUCE but returns the result to all processes.         | **IN**: `inbuf` (address of input buffer) <br> **IN**: `count` (number of elements in input buffer) <br> **IN**: `type` (datatype of input buffer elements) <br> **IN**: `op` (reduction operation) <br> **IN**: `comm` (communicator handle)  | **OUT**: `outbuf` (address of output buffer) |
 
-
-### Example: Barrier Synchronization
-The `MPI_BARRIER` function ensures that all processes reach a certain point before any can proceed. This can prevent messages from different phases of a computation from intermingling.
-
-### Example: Data Movement Functions
-The following illustrates how to use `MPI_BCAST`, `MPI_GATHER`, and `MPI_SCATTER` for collective data movement.
-
-#### Example: Broadcast
-```c
-MPI_Bcast(buff, 1, MPI_INT, 0, com);
-```
-
-#### Example: Gather
-```c
-MPI_Gather(local, lsize, MPI_FLOAT, work, lsize, MPI_FLOAT, 0, com);
-```
-
-#### Example: Scatter
-```c
-MPI_Scatter(work, lsize, MPI_FLOAT, local + 1, lsize, MPI_FLOAT, 0, com);
-```
-
-### Example: Reduction Operations
-Reduction operations combine values from all processes and return the result to a specified process or all processes.
-
-#### Example: Compute Minimum
-```c
-MPI_Reduce(inbuf, outbuf, 2, MPI_INT, MPI_MIN, 0, MPI_COMM_WORLD);
-```
-
-### Complete Example Program
+#### Complete Example Program
 
 ```c
 main(int argc, char *argv[]) {
@@ -454,18 +347,12 @@ main(int argc, char *argv[]) {
 }
 ```
 
-### Summary
-- MPI provides a suite of collective communication functions for efficient and convenient data exchange among processes.
-- These functions help in synchronizing processes, broadcasting data, gathering data from all processes to one, scattering data from one process to all, and performing reduction operations.
-- Proper use of these functions enhances the performance and scalability of parallel algorithms.
-
-## MPI Global Operations and Asynchronous Communication
-
 ### Finite Difference Problem: Global Operations
 
 The following example demonstrates a finite difference problem using global operations. The algorithm requires both nearest-neighbor communication and global communication to detect termination. This example uses MPI_SEND and MPI_RECV for nearest-neighbor communication and four MPI global communication routines.
 
 #### Communication Operations
+
 1. **MPI_BCAST**: Broadcasts the problem size parameter (`size`) from process 0 to all processes.
 2. **MPI_SCATTER**: Distributes an input array (`work`) from process 0 to other processes, so each process receives `size/np` elements.
 3. **MPI_SEND and MPI_RECV**: Exchanges data (a single floating-point number) with neighbors.
@@ -473,6 +360,7 @@ The following example demonstrates a finite difference problem using global oper
 5. **MPI_GATHER**: Accumulates an output array at process 0.
 
 #### MPI Implementation
+
 The following MPI implementation illustrates the use of these communication operations:
 
 ```c
@@ -559,6 +447,196 @@ int main(int argc, char *argv[]) {
 }
 ```
 
+### MPI Modularity
+
+In parallel programming, modular construction involves combining program components in various ways: sequentially, in parallel, or concurrently. MPI supports modular programming via its communicator mechanism, allowing for the specification of program components that encapsulate internal communication operations and provide a local name space for processes.
+
+#### Communicators in MPI
+Communicators in MPI specify the process group and context for communication operations, enabling modular program design. Here are key functions for creating and managing communicators:
+
+
+| **Function**            | **Purpose**                                                | **Parameters**                                                                                                   | **Returns**                             |
+|-------------------------|------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|-----------------------------------------|
+| **MPI_COMM_DUP**        | Creates a new communicator with the same process group but a new context. | **IN**: `comm` (communicator handle)                                                                              | **OUT**: `newcomm` (new communicator handle) |
+| **MPI_COMM_SPLIT**      | Partitions a group into disjoint subgroups.                 | **IN**: `comm` (communicator handle) <br> **IN**: `color` (subgroup control, integer) <br> **IN**: `key` (process ID control, integer) | **OUT**: `newcomm` (new communicator handle) |
+| **MPI_INTERCOMM_CREATE**| Creates an intercommunicator linking processes in two groups. | **IN**: `comm` (local intracommunicator handle) <br> **IN**: `leader` (local leader, integer) <br> **IN**: `peer` (peer intracommunicator handle) <br> **IN**: `rleader` (process ID of remote leader in `peer`, integer) <br> **IN**: `tag` (tag for communicator setup, integer) | **OUT**: `inter` (new intercommunicator handle) |
+| **MPI_COMM_FREE**       | Destroys a communicator.                                    | **IN**: `comm` (communicator handle)                                                                             | None                                    |
+
+#### Creating Communicators
+
+##### Using MPI_COMM_DUP for Sequential Composition
+Sequential composition can cause issues if different components use the same message tags. Using different contexts via MPI_COMM_DUP avoids this problem.
+
+Example:
+```fortran
+integer comm, newcomm, ierr
+call MPI_COMM_DUP(comm, newcomm, ierr)
+call transpose(newcomm, A)
+call MPI_COMM_FREE(newcomm, ierr)
+```
+
+##### Using MPI_COMM_SPLIT for Parallel Composition
+MPI_COMM_SPLIT partitions processes into subgroups, allowing parallel execution without conflicts.
+
+Example:
+```c
+MPI_Comm comm, newcomm;
+int myid, color;
+MPI_Comm_rank(comm, &myid);
+color = myid % 3;
+MPI_Comm_split(comm, color, myid, &newcomm);
+```
+This splits the communicator into subgroups based on `myid % 3`.
+
+### Communicating between Groups
+An intercommunicator created by MPI_INTERCOMM_CREATE links two groups, allowing intergroup communication.
+
+Example:
+```c
+MPI_Comm comm, newcomm, intercomm;
+int myid, new_id, np;
+MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+MPI_Comm_size(MPI_COMM_WORLD, &np);
+int color = (myid % 2 == 0) ? 0 : 1;
+MPI_Comm_split(MPI_COMM_WORLD, color, myid, &newcomm);
+int local_leader = (myid % 2 == 0) ? 0 : 1;
+int remote_leader = 1 - local_leader;
+MPI_Intercomm_create(newcomm, local_leader, MPI_COMM_WORLD, remote_leader, 0, &intercomm);
+```
+
+#### Example Program: Intercommunicator
+The following program splits processes into two groups and creates an intercommunicator between them.
+
+```c
+#include "mpi.h"
+#include <stdio.h>
+
+int main(int argc, char *argv[]) {
+    MPI_Init(&argc, &argv);
+
+    MPI_Comm comm = MPI_COMM_WORLD, newcomm, intercomm;
+    int myid, np, color, new_id;
+    
+    MPI_Comm_rank(comm, &myid);
+    MPI_Comm_size(comm, &np);
+    
+    color = (myid % 2 == 0) ? 0 : 1;
+    MPI_Comm_split(comm, color, myid, &newcomm);
+    
+    int local_leader = 0;
+    int remote_leader = (color == 0) ? 1 : 0;
+    
+    MPI_Intercomm_create(newcomm, local_leader, comm, remote_leader, 0, &intercomm);
+    
+    if (color == 0) {
+        MPI_Send(&myid, 1, MPI_INT, 0, 0, intercomm);
+    } else {
+        int received;
+        MPI_Recv(&received, 1, MPI_INT, 0, 0, intercomm, MPI_STATUS_IGNORE);
+        printf("Process %d received message from process %d\n", myid, received);
+    }
+    
+    MPI_Comm_free(&newcomm);
+    MPI_Comm_free(&intercomm);
+    MPI_Finalize();
+    return 0;
+}
+```
+
+### MPI Derived Datatypes
+In MPI, derived datatypes allow grouping noncontiguous data elements into a single message, avoiding the need for data copy operations. This mechanism is crucial for efficiently communicating complex data structures, such as rows of a 2D array stored by columns.
+
+#### Key Functions for Derived Datatypes
+
+| **Function**            | **Purpose**                                                         | **Parameters**                                                                                                 | **Returns**                             |
+|-------------------------|---------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|-----------------------------------------|
+| **MPI_TYPE_CONTIGUOUS** | Creates a derived datatype from contiguous elements.                | **IN**: `count` (number of elements, integer ≥ 0) <br> **IN**: `oldtype` (input datatype handle)               | **OUT**: `newtype` (output datatype handle) |
+| **MPI_TYPE_VECTOR**     | Creates a derived datatype from blocks separated by a stride.       | **IN**: `count` (number of elements, integer ≥ 0) <br> **IN**: `blocklen` (elements in a block, integer ≥ 0) <br> **IN**: `stride` (elements between start of each block, integer) <br> **IN**: `oldtype` (input datatype handle) | **OUT**: `newtype` (output datatype handle) |
+| **MPI_TYPE_INDEXED**    | Creates a derived datatype with variable indices and sizes.         | **IN**: `count` (number of blocks, integer ≥ 0) <br> **IN**: `blocklens` (elements in each block, array of integer ≥ 0) <br> **IN**: `indices` (displacements for each block, array of integer) <br> **IN**: `oldtype` (input datatype handle) | **OUT**: `newtype` (output datatype handle) |
+| **MPI_TYPE_COMMIT**     | Commits a datatype so that it can be used in communication.         | **INOUT**: `type` (datatype to be committed handle)                                                            | None                                    |
+| **MPI_TYPE_FREE**       | Frees a derived datatype.                                           | **INOUT**: `type` (datatype to be freed handle)                                                                | None                                    |
+
+#### Example Program:  Contiguous Derived Type
+
+Example of defining a contiguous derived type:
+```fortran
+integer ierr
+call MPI_TYPE_CONTIGUOUS(10, MPI_REAL, tenrealtype, ierr)
+call MPI_TYPE_COMMIT(tenrealtype, ierr)
+call MPI_SEND(data, 1, tenrealtype, dest, tag, MPI_COMM_WORLD, ierr)
+call MPI_TYPE_FREE(tenrealtype, ierr)
+```
+This is equivalent to:
+```fortran
+call MPI_SEND(data, 10, MPI_REAL, dest, tag, MPI_COMM_WORLD, ierr)
+```
+
+#### Example Program:  Vector Derived Type
+
+Example of defining a vector derived type:
+
+```c
+float data[1024];
+MPI_Datatype floattype;
+MPI_Type_vector(10, 1, 32, MPI_FLOAT, &floattype);
+MPI_Type_commit(&floattype);
+MPI_Send(data, 1, floattype, dest, tag, MPI_COMM_WORLD);
+MPI_Type_free(&floattype);
+```
+
+This is equivalent to:
+
+```c
+float data[1024], buff[10];
+for (int i = 0; i < 10; i++) buff[i] = data[i * 32];
+MPI_Send(buff, 10, MPI_FLOAT, dest, tag, MPI_COMM_WORLD);
+```
+
+#### Example Program: Finite Difference Stencil
+
+This program uses derived types to communicate the north and south rows and the west and east columns of a Fortran array.
+
+```fortran
+integer, parameter :: n = 10, m = 10
+real :: array(n, m)
+integer :: ierr, rowtype, coltype
+
+! Define row type
+call MPI_TYPE_VECTOR(m, 1, n, MPI_REAL, rowtype, ierr)
+call MPI_TYPE_COMMIT(rowtype, ierr)
+
+! Define column type
+call MPI_TYPE_CONTIGUOUS(n, MPI_REAL, coltype, ierr)
+call MPI_TYPE_COMMIT(coltype, ierr)
+
+! Use derived types to send/receive rows and columns
+call MPI_SEND(array(1, 1), 1, rowtype, dest, tag, MPI_COMM_WORLD, ierr)
+call MPI_RECV(array(1, 1), 1, coltype, source, tag, MPI_COMM_WORLD, ierr)
+
+! Free derived types
+call MPI_TYPE_FREE(rowtype, ierr)
+call MPI_TYPE_FREE(coltype, ierr)
+```
+
+#### Example Program: Fock Matrix Problem
+
+This example uses MPI_TYPE_INDEXED to send noncontiguous blocks of data.
+
+```fortran
+integer, parameter :: len = 100
+integer :: focktype, ierr, inbuf(len), source
+
+! Define indexed type
+call MPI_TYPE_INDEXED(len / 2, inbuf(len / 2 + 1), inbuf(1), MPI_INTEGER, focktype, ierr)
+call MPI_TYPE_COMMIT(focktype, ierr)
+
+! Use indexed type to send data
+call MPI_SEND(data, 1, focktype, source, MPI_COMM_WORLD, ierr)
+
+! Free indexed type
+call MPI_TYPE_FREE(focktype, ierr)
+```
+
 ### Asynchronous Communication
 
 Asynchronous communication is essential when a computation must access elements of a shared data structure in an unstructured manner. MPI provides functions like MPI_IPROBE, MPI_PROBE, and MPI_GET_COUNT to facilitate asynchronous communication.
@@ -569,7 +647,7 @@ Asynchronous communication is essential when a computation must access elements 
 | **MPI_PROBE**         | Blocks until a message is pending, then returns and sets its status argument. | **IN**: `source` (ID of source process, or `MPI_ANY_SOURCE`) <br> **IN**: `tag` (Message tag, or `MPI_ANY_TAG`) <br> **IN**: `comm` (communicator handle) | **OUT**: `status` (Status object) |
 | **MPI_GET_COUNT**     | Determines the size of a message.                                      | **IN**: `status` (Status variable from receive) <br> **IN**: `datatype` (Datatype of receive buffer elements)                       | **OUT**: `count` (Number of data elements in message) |
 
-#### Example: Using Asynchronous Communication
+#### Example Program: Using Asynchronous Communication
 
 The following code demonstrates how to use MPI_IPROBE, MPI_PROBE, and MPI_GET_COUNT to handle messages from an unknown source containing an unknown number of integers.
 
@@ -598,7 +676,7 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-### Example: Fock Matrix Construction with Polling
+#### Example Program: Fock Matrix Construction with Polling
 
 This example integrates data and computation tasks into a single process, alternating between checking for pending data requests and performing computation.
 
@@ -639,216 +717,45 @@ int main(int argc, char *argv[]) {
 }
 ```
 
+### Best Practices
 
-## MPI Modularity
+When using MPI, consider the following best practices:
 
-### Overview
-In parallel programming, modular construction involves combining program components in various ways: sequentially, in parallel, or concurrently. MPI supports modular programming via its communicator mechanism, allowing for the specification of program components that encapsulate internal communication operations and provide a local name space for processes.
-
-### Communicators in MPI
-Communicators in MPI specify the process group and context for communication operations, enabling modular program design. Here are key functions for creating and managing communicators:
-
-
-| **Function**            | **Purpose**                                                | **Parameters**                                                                                                   | **Returns**                             |
-|-------------------------|------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|-----------------------------------------|
-| **MPI_COMM_DUP**        | Creates a new communicator with the same process group but a new context. | **IN**: `comm` (communicator handle)                                                                              | **OUT**: `newcomm` (new communicator handle) |
-| **MPI_COMM_SPLIT**      | Partitions a group into disjoint subgroups.                 | **IN**: `comm` (communicator handle) <br> **IN**: `color` (subgroup control, integer) <br> **IN**: `key` (process ID control, integer) | **OUT**: `newcomm` (new communicator handle) |
-| **MPI_INTERCOMM_CREATE**| Creates an intercommunicator linking processes in two groups. | **IN**: `comm` (local intracommunicator handle) <br> **IN**: `leader` (local leader, integer) <br> **IN**: `peer` (peer intracommunicator handle) <br> **IN**: `rleader` (process ID of remote leader in `peer`, integer) <br> **IN**: `tag` (tag for communicator setup, integer) | **OUT**: `inter` (new intercommunicator handle) |
-| **MPI_COMM_FREE**       | Destroys a communicator.                                    | **IN**: `comm` (communicator handle)                                                                             | None                                    |
-
-
-### Creating Communicators
-#### Using MPI_COMM_DUP for Sequential Composition
-Sequential composition can cause issues if different components use the same message tags. Using different contexts via MPI_COMM_DUP avoids this problem.
-
-Example:
-```fortran
-integer comm, newcomm, ierr
-call MPI_COMM_DUP(comm, newcomm, ierr)
-call transpose(newcomm, A)
-call MPI_COMM_FREE(newcomm, ierr)
-```
-
-#### Using MPI_COMM_SPLIT for Parallel Composition
-MPI_COMM_SPLIT partitions processes into subgroups, allowing parallel execution without conflicts.
-
-Example:
-```c
-MPI_Comm comm, newcomm;
-int myid, color;
-MPI_Comm_rank(comm, &myid);
-color = myid % 3;
-MPI_Comm_split(comm, color, myid, &newcomm);
-```
-This splits the communicator into subgroups based on `myid % 3`.
-
-### Communicating between Groups
-An intercommunicator created by MPI_INTERCOMM_CREATE links two groups, allowing intergroup communication.
-
-Example:
-```c
-MPI_Comm comm, newcomm, intercomm;
-int myid, new_id, np;
-MPI_Comm_rank(MPI_COMM_WORLD, &myid);
-MPI_Comm_size(MPI_COMM_WORLD, &np);
-int color = (myid % 2 == 0) ? 0 : 1;
-MPI_Comm_split(MPI_COMM_WORLD, color, myid, &newcomm);
-int local_leader = (myid % 2 == 0) ? 0 : 1;
-int remote_leader = 1 - local_leader;
-MPI_Intercomm_create(newcomm, local_leader, MPI_COMM_WORLD, remote_leader, 0, &intercomm);
-```
-
-### Example Program: Intercommunicator
-The following program splits processes into two groups and creates an intercommunicator between them.
-
-```c
-#include "mpi.h"
-#include <stdio.h>
-
-int main(int argc, char *argv[]) {
-    MPI_Init(&argc, &argv);
-
-    MPI_Comm comm = MPI_COMM_WORLD, newcomm, intercomm;
-    int myid, np, color, new_id;
-    
-    MPI_Comm_rank(comm, &myid);
-    MPI_Comm_size(comm, &np);
-    
-    color = (myid % 2 == 0) ? 0 : 1;
-    MPI_Comm_split(comm, color, myid, &newcomm);
-    
-    int local_leader = 0;
-    int remote_leader = (color == 0) ? 1 : 0;
-    
-    MPI_Intercomm_create(newcomm, local_leader, comm, remote_leader, 0, &intercomm);
-    
-    if (color == 0) {
-        MPI_Send(&myid, 1, MPI_INT, 0, 0, intercomm);
-    } else {
-        int received;
-        MPI_Recv(&received, 1, MPI_INT, 0, 0, intercomm, MPI_STATUS_IGNORE);
-        printf("Process %d received message from process %d\n", myid, received);
-    }
-    
-    MPI_Comm_free(&newcomm);
-    MPI_Comm_free(&intercomm);
-    MPI_Finalize();
-    return 0;
-}
-```
-
-## MPI Derived Datatypes
-
-### Overview
-In MPI, derived datatypes allow grouping noncontiguous data elements into a single message, avoiding the need for data copy operations. This mechanism is crucial for efficiently communicating complex data structures, such as rows of a 2D array stored by columns.
-
-### Key Functions for Derived Datatypes
-
-| **Function**            | **Purpose**                                                         | **Parameters**                                                                                                 | **Returns**                             |
-|-------------------------|---------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|-----------------------------------------|
-| **MPI_TYPE_CONTIGUOUS** | Creates a derived datatype from contiguous elements.                | **IN**: `count` (number of elements, integer ≥ 0) <br> **IN**: `oldtype` (input datatype handle)               | **OUT**: `newtype` (output datatype handle) |
-| **MPI_TYPE_VECTOR**     | Creates a derived datatype from blocks separated by a stride.       | **IN**: `count` (number of elements, integer ≥ 0) <br> **IN**: `blocklen` (elements in a block, integer ≥ 0) <br> **IN**: `stride` (elements between start of each block, integer) <br> **IN**: `oldtype` (input datatype handle) | **OUT**: `newtype` (output datatype handle) |
-| **MPI_TYPE_INDEXED**    | Creates a derived datatype with variable indices and sizes.         | **IN**: `count` (number of blocks, integer ≥ 0) <br> **IN**: `blocklens` (elements in each block, array of integer ≥ 0) <br> **IN**: `indices` (displacements for each block, array of integer) <br> **IN**: `oldtype` (input datatype handle) | **OUT**: `newtype` (output datatype handle) |
-| **MPI_TYPE_COMMIT**     | Commits a datatype so that it can be used in communication.         | **INOUT**: `type` (datatype to be committed handle)                                                            | None                                    |
-| **MPI_TYPE_FREE**       | Frees a derived datatype.                                           | **INOUT**: `type` (datatype to be freed handle)                                                                | None                                    |
+1. Minimize communication overhead: Limit the number and size of messages to reduce the time spent on communication.
+2. Use non-blocking communication when possible: This allows the program to continue executing while messages are being sent or received.
+3. Use collective communication operations for efficient communication among multiple processes.
+4. Design your program to scale well with an increasing number of processes, ensuring that each process has enough work to do without waiting for others.
+5. Implement load balancing to distribute work evenly among processes, avoiding situations where some processes are idle while others are overloaded.
 
 ### Examples
 
-#### Contiguous Derived Type
-Example of defining a contiguous derived type:
-```fortran
-integer ierr
-call MPI_TYPE_CONTIGUOUS(10, MPI_REAL, tenrealtype, ierr)
-call MPI_TYPE_COMMIT(tenrealtype, ierr)
-call MPI_SEND(data, 1, tenrealtype, dest, tag, MPI_COMM_WORLD, ierr)
-call MPI_TYPE_FREE(tenrealtype, ierr)
-```
-This is equivalent to:
-```fortran
-call MPI_SEND(data, 10, MPI_REAL, dest, tag, MPI_COMM_WORLD, ierr)
-```
+#### C/C++ MPI
 
-#### Vector Derived Type
-Example of defining a vector derived type:
-```c
-float data[1024];
-MPI_Datatype floattype;
-MPI_Type_vector(10, 1, 32, MPI_FLOAT, &floattype);
-MPI_Type_commit(&floattype);
-MPI_Send(data, 1, floattype, dest, tag, MPI_COMM_WORLD);
-MPI_Type_free(&floattype);
-```
-This is equivalent to:
-```c
-float data[1024], buff[10];
-for (int i = 0; i < 10; i++) buff[i] = data[i * 32];
-MPI_Send(buff, 10, MPI_FLOAT, dest, tag, MPI_COMM_WORLD);
-```
+1. Install an MPI implementation, such as OpenMPI or MPICH.
+2. Compile your C/C++ MPI program using the provided wrapper scripts:
+   - For C: `mpicc mpi_program.c -o mpi_program`
+   - For C++: `mpiCC mpi_program.cpp -o mpi_program`
+3. Run your MPI program using the provided `mpiexec` or `mpirun` command:
+   - `mpiexec -n <number_of_processes> ./mpi_program`
+   - `mpirun -n <number_of_processes> ./mpi_program`
 
-### Example Program: Finite Difference Stencil
-This program uses derived types to communicate the north and south rows and the west and east columns of a Fortran array.
+The following C/C++ examples demonstrate different aspects of MPI:
 
-```fortran
-integer, parameter :: n = 10, m = 10
-real :: array(n, m)
-integer :: ierr, rowtype, coltype
+* [MPI Hello World](https://github.com/wesleykendall/mpitutorial/blob/gh-pages/tutorials/mpi-hello-world/code/mpi_hello_world.c)
+* [MPI Send and Receive](https://github.com/wesleykendall/mpitutorial/blob/gh-pages/tutorials/mpi-send-and-receive/code/send_recv.c)
+* [MPI Broadcast](https://github.com/wesleykendall/mpitutorial/blob/gh-pages/tutorials/mpi-broadcast/code/bcast.c)
+* [MPI Scatter and Gather](https://github.com/wesleykendall/mpitutorial/blob/gh-pages/tutorials/mpi-scatter-gather-and-allgather/code/scatter_gather.c)
 
-! Define row type
-call MPI_TYPE_VECTOR(m, 1, n, MPI_REAL, rowtype, ierr)
-call MPI_TYPE_COMMIT(rowtype, ierr)
+#### Python MPI
 
-! Define column type
-call MPI_TYPE_CONTIGUOUS(n, MPI_REAL, coltype, ierr)
-call MPI_TYPE_COMMIT(coltype, ierr)
+1. Install the `mpi4py` library and an MPI implementation, such as OpenMPI or MPICH.
+2. Run your Python MPI program using the provided `mpiexec` or `mpirun` command:
+   - `mpiexec -n <number_of_processes> python mpi_program.py`
+   - `mpirun -n <number_of_processes> python mpi_program.py`
 
-! Use derived types to send/receive rows and columns
-call MPI_SEND(array(1, 1), 1, rowtype, dest, tag, MPI_COMM_WORLD, ierr)
-call MPI_RECV(array(1, 1), 1, coltype, source, tag, MPI_COMM_WORLD, ierr)
+The following Python examples demonstrate different aspects of MPI:
 
-! Free derived types
-call MPI_TYPE_FREE(rowtype, ierr)
-call MPI_TYPE_FREE(coltype, ierr)
-```
-
-### Example Program: Fock Matrix Problem
-This example uses MPI_TYPE_INDEXED to send noncontiguous blocks of data.
-
-```fortran
-integer, parameter :: len = 100
-integer :: focktype, ierr, inbuf(len), source
-
-! Define indexed type
-call MPI_TYPE_INDEXED(len / 2, inbuf(len / 2 + 1), inbuf(1), MPI_INTEGER, focktype, ierr)
-call MPI_TYPE_COMMIT(focktype, ierr)
-
-! Use indexed type to send data
-call MPI_SEND(data, 1, focktype, source, MPI_COMM_WORLD, ierr)
-
-! Free indexed type
-call MPI_TYPE_FREE(focktype, ierr)
-```
-
-### Asynchronous Communication
-
-| **Function**        | **Purpose**                                         | **Parameters**                                                                                                   | **Returns**                                  |
-|---------------------|-----------------------------------------------------|------------------------------------------------------------------------------------------------------------------|----------------------------------------------|
-| **MPI_IPROBE**      | Polls for a pending message without receiving it.   | **IN**: `source` (ID of source process, or `MPI_ANY_SOURCE`) <br> **IN**: `tag` (Message tag, or `MPI_ANY_TAG`) <br> **IN**: `comm` (communicator handle) | **OUT**: `flag` (Boolean indicating if a message is available) <br> **OUT**: `status` (Status object) |
-| **MPI_PROBE**       | Blocks until a message is pending.                  | **IN**: `source` (ID of source process, or `MPI_ANY_SOURCE`) <br> **IN**: `tag` (Message tag, or `MPI_ANY_TAG`) <br> **IN**: `comm` (communicator handle) | **OUT**: `status` (Status object) |
-| **MPI_GET_COUNT**   | Determines the size of a message.                   | **IN**: `status` (Status variable from receive) <br> **IN**: `datatype` (Datatype of receive buffer elements)    | **OUT**: `count` (Number of data elements in message) |
-
-### Example: Asynchronous Communication
-Example code fragment to receive a message from an unknown source containing an unknown number of integers.
-
-```c
-int count, *buf, source;
-MPI_Status status;
-
-MPI_Probe(MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
-source = status.MPI_SOURCE;
-MPI_Get_count(&status, MPI_INT, &count);
-buf = (int *)malloc(count * sizeof(int));
-MPI_Recv(buf, count, MPI_INT, source, 0, MPI_COMM_WORLD, &status);
-
-free(buf);
-```
-
+* [MPI Hello World](https://mpi4py.readthedocs.io/en/stable/tutorial.html#mpi-hello-world)
+* [MPI Send and Receive](https://mpi4py.readthedocs.io/en/stable/tutorial.html#point-to-point-communication)
+* [MPI Broadcast](https://mpi4py.readthedocs.io/en/stable/tutorial.html#collective-communication)
+* [MPI Scatter and Gather](https://mpi4py.readthedocs.io/en/stable/tutorial.html#scatter-and-gather)
