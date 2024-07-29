@@ -917,7 +917,7 @@ parentPort.on('message', (message) => {
 
 Here, the main thread sends a message to the worker, which can then respond or perform actions based on the received data.
 
-###### Worker Termination
+##### Worker Termination
 
 Workers can be terminated from either the main thread or within the worker itself. The `terminate()` method stops the worker from the main thread, while `process.exit()` can be used inside the worker.
 
