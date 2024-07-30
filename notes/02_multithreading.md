@@ -1,8 +1,6 @@
 ## Multithreading
 
-* Multithreading is a way of achieving concurrency in software development.
-* It involves creating multiple threads within a single process to execute tasks concurrently.
-* Even with multicore processors, multithreading does not guarantee parallelism as it depends on the language implementation.
+**Multithreading** refers to the capability of a CPU, or a single core within a multi-core processor, to execute multiple threads concurrently. A thread is the smallest unit of processing that can be scheduled by an operating system. In a multithreaded environment, a program, or process, can perform multiple tasks at the same time, as each thread runs in the same shared memory space. This can be useful for tasks that are IO-bound, as threads can be used to keep the CPU busy while waiting for IO operations to complete. However, because threads share the same memory, they must be carefully synchronized to avoid issues like race conditions, where two threads attempt to modify the same data concurrently, leading to unpredictable outcomes.
 
 ### Thread Pool vs On-Demand Thread
 
