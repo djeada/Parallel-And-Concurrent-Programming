@@ -1,6 +1,6 @@
 ## Multiprocessing
 
-Multiprocessing is a method of achieving concurrency by creating several processes within a single program. It is important to note that parallelism is not guaranteed by multiprocessing. Processes, unlike threads, do not share any resources by default, hence it makes the most sense to use that approach when you wish to simultaneously complete unrelated tasks.
+**Multiprocessing** involves running multiple processes simultaneously. Each process has its own memory space, making them more isolated from each other compared to threads, which share the same memory. This isolation means that multiprocessing can be more robust and less prone to errors from shared state, as each process runs independently. Multiprocessing is often used to leverage multiple CPU cores, allowing a program to perform computationally intensive tasks in parallel, thus improving performance. Communication between processes is typically achieved through inter-process communication (IPC) mechanisms, such as pipes, sockets, or shared memory. While more resource-intensive than multithreading, due to the need for separate memory spaces, multiprocessing can achieve better performance for CPU-bound tasks and provides better fault isolation.
 
 ### Child Processes
 
