@@ -4,12 +4,21 @@ Asynchronous programming is a technique used to achieve concurrency, where tasks
 
 Asynchronous programming is particularly useful for tasks that involve I/O operations, such as fetching data from a database, where waiting for the data retrieval could freeze the user interface.
 
-## Building Blocks of Asynchronous Programming
+### Building Blocks of Asynchronous Programming
 
 Asynchronous programming offers non-blocking execution, which is especially beneficial for I/O-bound operations. The two main pillars of this paradigm are the event loop and async functions.
 
+#### Function vs Corutine
 
-### Function vs Corutine
+- In programming, a **function** is a block of code that encapsulates a specific task, allowing it to be reused throughout the program. It usually accepts inputs called arguments and may produce a result or output by returning a value.
+- Functions help in breaking down complex problems into smaller, manageable pieces, making the code easier to understand and maintain. They follow a synchronous execution model, meaning the program flow waits for a function to complete before proceeding to the next line of code.
+- Upon calling a function, the program's execution enters the function, performs the defined operations, and exits once it reaches the end or encounters a return statement. The return statement provides the output of the function, which can then be used elsewhere in the program.
+- Unlike functions, **coroutines** are a more advanced feature found in some programming languages, enabling a different style of concurrency. They are special constructs that allow the execution to be paused and resumed, which is useful in handling tasks that might involve waiting, such as I/O operations.
+- Coroutines are typically used to write asynchronous code, meaning they can pause their execution at certain points (awaiting some event or resource) and later resume from where they left off. This ability helps in writing non-blocking code, making it possible to handle multiple tasks concurrently without the need for multiple threads.
+- When a coroutine is paused, the control returns to the caller, allowing other tasks to execute in the meantime. This makes coroutines particularly useful in scenarios where tasks are I/O-bound or involve waiting for external resources, as they can efficiently manage time by not blocking the execution thread.
+- The concept of coroutines includes the ability to yield control back to the caller, either temporarily or until a specific condition is met. This is often done using keywords like `yield` or `await`, depending on the programming language.
+- While functions have a straightforward call and return structure, coroutines can enter a suspended state and later continue execution, maintaining their state across these suspensions. This feature makes them a powerful tool for implementing complex control flows and handling asynchronous programming patterns.
+
 
 ```
 Function:                         Coroutine:
@@ -38,7 +47,11 @@ Function:                         Coroutine:
                                   +-------------------+
 ```
 
-### Event Loop
+#### Event Loop
+
+- The **event loop** serves as the core mechanism in asynchronous programming, continuously monitoring and managing the execution of tasks. It operates by repeatedly checking for tasks that are ready to execute, ensuring efficient management of operations.
+- Key responsibilities of the event loop include the **registration** and **scheduling** of tasks for execution, which involves keeping track of tasks and determining when they should run. It also handles event dispatch, a process crucial for managing I/O operations by directing them to the appropriate handlers once they are complete.
+- Additionally, the event loop is responsible for timer management, overseeing **timeouts** and the scheduling of tasks that need to occur at specific times. This includes setting up and triggering tasks based on time-based conditions. A notable aspect of the event loop's functionality is its ability to enable concurrent task execution even within single-threaded environments. By efficiently managing multiple tasks, it allows them to progress without blocking one another, thus maximizing the use of available resources.
 
 ```
          +------------------+
@@ -77,56 +90,18 @@ Function:                         Coroutine:
           +-------+-------+
 ```
 
-The event loop is the engine driving asynchronous programming. It constantly checks for and executes tasks.
+#### Futures and Tasks
 
-**Key Responsibilities**:
-1. **Task Management**: Registers and schedules tasks for execution.
-2. **Event Dispatch**: Handles I/O operations, routing them to the correct handlers upon completion.
-3. **Timer Management**: Manages timeouts and scheduled tasks.
-4. **Concurrency**: Enables concurrent task execution in even single-threaded environments.
+- In asynchronous programming, a **future** serves as a placeholder for a result that will be available at some point in the future, representing the outcome of an asynchronous operation. It can initially be in a pending state, indicating that the operation has not yet completed, and later transitions to a completed state when the result is available or to a failed state if an error occurs.
+- Futures are often used to check the **status** of an ongoing operation, allowing developers to determine whether the operation has finished or is still in progress. They can also retrieve the result once the operation is complete or handle any exceptions that might have arisen during execution.
+- While futures themselves do not execute tasks, they are associated with the **results** produced by an executor, such as an event loop or a thread pool. This association helps manage and track the completion of asynchronous operations.
+- A **task** is a specific type of future designed to represent a coroutine in asynchronous programming. It is used to encapsulate the execution of a coroutine, allowing for the scheduling and management of these coroutines.
+- Unlike a general future, a task can be **awaited**, which means that other coroutines can pause their execution until the task is completed. This non-blocking behavior is crucial for maintaining the responsiveness of applications, as it allows other operations to continue running while waiting for the task to finish.
+- Tasks are managed by the **event loop**, which schedules them to run concurrently with other tasks. This scheduling capability is essential for handling multiple operations simultaneously, such as processing multiple user requests or performing data analysis in parallel.
+- One of the key features of tasks is their ability to be **canceled**, which provides control over the execution flow, especially in situations where the task is no longer needed. Additionally, tasks can be combined or gathered, allowing developers to wait for multiple tasks to complete before proceeding with further actions.
+- The use of tasks in asynchronous programming enables developers to **chain dependent operations**, where the completion of one task can trigger the start of another. This chaining helps in creating complex workflows and ensuring that operations occur in the desired sequence.
 
-### Async Functions and Traditional Coroutines
-
-- **Traditional Coroutines**: General mechanisms that allow functions to pause and resume. In Python, they're often implemented using generators (`yield`).
-
-- **Async Functions**: A specialized form of coroutines tailored for asynchronous operations. Defined using `async def`, these functions can pause their execution with `await` to wait for other async operations.
-
-**Async Function Example**:
-
-```python
-async def fetch_data():
-    # Simulate data fetching with a sleep
-    await asyncio.sleep(3)
-    return "Data fetched"
-```
-
-### Futures and Asyncio Tasks
-
-- **Futures**: Represent the eventual results of asynchronous operations. They signal the operation's state, such as pending or completed.
-
-- **Tasks**: A kind of Future that wraps around async functions. The event loop uses Tasks to manage the execution of async functions.
-
-Working with Futures:
-
-```python
-import asyncio
-
-async def main():
-    loop = asyncio.get_event_loop()
-    future = loop.create_future()
-
-    async def set_result():
-        await asyncio.sleep(2)
-        future.set_result("Hello, world!")
-
-    loop.create_task(set_result())
-    result = await future
-    print(result)
-
-asyncio.run(main())
-```
-
-## Asynchrony vs Multithreading
+### Asynchrony vs Multithreading
 
 Asynchrony and multithreading are distinct concepts but can be used together to achieve parallelism. The key difference is that asynchronous functions switch cooperatively, while threads switch preemptively.
 
@@ -160,7 +135,7 @@ thread 2: ---BBBBBBBBBBB
 thread 3: ----CCCC------
 ```
 
-## Challenges and Considerations in Asynchronous Programming
+### Challenges and Considerations
 
 - In **asynchronous programming**, functions operate on a cooperative model where tasks voluntarily yield control, rather than being preemptively interrupted, distinguishing it from multithreading.
 - This model eliminates the need for complex synchronization methods, thereby reducing overhead, as there is no requirement for **locks**.
