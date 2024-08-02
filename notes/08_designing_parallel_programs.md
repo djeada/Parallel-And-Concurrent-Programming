@@ -78,7 +78,7 @@ Block decomposition is a technique used in matrix theory and linear algebra. It 
 
 Example:
 
-Consider a matrix $A$ of size $4 \times$:
+Consider a matrix $A$ of size $4 \times 4$:
 
 $$
 A = \begin{pmatrix}
