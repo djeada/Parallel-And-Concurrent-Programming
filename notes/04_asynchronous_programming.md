@@ -1,4 +1,3 @@
-
 ## Asynchrony
 
 Asynchronous programming is a technique used to achieve concurrency, where tasks can be executed independently without waiting for other tasks to finish. It allows for nonblocking behavior, in contrast to synchronous execution that waits for one task to complete before starting the next task.
@@ -9,7 +8,74 @@ Asynchronous programming is particularly useful for tasks that involve I/O opera
 
 Asynchronous programming offers non-blocking execution, which is especially beneficial for I/O-bound operations. The two main pillars of this paradigm are the event loop and async functions.
 
+
+### Function vs Corutine
+
+```
+Function:                         Coroutine:
++-------------------+             +-------------------+
+|       Start       |             |       Start       |
++-------------------+             +-------------------+
+           |                                 |
+           v                                 v
++-------------------+             +-------------------+
+|   Execute Task    |             |   Execute Part 1  |
++-------------------+             +-------------------+
+           |                                 |
+           v                                 v
++-------------------+             +-------------------+
+|       End         |             |       Pause       |
++-------------------+             +-------------------+
+                                             |
+                                             v
+                                  +-------------------+
+                                  |   Execute Part 2  |
+                                  +-------------------+
+                                             |
+                                             v
+                                  +-------------------+
+                                  |       End         |
+                                  +-------------------+
+```
+
 ### Event Loop
+
+```
+         +------------------+
+         | Initialize Loop  |
+         +--------+---------+
+                  |
+                  v
+          +---------------+
+          |   Wait for    |<-------------------
+          |   Event(s)    |                   |
+          +-------+-------+                   |
+                  |                           |
+                  v                           |
+          +---------------+                   |
+          | Process Event |                   |
+          +---------------+                   |
+                  |                           |
+                  v                           |
+          +---------------+                   |
+          |   Handle any  |                   |
+          |   Callbacks   |                   |
+          +---------------+                   |
+                  |                           |
+                  v                           |
+           +-------------+                    |
+           | Check if    |                    |
+           |  Loop is    | ------ No ----------
+           |  Terminated |
+           +------+------+
+                  |
+                 Yes
+                  |
+                  v
+          +---------------+
+          |   Exit Loop   |
+          +-------+-------+
+```
 
 The event loop is the engine driving asynchronous programming. It constantly checks for and executes tasks.
 
@@ -96,36 +162,21 @@ thread 3: ----CCCC------
 
 ## Challenges and Considerations in Asynchronous Programming
 
-Asynchronous functions, distinct from multithreading, utilize a cooperative approach. Here, tasks willingly give up control, rather than being preemptively interrupted. This cooperative model offers advantages:
-
-- **Elimination of Locks**: No need for complex synchronization methods, reducing overhead.
-- **Efficient Task Switching**: Transitions between tasks are swift, without the heavyweight context switches seen in threads.
-
-But, it's not without challenges:
-
-1. **Working with Synchronous Functions**:
-   - **Challenge**: Embedding synchronous code in an asynchronous context can lead to blocking, undermining the efficiency of your async system.
-   - **Solution**: Utilize `run_in_executor` to offload synchronous operations to separate threads. Alternatively, rewrite synchronous code to be asynchronous.
-
-2. **Error Handling**:
-   - **Challenge**: Async code's error dynamics differ from synchronous code. Unhandled exceptions in coroutines could disrupt the event loop.
-   - **Solution**: Always implement robust exception handling within coroutines. Understand how errors can ripple through your async operations.
-
-3. **Debugging Asynchronous Code**:
-   - **Challenge**: The non-linear flow of asynchronous applications can make traditional debugging tricky.
-   - **Solution**: Leverage detailed logging, and make use of specialized tools like `asyncio.debug()`. They provide insights into task transitions and pauses.
-
-4. **Scalability Considerations**:
-   - **Challenge**: While async shines for I/O-bound operations, CPU-bound tasks might not benefit similarly.
-   - **Solution**: For CPU-intensive workloads, consider a hybrid approach. Combine multithreading and multiprocessing to extract maximum performance.
-
-5. **Handling Backpressure**:
-   - **Challenge**: In systems where data production and consumption rates differ, you risk overloading parts of the system.
-   - **Solution**: Implement mechanisms like buffering, throttling, or load shedding to regulate data flow, ensuring no component gets overwhelmed.
-
-6. **Testing Asynchronous Code**:
-   - **Challenge**: The inherent unpredictability in asynchronous task execution complicates testing.
-   - **Solution**: Adopt testing tools, such as `pytest-asyncio`, built explicitly for asynchronous paradigms. These tools can simulate various scenarios, ensuring your async code behaves as expected.
+- In **asynchronous programming**, functions operate on a cooperative model where tasks voluntarily yield control, rather than being preemptively interrupted, distinguishing it from multithreading.
+- This model eliminates the need for complex synchronization methods, thereby reducing overhead, as there is no requirement for **locks**.
+- Task switching is efficient in this context, as transitions are quick and avoid the heavy context switches typical in **threads**.
+- There are challenges when **integrating synchronous functions** within an asynchronous context, as they can cause blocking and undermine system efficiency.
+- To address this, developers can use `run_in_executor` to offload synchronous operations to separate threads, or they can **refactor** the code to be fully asynchronous.
+- **Error handling** in asynchronous code can be complex, since unhandled exceptions in coroutines can disrupt the event loop, potentially impacting the entire application.
+- It is important to implement robust exception handling within coroutines and understand how **errors** can propagate through asynchronous systems.
+- **Debugging asynchronous code** is challenging due to its non-linear flow, making traditional debugging techniques less effective.
+- Utilizing detailed **logging** and specialized tools, such as `asyncio.debug()`, can help provide insight into task transitions and pauses, aiding the debugging process.
+- While asynchronous programming is well-suited for handling **I/O-bound operations**, it may not be as effective for **CPU-bound tasks**, necessitating careful consideration for scalability.
+- A **hybrid approach**, combining multithreading and multiprocessing, can be employed to optimize performance for CPU-intensive workloads.
+- Managing **backpressure** is critical, as discrepancies between data production and consumption rates can overwhelm system components.
+- Strategies such as **buffering**, throttling, or load shedding can be used to regulate data flow and prevent system overload.
+- **Testing asynchronous code** is inherently challenging due to the unpredictable nature of task execution, complicating the testing process.
+- Using testing tools specifically designed for **asynchronous environments**, such as `pytest-asyncio`, enables the simulation of various scenarios and ensures the reliability of the code.
 
 ### Examples
 
