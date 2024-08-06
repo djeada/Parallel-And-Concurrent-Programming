@@ -20,7 +20,6 @@
 - [ ] thread; processes
 - [ ] thread; other threads
 - [x] process; threads
-- [ ] thread; instructions
 
 #### Q. Parallel computing primarily enhances the _____.
 
@@ -68,7 +67,6 @@
 - [ ] are considered more "lightweight"
 - [ ] are faster to switch between
 - [x] require more overhead to create
-- [ ] are more scalable
 
 #### Q. In C++, what happens to a std::thread object immediately after being instantiated?
 
