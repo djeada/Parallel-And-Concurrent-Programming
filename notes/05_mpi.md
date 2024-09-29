@@ -84,31 +84,6 @@ While MPI provides a comprehensive set of functions, many parallel applications 
 - MPI supports the creation of new communicators to organize and define **process subgroups**, offering flexibility for modular programming and enabling the isolation of communication within different parts of the program, such as in libraries.
 - Communicators also establish a **context**, which acts as a secure communication domain, ensuring that messages transmitted within one communicator are not mistakenly received by processes in another, thus preventing message conflicts when using multiple libraries or modular components in a program.
 
-## MPI Initialization and Finalization
-
-### MPI_Init
-
-- Must be called once by each process before any other MPI function.
-- Typically called at the beginning of the `main` function.
-- Initializes the MPI environment and sets up the necessary resources.
-
-### MPI_Finalize
-
-- Must be called by each process after all MPI operations are completed.
-- Cleans up the MPI environment and frees resources.
-
-## Determining Process Information
-
-### MPI_Comm_size
-
-- Used to determine the total number of processes participating in the communicator.
-- Essential for writing code that adapts to different numbers of processes.
-
-### MPI_Comm_rank
-
-- Used to determine the rank (identifier) of the calling process within the communicator.
-- The rank is used to differentiate the behavior of processes, for example, assigning different tasks or data partitions.
-
 ## Example Program: "Hello World" in MPI
 
 Below is a simple MPI program that illustrates the basic structure of an MPI application.
@@ -199,7 +174,7 @@ mpirun -np 4 ./hello_world
 
 ```
 
-### Sample Output
+Sample Output:
 
 ```
 
@@ -414,7 +389,7 @@ int main(int argc, char *argv[]) {
 
 ```
 
-### Output
+Output:
 
 If there are 4 processes, the local sums are 1, 2, 3, 4, and the global sum is 10.
 
@@ -444,69 +419,7 @@ MPI provides language bindings for C, C++, and Fortran, allowing MPI functions t
 - **Constants and handles** in Fortran are defined in `mpif.h` or the `mpi` module, providing a consistent set of identifiers across MPI programs.
 - MPI provides **data types** in Fortran, such as `MPI_INTEGER` for integers and `MPI_REAL` for real numbers, mapping directly to Fortran's native types.
 
-## Example: Parallel Computation of Pi
-
-As a more illustrative example, let's consider computing the value of Pi using numerical integration in parallel.
-
-Algorithm:
-
-- Use the numerical integration of the function \( f(x) = \frac{4}{1 + x^2} \) from \( 0 \) to \( 1 \).
-- Divide the interval among processes; each process computes a partial sum over its subinterval.
-- Use `MPI_Reduce` to sum up the partial results.
-
-### C Version
-
-```c
-
-#include <mpi.h>
-
-#include <stdio.h>
-
-int main(int argc, char *argv[]) {
-    int rank, size, n, i;
-    double h, local_sum, x, pi, total_sum;
-
-    MPI_Init(&argc, &argv);               // Initialize MPI environment
-
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank); // Get rank
-
-    MPI_Comm_size(MPI_COMM_WORLD, &size); // Get size
-
-    n = 1000000; // Number of intervals
-    h = 1.0 / (double)n;
-    local_sum = 0.0;
-
-    // Compute partial sum
-    for (i = rank; i < n; i += size) {
-        x = h * ((double)i + 0.5);
-        local_sum += 4.0 / (1.0 + x * x);
-
-    }
-
-    local_sum *= h;
-
-    // Reduce all partial sums to the total sum
-
-    MPI_Reduce(&local_sum, &pi, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-
-    if (rank == 0) {
-        printf("Approximate value of Pi: %.16f\n", pi);
-
-    }
-
-    MPI_Finalize();
-    return 0;
-
-}
-
-```
-
-### Explanation
-
-- **Process distribution** is handled such that each process computes the sum over intervals, where each process begins at its rank and calculates over every `size`-th interval, distributing the workload evenly.
-- **MPI_Reduce** is used to collect and sum all the local sums from individual processes, resulting in the final aggregated approximation of Pi.
-
-# Determinism in MPI Programs
+### Determinism in MPI Programs
 
 In parallel computing, **determinism** refers to the property where a program produces the same output every time it is run with the same input, regardless of the timing of events during execution. In message-passing programming models like MPI, achieving determinism can be challenging due to the inherent nondeterminism in the arrival order of messages.
 
@@ -514,15 +427,11 @@ Consider a scenario where two processes, **Process A** and **Process B**, send m
 
 Ensuring that an MPI program behaves deterministically is crucial for debugging, testing, and verifying parallel applications. It is the programmer's responsibility to design the communication patterns and use MPI features appropriately to achieve determinism.
 
-## Techniques for Ensuring Determinism
-
 To make MPI programs deterministic, programmers can employ the following techniques:
 
-### 1. Specifying Message Sources
+#### 1. Specifying Message Sources
 
 By default, when a process calls `MPI_Recv`, it can specify the source of the message or accept messages from any source by using `MPI_ANY_SOURCE`. To ensure determinism, it is advisable to specify the exact source process from which to receive messages. This eliminates ambiguity about which message is received and in what order.
-
-* 
 
 ```c
 
@@ -536,11 +445,9 @@ MPI_Recv(buffer, count, datatype, source_rank, tag, comm, &status);
 
 ```
 
-### 2. Using Message Tags
+#### 2. Using Message Tags
 
 MPI allows messages to be labeled with a **tag**, an integer value specified during send and receive operations. By carefully assigning and matching tags, processes can distinguish between different types of messages and ensure that they receive the correct message at the correct time.
-
-* 
 
 ```c
 
@@ -554,28 +461,22 @@ MPI_Recv(data, count, datatype, source_rank, TAG_DATA, comm, &status);
 
 ```
 
-### 3. Ordering Communication Operations
+#### 3. Ordering Communication Operations
 
 Designing the communication sequence so that all processes follow a predetermined order can help in achieving determinism. This often involves structuring the program such that all sends and receives occur in a fixed sequence, possibly by using barriers or other synchronization mechanisms.
 
-### 4. Avoiding Wildcards
+#### 4. Avoiding Wildcards
 
 Minimize the use of wildcards like `MPI_ANY_SOURCE` and `MPI_ANY_TAG` in receive operations. While they provide flexibility, they can lead to nondeterministic behavior because the order in which messages are received can vary between executions.
 
-## Example: Nondeterministic Program
+#### Example: Nondeterministic Program
 
 Let's examine a program that demonstrates nondeterministic behavior due to the use of `MPI_ANY_SOURCE` and `MPI_ANY_TAG`.
 
-### Description
-
 The program implements a symmetric pairwise interaction algorithm in which processes are arranged in a ring topology. Each process sends data halfway around the ring and then receives data from any source. Finally, it returns accumulated data to the originating process.
 
-### C Version
-
 ```c
-
 #include <mpi.h>
-
 #include <stdio.h>
 
 int main(int argc, char *argv[]) {
@@ -625,8 +526,6 @@ In this program:
 
 To make the program deterministic, modify the `MPI_Recv` calls to specify the exact source and tag expected.
 
-* 
-
 ```c
 
 MPI_Recv(buff, 600, MPI_FLOAT, rnbr, 1, MPI_COMM_WORLD, &status);
@@ -658,7 +557,7 @@ Below is a summary of important collective communication functions provided by M
 
 Let's consider an example where we need to compute the sum of an array distributed across multiple processes.
 
-#### Problem Description
+Problem Description:
 
 - Compute the global sum of a large array distributed across `N` processes.
 - Each process holds a portion of the array (`local_array`).
@@ -668,7 +567,6 @@ Let's consider an example where we need to compute the sum of an array distribut
 #### Code Example (C)
 
 ```c
-
 #include <mpi.h>
 
 #include <stdio.h>
@@ -751,16 +649,14 @@ Explanation:
 - The local sums are reduced to a global sum using `MPI_Reduce` with the `MPI_SUM` operation.
 - The root process prints the global sum.
 
-## Finite Difference Problem Using MPI
-
-### Problem Description
+#### Finite Difference Problem Using MPI
 
 We aim to solve a finite difference problem where a computational domain is divided among multiple processes. The algorithm requires:
 
 - **Nearest-neighbor communication** occurs when each process requires data from its immediate neighboring processes to perform local computations or updates, commonly seen in grid-based or iterative algorithms.
 - **Global communication** is necessary when processes must collectively evaluate a condition, such as determining convergence or termination, based on a **global error metric** that involves contributions from all processes.
 
-### Code Example (C)
+#### Code Example (C)
 
 ```c
 
@@ -891,7 +787,7 @@ int main(int argc, char *argv[]) {
 
 ```
 
-#### Explanation
+Explanation:
 
 - The root process initializes the problem size and data array.
 - The problem size is broadcasted, and the data is scattered among processes.
@@ -919,7 +815,7 @@ A **communicator** in MPI is an object that represents a group of processes that
 | **MPI_Comm_dup**      | Duplicates an existing communicator to create a new one with the same group but a different communication context. This is useful for isolating communication in different modules. | `MPI_Comm comm, MPI_Comm *newcomm`                                                                  |
 | **MPI_Comm_split**    | Splits a communicator into multiple, disjoint sub-communicators based on color and key values. This is useful for creating process subgroups. | `MPI_Comm comm, int color, int key, MPI_Comm *newcomm`                                              |
 
-* Splitting Processes into Subgroups**
+Splitting Processes into Subgroups:
 
 ```c
 
@@ -993,14 +889,12 @@ MPI_Type_free(&column_type);
 
 ```
 
-### Benefits
+Benefits:
 
 - Avoids copying non-contiguous data into a contiguous buffer.
 - Simplifies code by allowing MPI to handle complex data layouts.
 
 ## Asynchronous Communication
-
-### Overview
 
 Asynchronous communication allows a process to initiate a communication operation and then proceed without waiting for it to complete. This can help overlap computation and communication, improving performance.
 
