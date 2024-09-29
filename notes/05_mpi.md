@@ -69,19 +69,12 @@ While MPI provides a comprehensive set of functions, many parallel applications 
 ### Core MPI Functions
 
 | **Function**          | **Description**                                                                    | **Parameters**                                                     |
-
 |-----------------------|------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-
 | **MPI_Init**          | Initializes the MPI execution environment. Must be called before any other MPI function. | `int *argc, char ***argv` - Arguments passed to the program        |
-
 | **MPI_Finalize**      | Terminates the MPI execution environment. No MPI functions can be called after this. | None                                                               |
-
 | **MPI_Comm_size**     | Determines the size of the group associated with a communicator.                    | `MPI_Comm comm, int *size` - Communicator and pointer to store size|
-
 | **MPI_Comm_rank**     | Determines the rank of the calling process in the communicator.                     | `MPI_Comm comm, int *rank` - Communicator and pointer to store rank|
-
 | **MPI_Send**          | Performs a standard-mode, blocking send.                                            | `void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm` |
-
 | **MPI_Recv**          | Performs a standard-mode, blocking receive.                                         | `void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status *status` |
 
 ## Introduction to MPI Communicators
@@ -320,13 +313,9 @@ Process 1 received number 42 from process 0
 Non-blocking communication allows processes to initiate communication operations and then proceed without waiting for them to complete. This can be useful for overlapping computation with communication.
 
 | **Function**          | **Description**                                                                | **Parameters**                                                                                      |
-
 |-----------------------|--------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
-
 | **MPI_Isend**         | Initiates a non-blocking send.                                                  | `void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request`|
-
 | **MPI_Irecv**         | Initiates a non-blocking receive.                                               | `void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Request *request`|
-
 | **MPI_Wait**          | Waits for a non-blocking operation to complete.                                 | `MPI_Request *request, MPI_Status *status`                                                          |
 
 ### Example: Non-Blocking Communication
@@ -383,17 +372,11 @@ int main(int argc, char *argv[]) {
 Collective communication involves all processes in a communicator. MPI provides various collective operations such as:
 
 | **Function**          | **Description**                                                                | **Parameters**                                                                                                  |
-
 |-----------------------|--------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
-
 | **MPI_Bcast**         | Broadcasts a message from one process to all other processes.                   | `void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm`                                        |
-
 | **MPI_Reduce**        | Performs a reduction operation (e.g., sum, max) across all processes and returns the result to a single process. | `const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm`     |
-
 | **MPI_Allreduce**     | Similar to `MPI_Reduce`, but the result is returned to all processes.            | `const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm`               |
-
 | **MPI_Scatter**       | Distributes distinct chunks of data from one process to all processes.           | `const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm` |
-
 | **MPI_Gather**        | Gathers data from all processes to one process.                                 | `const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm` |
 
 ### Example: MPI_Reduce
@@ -661,23 +644,14 @@ Parallel algorithms often require coordinated communication among multiple proce
 Below is a summary of important collective communication functions provided by MPI:
 
 | **Function**        | **Purpose**                                           |
-
 |---------------------|-------------------------------------------------------|
-
 | `MPI_Barrier`       | Synchronizes all processes in a communicator.         |
-
 | `MPI_Bcast`         | Broadcasts data from one process to all others.       |
-
 | `MPI_Gather`        | Gathers data from all processes to one process.       |
-
 | `MPI_Scatter`       | Distributes distinct data from one process to all.    |
-
 | `MPI_Reduce`        | Reduces values on all processes to a single result.   |
-
 | `MPI_Allreduce`     | Similar to `MPI_Reduce`, but result is shared.        |
-
 | `MPI_Allgather`     | Gathers data from all processes to all processes.     |
-
 | `MPI_Alltoall`      | Sends data from all processes to all processes.       |
 
 ### Complete Example: Parallel Summation
@@ -941,11 +915,8 @@ A **communicator** in MPI is an object that represents a group of processes that
 #### Creating New Communicators
 
 | **Function**          | **Description**                                                                                          | **Parameters**                                                                                      |
-
 |-----------------------|----------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
-
 | **MPI_Comm_dup**      | Duplicates an existing communicator to create a new one with the same group but a different communication context. This is useful for isolating communication in different modules. | `MPI_Comm comm, MPI_Comm *newcomm`                                                                  |
-
 | **MPI_Comm_split**    | Splits a communicator into multiple, disjoint sub-communicators based on color and key values. This is useful for creating process subgroups. | `MPI_Comm comm, int color, int key, MPI_Comm *newcomm`                                              |
 
 * Splitting Processes into Subgroups**
@@ -971,7 +942,7 @@ To enable communication between different groups, MPI provides **intercommunicat
 
 | **MPI_Intercomm_create**   | Creates an intercommunicator that allows communication between two groups of processes.                | `MPI_Comm local_comm, int local_leader, MPI_Comm peer_comm, int remote_leader, int tag, MPI_Comm *newintercomm`     |
 
-* Creating an Intercommunicator**
+Creating an Intercommunicator:
 
 ```c
 
@@ -990,13 +961,9 @@ MPI_Intercomm_create(local_comm, local_leader, MPI_COMM_WORLD, remote_leader, ta
 In many applications, data to be sent or received may not be stored contiguously in memory. MPI allows the creation of **derived data types** to describe such complex memory layouts, enabling efficient communication without extra copying.
 
 | **Function**              | **Description**                                                                                      | **Parameters**                                                                                                       |
-
 |---------------------------|------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
-
 | **MPI_Type_contiguous**    | Creates a new data type representing a contiguous block of elements.                                 | `int count, MPI_Datatype oldtype, MPI_Datatype *newtype`                                                             |
-
 | **MPI_Type_vector**        | Creates a data type representing blocks of elements with a regular stride.                           | `int count, int blocklength, int stride, MPI_Datatype oldtype, MPI_Datatype *newtype`                                 |
-
 | **MPI_Type_indexed**       | Creates a data type with blocks at arbitrary displacements.                                          | `int count, const int array_of_blocklengths[], const int array_of_displacements[], MPI_Datatype oldtype, MPI_Datatype *newtype` |
 
 ### Example: Sending a Column of a Matrix
@@ -1047,11 +1014,8 @@ Asynchronous communication allows a process to initiate a communication operatio
 Sometimes, a process may need to check if a message has arrived without actually receiving it.
 
 | **Function**          | **Description**                                                                                | **Parameters**                                                                                         |
-
 |-----------------------|------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
-
 | **MPI_Iprobe**        | Non-blocking check for the arrival of a message.                                                | `int source, int tag, MPI_Comm comm, int *flag, MPI_Status *status`                                     |
-
 | **MPI_Probe**         | Blocking check for a message; returns when a message is available.                              | `int source, int tag, MPI_Comm comm, MPI_Status *status`                                                |
 
 ### Example: Dynamic Message Handling
