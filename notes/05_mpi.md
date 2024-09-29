@@ -1,4 +1,4 @@
-# Message Passing Interface (MPI)
+## Message Passing Interface (MPI)
 
 The **Message Passing Interface (MPI)** is a standardized and portable message-passing system designed to function on a wide variety of parallel computing architectures. It provides a set of library routines that can be called from programming languages like C, C++, and Fortran to write parallel applications. MPI allows multiple processes to communicate with one another by sending and receiving messages, enabling the development of scalable and efficient parallel programs.
 
@@ -12,23 +12,23 @@ Main idea:
 - While MPI consists of over 100 functions, a small subset is sufficient for most applications. This subset includes functions for initialization, communication, synchronization, and finalization.
 - MPI can be used with various programming languages and supports both single-program multiple-data (SPMD) and multiple-program multiple-data (MPMD) models.
 
-## MPI Programming Model
+### MPI Programming Model
 
 MPI follows the **message-passing programming model**, where processes communicate by explicitly sending and receiving messages. Here are the key aspects of the MPI programming model:
 
-### Process Model
+#### Process Model
 
 - In an MPI program, the number of processes is typically fixed at the start of the program. Each process runs independently and can be mapped to a separate processor or core.
 - Each process has a unique identifier called a **rank**, which ranges from `0` to `N-1`, where `N` is the total number of processes.
 - A communicator defines a group of processes that can communicate with each other. The default communicator, `MPI_COMM_WORLD`, includes all processes.
 
-### Communication Types
+#### Communication Types
 
 - **Point-to-Point Communication** involves direct communication between pairs of processes. Functions like `MPI_Send` and `MPI_Recv` are used for sending and receiving messages.
 - **Collective Communication** involves communication among all processes in a communicator. Functions like `MPI_Bcast`, `MPI_Reduce`, and `MPI_Barrier` are used for collective operations.
 - **Non-Blocking Communication** allows processes to initiate communication operations that can proceed concurrently with computation. Functions like `MPI_Isend` and `MPI_Irecv` initiate non-blocking operations.
 
-### Synchronization
+#### Synchronization
 
 - MPI provides the `MPI_Barrier` function, which acts as a synchronization point. All processes in a communicator must reach this barrier before any can proceed. This ensures that no process moves forward until all others have caught up, making it useful for coordinating stages of parallel computation.
 - In addition to `MPI_Barrier`, other collective operations like `MPI_Bcast`, `MPI_Reduce`, and `MPI_Gather` implicitly involve synchronization. While these functions perform data movement, they also ensure synchronization by requiring participation from all processes within a communicator.
@@ -36,7 +36,7 @@ MPI follows the **message-passing programming model**, where processes communica
 - MPI allows for finer synchronization via point-to-point communication calls like `MPI_Sendrecv` and non-blocking functions (`MPI_Isend`, `MPI_Irecv`). These allow more precise control over synchronization by managing communication dependencies without forcing all processes to wait.
 - While synchronization ensures correctness in parallel programs, excessive use of barriers or collective synchronization functions can hurt performance by forcing idle times for processes. Minimizing unnecessary synchronization is important for optimizing parallel efficiency.
 
-### Process Topologies
+#### Process Topologies
 
 - MPI supports the creation of virtual topologies, allowing processes to be mapped onto structured logical grids. These topologies do not affect how processes are scheduled on physical processors but influence communication patterns within the application, improving efficiency when the communication aligns with the problem’s structure.
 - The `MPI_Cart_create` function helps create Cartesian topologies, which are useful for problems that naturally align with grid-based domains, such as finite difference or finite element simulations. Cartesian grids allow processes to easily determine their neighbors using MPI’s topology-aware functions, such as `MPI_Cart_shift`.
@@ -44,29 +44,29 @@ MPI follows the **message-passing programming model**, where processes communica
 - Using virtual topologies can enhance communication efficiency by reducing the need for complex address calculations or irregular data exchanges. MPI’s built-in functions, like `MPI_Cart_coords` and `MPI_Cart_rank`, simplify the management of communication, allowing for more natural mappings of processes to computational domains.
 - MPI’s Cartesian topology support includes features such as dimensionality and periodic boundary conditions. This allows programmers to map processes in ways that reflect the physical properties of the problem, such as simulating toroidal or cylindrical systems where edge processes need to communicate with processes on the opposite side of the grid.
 
-## Implementing Parallel Algorithms with MPI
+### Implementing Parallel Algorithms with MPI
 
 MPI provides the tools necessary to implement a wide range of parallel algorithms. Here are some considerations:
 
-### Data Decomposition
+#### Data Decomposition
 
 - In **domain decomposition**, the data is split into smaller, manageable chunks, where each process works on a specific portion of the dataset, which is particularly useful in large-scale **simulations** or numerical computations.
 - **Task decomposition** involves dividing the overall computational tasks so that each process can work on a distinct function or subtask, often used to enhance the **parallel efficiency** of complex systems.
 - The primary benefit of domain decomposition is that it allows for **load balancing**, ensuring that each process is equally utilized, minimizing idle time and maximizing computational resources.
 - In contrast, task decomposition can introduce a certain level of **heterogeneity** in workload since different tasks might have different computational demands.
 
-### Communication Patterns
+#### Communication Patterns
 
 - **Nearest neighbor communication** is a pattern where each process exchanges data only with its adjacent processes, which is particularly relevant in **grid-based computations** such as finite difference methods in scientific computing.
 - **Global communication** involves scenarios where processes need to exchange data with every other process, such as in collective operations like **global sums**, reductions, or broadcasts.
 - Nearest neighbor communication is more **localized**, reducing the communication overhead since data only needs to travel to nearby processes, making it efficient in systems with a structured spatial domain.
 - On the other hand, global communication often involves **all-to-all communication**, requiring synchronization across all processes, which can introduce **latency** and bottlenecks in large-scale systems.
 
-## MPI Basics
+### MPI Basics
 
 While MPI provides a comprehensive set of functions, many parallel applications can be developed using a core subset of functions. These functions cover initialization, communication, and finalization.
 
-### Core MPI Functions
+#### Core MPI Functions
 
 | **Function**          | **Description**                                                                    | **Parameters**                                                     |
 |-----------------------|------------------------------------------------------------------------------------|--------------------------------------------------------------------|
@@ -77,18 +77,18 @@ While MPI provides a comprehensive set of functions, many parallel applications 
 | **MPI_Send**          | Performs a standard-mode, blocking send.                                            | `void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm` |
 | **MPI_Recv**          | Performs a standard-mode, blocking receive.                                         | `void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status *status` |
 
-## Introduction to MPI Communicators
+#### Introduction to MPI Communicators
 
 - A **communicator** in MPI refers to a fundamental concept that represents a group of processes capable of exchanging messages with each other, forming the basis for coordinated communication in parallel programs.
 - **MPI_COMM_WORLD** is the default communicator provided by MPI, which encompasses all the processes that are spawned when the MPI program begins, enabling broad communication across the entire set of processes.
 - MPI supports the creation of new communicators to organize and define **process subgroups**, offering flexibility for modular programming and enabling the isolation of communication within different parts of the program, such as in libraries.
 - Communicators also establish a **context**, which acts as a secure communication domain, ensuring that messages transmitted within one communicator are not mistakenly received by processes in another, thus preventing message conflicts when using multiple libraries or modular components in a program.
 
-## Example Program: "Hello World" in MPI
+#### Example Program: "Hello World" in MPI
 
 Below is a simple MPI program that illustrates the basic structure of an MPI application.
 
-### C Version
+##### C Version
 
 ```c
 
@@ -124,7 +124,7 @@ int main(int argc, char *argv[]) {
 
 ```
 
-### Fortran Version
+##### Fortran Version
 
 ```fortran
 program hello_world
@@ -151,7 +151,7 @@ end program hello_world
 
 ```
 
-### Compilation and Execution
+##### Compilation and Execution
 
 To compile the C version:
 
@@ -188,22 +188,22 @@ Hello world from rank 3 out of 4 processors
 
 ```
 
-## Sending and Receiving Messages
+### Sending and Receiving Messages
 
 MPI provides various communication functions to send and receive messages between processes.
 
-### MPI_Send and MPI_Recv
+#### MPI_Send and MPI_Recv
 
 - **MPI_Send** is a function used to transmit messages from one process to another in an MPI program, allowing for explicit data exchange between processes.
 - The operation of MPI_Send is **blocking**, meaning that the function only completes and returns when the data in the send buffer has been safely sent, allowing the buffer to be reused for other tasks.
 - **MPI_Recv** is designed to receive messages sent by other processes, facilitating communication by transferring data into the designated receive buffer.
 - Like MPI_Send, MPI_Recv is also a **blocking** operation, meaning the function completes only when the receive buffer is fully populated with the incoming message, ensuring that the data is ready for processing.
 
-### Example: Sending Messages Between Processes
+#### Example: Sending Messages Between Processes
 
 Consider an example where process 0 sends a message to process 1.
 
-#### C Version
+##### C Version
 
 ```c
 
@@ -246,7 +246,7 @@ int main(int argc, char *argv[]) {
 
 ```
 
-#### Fortran Version
+##### Fortran Version
 
 ```fortran
 program send_recv_example
@@ -273,7 +273,7 @@ end program send_recv_example
 
 ```
 
-#### Output
+##### Output
 
 ```
 
@@ -283,7 +283,7 @@ Process 1 received number 42 from process 0
 
 ```
 
-## Non-Blocking Communication
+### Non-Blocking Communication
 
 Non-blocking communication allows processes to initiate communication operations and then proceed without waiting for them to complete. This can be useful for overlapping computation with communication.
 
@@ -293,7 +293,7 @@ Non-blocking communication allows processes to initiate communication operations
 | **MPI_Irecv**         | Initiates a non-blocking receive.                                               | `void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Request *request`|
 | **MPI_Wait**          | Waits for a non-blocking operation to complete.                                 | `MPI_Request *request, MPI_Status *status`                                                          |
 
-### Example: Non-Blocking Communication
+#### Example: Non-Blocking Communication
 
 ```c
 
@@ -342,7 +342,7 @@ int main(int argc, char *argv[]) {
 
 ```
 
-## Collective Communication
+### Collective Communication
 
 Collective communication involves all processes in a communicator. MPI provides various collective operations such as:
 
@@ -354,7 +354,7 @@ Collective communication involves all processes in a communicator. MPI provides 
 | **MPI_Scatter**       | Distributes distinct chunks of data from one process to all processes.           | `const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm` |
 | **MPI_Gather**        | Gathers data from all processes to one process.                                 | `const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm` |
 
-### Example: MPI_Reduce
+#### Example: MPI_Reduce
 
 Suppose each process has a local sum, and we want to compute the global sum.
 
@@ -399,11 +399,11 @@ Global sum is 10
 
 ```
 
-## MPI Language Bindings
+### MPI Language Bindings
 
 MPI provides language bindings for C, C++, and Fortran, allowing MPI functions to be used naturally in these languages.
 
-### C Language Binding
+#### C Language Binding
 
 - The **header file** required for MPI programming in C is `mpi.h`, which must be included in all MPI-related programs.
 - MPI **function naming** follows a convention where function names are prefixed with `MPI_` and are written in CamelCase, maintaining consistency across the library.
@@ -411,7 +411,7 @@ MPI provides language bindings for C, C++, and Fortran, allowing MPI functions t
 - **Constants and handles** used in MPI, such as communicators and data types, are predefined in `mpi.h`, ensuring standardized communication.
 - MPI provides **data types** that correspond to C data types, such as `MPI_INT` for integers and `MPI_FLOAT` for floating-point numbers, allowing easy mapping between MPI and C.
 
-### Fortran Language Binding
+#### Fortran Language Binding
 
 - In Fortran, either `use mpi` (for Fortran 90 and later) or `include 'mpif.h'` (for Fortran 77) must be used to access MPI functions and definitions.
 - MPI **function naming** in Fortran uses uppercase letters, following a different convention compared to C.
@@ -522,7 +522,7 @@ In this program:
 - **Race conditions** occur when multiple messages are sent to a process, and the order in which they are received may vary between different executions, potentially causing unpredictable behavior.
 - **Deadlocks** can emerge when incorrect assumptions are made about the **message ordering**, leading processes to wait indefinitely for messages that may have been received in a different sequence than expected.
 
-### Ensuring Determinism in the Example
+#### Ensuring Determinism in the Example
 
 To make the program deterministic, modify the `MPI_Recv` calls to specify the exact source and tag expected.
 
@@ -534,11 +534,11 @@ MPI_Recv(buff, 600, MPI_FLOAT, rnbr, 1, MPI_COMM_WORLD, &status);
 
 By specifying `rnbr` as the source and `1` as the tag, the process ensures that it receives the expected message from its right neighbor with the correct tag.
 
-## MPI Collective Communication
+### MPI Collective Communication
 
 Parallel algorithms often require coordinated communication among multiple processes. MPI provides a set of **collective communication functions** that are optimized for such operations. These functions simplify the code and can offer performance benefits due to underlying optimizations.
 
-### Key MPI Collective Communication Functions
+#### Key MPI Collective Communication Functions
 
 Below is a summary of important collective communication functions provided by MPI:
 
@@ -553,7 +553,7 @@ Below is a summary of important collective communication functions provided by M
 | `MPI_Allgather`     | Gathers data from all processes to all processes.     |
 | `MPI_Alltoall`      | Sends data from all processes to all processes.       |
 
-### Complete Example: Parallel Summation
+#### Complete Example: Parallel Summation
 
 Let's consider an example where we need to compute the sum of an array distributed across multiple processes.
 
@@ -564,13 +564,11 @@ Problem Description:
 - Each process computes the sum of its local array (`local_sum`).
 - Use `MPI_Reduce` to compute the global sum (`global_sum`) at the root process.
 
-#### Code Example (C)
+##### Code Example (C)
 
 ```c
 #include <mpi.h>
-
 #include <stdio.h>
-
 #include <stdlib.h>
 
 int main(int argc, char *argv[]) {
@@ -656,16 +654,13 @@ We aim to solve a finite difference problem where a computational domain is divi
 - **Nearest-neighbor communication** occurs when each process requires data from its immediate neighboring processes to perform local computations or updates, commonly seen in grid-based or iterative algorithms.
 - **Global communication** is necessary when processes must collectively evaluate a condition, such as determining convergence or termination, based on a **global error metric** that involves contributions from all processes.
 
-#### Code Example (C)
+##### Code Example (C)
 
 ```c
 
 #include <mpi.h>
-
 #include <stdio.h>
-
 #include <stdlib.h>
-
 #include <math.h>
 
 void compute(float *local, int lsize) {
@@ -798,13 +793,11 @@ Explanation:
 - The loop continues until the global error is below a specified threshold.
 - Final results are gathered at the root process.
 
-## MPI Modularity and Communicators
-
-### Importance of Modularity
+### MPI Modularity and Communicators
 
 In complex parallel applications, it is essential to structure the code into modules for maintainability and reusability. MPI supports modular programming through the use of **communicators**, which define communication contexts and process groups.
 
-### Communicators in MPI
+#### Communicators in MPI
 
 A **communicator** in MPI is an object that represents a group of processes that can communicate with each other. The default communicator, `MPI_COMM_WORLD`, includes all the processes in the MPI program.
 
@@ -828,7 +821,7 @@ MPI_Comm_split(MPI_COMM_WORLD, color, myid, &new_comm);
 
 ```
 
-### Communicating Between Groups
+#### Communicating Between Groups
 
 To enable communication between different groups, MPI provides **intercommunicators**.
 
@@ -852,7 +845,7 @@ MPI_Intercomm_create(local_comm, local_leader, MPI_COMM_WORLD, remote_leader, ta
 
 ```
 
-## MPI Derived Data Types
+### MPI Derived Data Types
 
 In many applications, data to be sent or received may not be stored contiguously in memory. MPI allows the creation of **derived data types** to describe such complex memory layouts, enabling efficient communication without extra copying.
 
@@ -862,7 +855,7 @@ In many applications, data to be sent or received may not be stored contiguously
 | **MPI_Type_vector**        | Creates a data type representing blocks of elements with a regular stride.                           | `int count, int blocklength, int stride, MPI_Datatype oldtype, MPI_Datatype *newtype`                                 |
 | **MPI_Type_indexed**       | Creates a data type with blocks at arbitrary displacements.                                          | `int count, const int array_of_blocklengths[], const int array_of_displacements[], MPI_Datatype oldtype, MPI_Datatype *newtype` |
 
-### Example: Sending a Column of a Matrix
+#### Example: Sending a Column of a Matrix
 
 Suppose we have a 2D array stored in row-major order, and we want to send a column.
 
@@ -894,16 +887,16 @@ Benefits:
 - Avoids copying non-contiguous data into a contiguous buffer.
 - Simplifies code by allowing MPI to handle complex data layouts.
 
-## Asynchronous Communication
+### Asynchronous Communication
 
 Asynchronous communication allows a process to initiate a communication operation and then proceed without waiting for it to complete. This can help overlap computation and communication, improving performance.
 
-### Non-blocking Operations
+#### Non-blocking Operations
 
 - **MPI_Isend** and **MPI_Irecv** are used to initiate **non-blocking** send and receive operations, allowing processes to continue their execution without waiting for the communication to complete.
 - **MPI_Wait** and **MPI_Test** are functions that handle the completion of non-blocking operations, with MPI_Wait pausing execution until the operation finishes, while MPI_Test checks whether the operation has completed without blocking the process.
 
-### Probing for Messages
+#### Probing for Messages
 
 Sometimes, a process may need to check if a message has arrived without actually receiving it.
 
@@ -912,7 +905,7 @@ Sometimes, a process may need to check if a message has arrived without actually
 | **MPI_Iprobe**        | Non-blocking check for the arrival of a message.                                                | `int source, int tag, MPI_Comm comm, int *flag, MPI_Status *status`                                     |
 | **MPI_Probe**         | Blocking check for a message; returns when a message is available.                              | `int source, int tag, MPI_Comm comm, MPI_Status *status`                                                |
 
-### Example: Dynamic Message Handling
+#### Example: Dynamic Message Handling
 
 ```c
 
