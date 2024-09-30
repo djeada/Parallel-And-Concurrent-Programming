@@ -826,9 +826,7 @@ MPI_Comm_split(MPI_COMM_WORLD, color, myid, &new_comm);
 To enable communication between different groups, MPI provides **intercommunicators**.
 
 | **Function**              | **Description**                                                                                        | **Parameters**                                                                                                      |
-
 |---------------------------|--------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
-
 | **MPI_Intercomm_create**   | Creates an intercommunicator that allows communication between two groups of processes.                | `MPI_Comm local_comm, int local_leader, MPI_Comm peer_comm, int remote_leader, int tag, MPI_Comm *newintercomm`     |
 
 Creating an Intercommunicator:
