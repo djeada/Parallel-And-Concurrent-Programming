@@ -48,16 +48,17 @@ A web server process, for example, receives a request and assigns it to a thread
 
 ### Challenges with Multithreading
 
-- Multithreading poses challenges because threads share a **state**, simplifying communication but increasing error risk due to shared data.
-- A primary multithreading challenge is the **data race**, which occurs when the program's outcome depends on thread execution order.
-- Data races happen as threads **preemptively** switch—this means the operating system, not the programmer, controls thread switching, which can occur unpredictably.
-- When threads access the same **resources** without coordination, data races become more likely, leading to potential conflicts.
-- To prevent data races, synchronization tools like **mutexes** and **semaphores** are used to manage access to shared resources and maintain order.
-
+- In multithreaded programs, threads share a **common state**, making communication straightforward but introducing risks when accessing shared resources.
+- One of the core challenges is managing **data consistency** across threads. Without proper synchronization, multiple threads can attempt to read or modify shared data simultaneously, leading to **race conditions**.
+- Efficient resource management is critical in multithreading, as threads share memory and processing power. **Overhead** from thread management, such as switching contexts and handling locks, can negate performance benefits if not managed well.
+- Managing **shared memory** is a significant challenge, as multiple threads accessing the same memory location can lead to inconsistencies unless properly synchronized with mechanisms like locks, mutexes, or semaphores.
+- The **nondeterministic** nature of multithreading complicates debugging and testing. Since thread scheduling by the operating system is unpredictable, errors may only appear sporadically, making them hard to identify and fix.
+- Balancing **performance** and thread safety is a critical consideration, as implementing safeguards like locks can prevent data corruption but also lead to delays and reduce parallelism benefits.
+  
 #### Data Race
 
 - A data race, or **race condition**, arises when the result of a multithreaded program depends on the sequence of thread execution, creating potential for errors and unpredictable results.
-- Since threads are preemptively **switched** by the operating system, control over when switching happens is out of the programmer's hands, increasing the chance of conflicts.
+- Since threads are **preemptively switched** by the operating system, control over when switching happens is out of the programmer's hands, increasing the chance of conflicts.
 - This can be convenient, as it removes the need for manual **task-switching** control, but it also means that a switch can happen at any moment, potentially disrupting program flow.
 - Consider an example with two functions, *funA()* and *funB()*, where *funB()* relies on the result of *funA()*. In a single-threaded program, these functions execute in order:
 
