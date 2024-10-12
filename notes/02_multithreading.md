@@ -48,30 +48,29 @@ A web server process, for example, receives a request and assigns it to a thread
 
 ### Challenges with Multithreading
 
-* Multithreading challenges arise because threads share state with one another, making communication simple but error-prone.
-* The most common challenge when dealing with multithreading is the data race.
-* Data race occurs when the result of a multithreaded program depends on the order in which threads are executed.
-* This happens because threads switch preemptively, meaning that you don't control when they switch, and a switch may occur at an inconvenient moment.
-* When multiple threads use the same resources, data race becomes increasingly dangerous.
-* Mutex and semaphore are mechanisms developed to prevent data race.
+- Multithreading poses challenges because threads share a **state**, simplifying communication but increasing error risk due to shared data.
+- A primary multithreading challenge is the **data race**, which occurs when the program's outcome depends on thread execution order.
+- Data races happen as threads **preemptively** switch—this means the operating system, not the programmer, controls thread switching, which can occur unpredictably.
+- When threads access the same **resources** without coordination, data races become more likely, leading to potential conflicts.
+- To prevent data races, synchronization tools like **mutexes** and **semaphores** are used to manage access to shared resources and maintain order.
 
 #### Data Race
 
-* When a multithreaded program's result is dependent on the order in which the threads are executed, this situation is referred to as a race condition.
-* Race conditions happen because threads switch preemptively, and you don't control when the operating system makes the switch.
-* This is convenient since you don't have to manually code where the task should switch, but it requires presuming that a switch may occur at any moment.
-* Consider the following simple example: we have two functions, *funA()* and *funB()*, and *funB()* is dependent on the results of *funA()*. In a single-threaded program, you call the functions in the correct order:
+- A data race, or **race condition**, arises when the result of a multithreaded program depends on the sequence of thread execution, creating potential for errors and unpredictable results.
+- Since threads are preemptively **switched** by the operating system, control over when switching happens is out of the programmer's hands, increasing the chance of conflicts.
+- This can be convenient, as it removes the need for manual **task-switching** control, but it also means that a switch can happen at any moment, potentially disrupting program flow.
+- Consider an example with two functions, *funA()* and *funB()*, where *funB()* relies on the result of *funA()*. In a single-threaded program, these functions execute in order:
 
 ```python
 funA()
 funB()
 ```
 
-* If these functions are delegated to separate threads, the solution will fail because you don't know which function will execute first, or if they will run in parallel, leading to improper software functioning.
-* Data race occurs when at least two concurrent threads access the same memory address, with at least one of them modifying it.
-* This can corrupt the memory, so crucial areas must be protected with locks.
+- However, if assigned to separate **threads**, the execution order becomes unpredictable, potentially leading to improper results if *funB()* runs before *funA()* completes.
+- A data race specifically occurs when two threads **concurrently** access the same memory location, with at least one modifying it, leading to the risk of memory **corruption**.
+- To prevent this, **locks** can be applied to critical sections, ensuring only one thread accesses specific memory at a time, thereby maintaining data integrity.
 
-Analogy: Imagine a crowded restaurant kitchen where multiple chefs are working on the same dish at the same time, using the same ingredients and tools. If they are not coordinated properly, they might end up bumping into each other or accidentally using the same tool or ingredient at the same time, causing confusion and potentially ruining the dish. This is similar to what happens in a data race, where multiple threads are accessing the same memory location at the same time without proper synchronization, leading to unpredictable and potentially incorrect results.
+Analogy: Imagine a busy kitchen where multiple chefs work on the same dish using shared tools and ingredients. Without coordination, they might interfere with each other, using the same tool or ingredient simultaneously, resulting in mistakes or confusion. Similarly, a data race happens when threads access shared memory without synchronization, leading to unpredictable outcomes and potential errors.
 
 ```cpp
 #include <iostream>
