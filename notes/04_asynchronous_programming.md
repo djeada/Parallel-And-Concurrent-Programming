@@ -54,40 +54,36 @@ Function:                         Coroutine:
 - Additionally, the event loop is responsible for timer management, overseeing **timeouts** and the scheduling of tasks that need to occur at specific times. This includes setting up and triggering tasks based on time-based conditions. A notable aspect of the event loop's functionality is its ability to enable concurrent task execution even within single-threaded environments. By efficiently managing multiple tasks, it allows them to progress without blocking one another, thus maximizing the use of available resources.
 
 ```
-         +------------------+
-         | Initialize Loop  |
-         +--------+---------+
-                  |
-                  v
-          +---------------+
-          |   Wait for    |<-------------------
-          |   Event(s)    |                   |
-          +-------+-------+                   |
-                  |                           |
-                  v                           |
-          +---------------+                   |
-          | Process Event |                   |
-          +---------------+                   |
-                  |                           |
-                  v                           |
-          +---------------+                   |
-          |   Handle any  |                   |
-          |   Callbacks   |                   |
-          +---------------+                   |
-                  |                           |
-                  v                           |
-           +-------------+                    |
-           | Check if    |                    |
-           |  Loop is    | ------ No ----------
-           |  Terminated |
-           +------+------+
-                  |
-                 Yes
-                  |
-                  v
-          +---------------+
-          |   Exit Loop   |
-          +-------+-------+
+                   ┌─────────────┐
+                   │  Code Runs  │
+                   │  on Stack   │
+                   └─────────────┘
+                         │
+                         ▼
+   ┌───────────────────────────────┐
+   │  Async Functions / Web APIs   │
+   │  do background tasks, timers, │
+   │  network calls, etc.          │
+   └───────────────────────────────┘
+                         │
+                         ▼
+                   ┌─────────────┐   (Completion triggers callback)
+                   │  Callback   │   → placed into Task Queue
+                   └─────────────┘
+                         │
+                         ▼
+   ┌───────────────────────────────┐
+   │           Task Queue          │
+   │   (events, callbacks waiting) │
+   └───────────────────────────────┘
+                         │
+                (Event Loop Checks)
+                         ▼
+                   ┌─────────────┐
+                   │  Call Stack │ ←─ Pushed again
+                   └─────────────┘
+                         │
+                         └─────► [ Repeat Cycle... ]
 ```
 
 #### Futures and Tasks
