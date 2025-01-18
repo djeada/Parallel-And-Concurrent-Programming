@@ -163,11 +163,11 @@ Time taken: 0.023456 seconds
 
         |            |
 
-  +-----+-----+  +---+-----+
+  +-----+-----+  +---+------+
 
-  | Thread 1  |  | Thread 2|
+  | Thread 1  |  | Thread 2 |
 
-  +-----------+  +---------+
+  +-----------+  +----------+
 
         |               |
         |               |
@@ -646,9 +646,15 @@ In this example, `printMessage` is called in a separate thread, and the main thr
 
 The `join()` function is called on a `std::thread` object to wait for the associated thread to complete execution. This blocks the calling thread until the thread represented by `std::thread` finishes.
 
-* **Advantages**:
-  * Ensures that the main thread waits for the completion of the spawned thread, preventing premature termination of the program.
-  * Properly releases resources allocated to the thread upon completion.
+**Advantages**:
+
+- The main program can wait for the thread to **complete**, ensuring synchronization between threads.
+- It facilitates proper resource **management** by ensuring threads finish before the program terminates.
+
+**Disadvantages**:
+ 
+- A **drawback** is that the main program may block while waiting, potentially reducing responsiveness.
+- It requires careful handling to prevent deadlocks or race **conditions** during synchronization.
 
 ```cpp
 t1.join(); // Main thread waits for t1 to finish
@@ -658,13 +664,15 @@ t1.join(); // Main thread waits for t1 to finish
 
 Using `detach()`, a thread is separated from the `std::thread` object and continues to execute independently. This allows the main thread to proceed without waiting for the detached thread to finish. However, once detached, the thread becomes non-joinable, meaning it cannot be waited on or joined, and it will run independently until completion.
 
-* **Advantages**:
-  * The main program continues without waiting for the detached thread.
-  * Useful for fire-and-forget tasks.
+**Advantages**:
 
-* **Disadvantages**:
-  * No control over when the thread finishes.
-  * Risks of resources not being properly managed, as the program might end before the thread completes.
+- The main program continues without waiting for the detached thread, facilitating fire-and-forget tasks.
+- It is useful for **fire-and-forget** tasks.
+
+**Disadvantages**:
+
+- There is no **control** over when the thread finishes.
+- There is a risk of resources not being properly managed, as the program might end before the thread completes.
 
 ```cpp
 std::thread t2(printMessage, "This is a detached thread");
