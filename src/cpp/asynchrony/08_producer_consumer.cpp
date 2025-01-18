@@ -81,11 +81,19 @@ int main() {
   }
 
   for (auto &producer_future : producers) {
-    producer_future.wait();
+    try {
+      producer_future.get(); // Ensure exceptions are propagated
+    } catch (const std::exception &e) {
+      std::cerr << "Exception in producer: " << e.what() << '\n';
+    }
   }
 
   for (auto &consumer_future : consumers) {
-    consumer_future.wait();
+    try {
+      consumer_future.get(); // Ensure exceptions are propagated
+    } catch (const std::exception &e) {
+      std::cerr << "Exception in consumer: " << e.what() << '\n';
+    }
   }
 
   return 0;
