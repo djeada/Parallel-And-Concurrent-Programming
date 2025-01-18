@@ -1,8 +1,8 @@
-# Designing Parallel Programs
+## Designing Parallel Programs
 
 Designing parallel programs involves breaking down computational tasks into smaller, concurrent units to be executed simultaneously. This approach leverages the power of multiple processors to enhance performance and efficiency. Key steps in this process include partitioning, communication, agglomeration, and mapping.
 
-## Partitioning
+### Partitioning
 
 Partitioning is a fundamental concept in computational problem-solving, where a large problem is divided into smaller, more manageable tasks. This approach allows tasks to be executed concurrently, improving efficiency and performance. In essence, partitioning is about breaking a problem into smaller pieces.
 
@@ -19,7 +19,7 @@ Partitioning is a fundamental concept in computational problem-solving, where a 
 +---------+ +---------+ +---------+
 ```
 
-### Goals
+#### Goals
 
 I. Balance the Workload Among Tasks
 
@@ -31,7 +31,7 @@ II. Minimize Dependencies Between Tasks
 - Reduce the communication and synchronization overhead between tasks.
 - Independent tasks can be processed in parallel without frequent data exchange, improving overall performance.
 
-### Types of Decomposition
+#### Types of Decomposition
 
 I. Domain Decomposition
 
@@ -118,11 +118,11 @@ $$
 
 Block decomposition helps in performing matrix operations more efficiently by working with smaller submatrices.
 
-## Communication
+### Communication
 
 Communication in parallel computing involves the exchange of data between tasks. This process is essential when tasks depend on each other's results to proceed. Efficient communication is crucial for maintaining performance and minimizing delays.
 
-### Goals
+#### Goals
 
 I. Minimize the Volume and Frequency of Communication
 
@@ -232,7 +232,7 @@ II. Asynchronous Nonblocking Communication
 - Tasks initiate communication and then proceed with other work without waiting for the communication to complete.
 - Allows for overlapping communication with computation, potentially improving efficiency.
 
-### Key Concepts in Communication
+#### Concepts in Communication
 
 I. Overhead
 
@@ -249,11 +249,11 @@ III. Bandwidth
 - The amount of data that can be communicated per second, typically measured in gigabytes per second (GB/s).
 - Higher bandwidth allows more data to be transferred in less time, enhancing the overall performance of communication-intensive applications.
 
-## Agglomeration
+### Agglomeration
 
 Agglomeration is the process of combining smaller tasks and data partitions into larger tasks. This technique aims to reduce communication overhead and improve overall efficiency by grouping tasks that frequently interact and ensuring the aggregated tasks fit within the processor’s memory.
 
-### Goals
+#### Goals
 
 I. Improve Computational Granularity:
 
@@ -265,7 +265,7 @@ II. Minimize Communication:
 - Localizing data and computation within agglomerated tasks decreases the need for frequent data exchanges between tasks.
 - This reduction in communication can significantly enhance performance, especially in distributed computing environments.
 
-### Granularity
+#### Granularity
 
 Granularity in parallel computing refers to the ratio of computation to communication in a task or set of tasks. It indicates the amount of work done between communication events.
 
@@ -276,7 +276,7 @@ $$
 - **Fine-grained parallelism** is characterized by a high frequency of communication compared to computation, which results in low granularity.
 - **Coarse-grained parallelism**, on the other hand, is characterized by a low frequency of communication compared to computation, which results in high granularity.
 
-### Types of Parallelism
+#### Types of Parallelism
 
 I. Fine-Grained Parallelism
 
@@ -296,7 +296,7 @@ II. Coarse-Grained Parallelism
 - Despite these advantages, coarse-grained parallelism also has its drawbacks, such as poor load balancing because the workload is divided into fewer, larger tasks.
 - This can lead to situations where some processors are idle while others are overloaded, resulting in inefficiencies.
 
-### Practical Considerations
+#### Practical Considerations
 
 I. Task Grouping
 
@@ -313,11 +313,11 @@ III. Optimization Balance
 - Striking a balance between fine-grained and coarse-grained parallelism is crucial.
 - The ideal granularity depends on the specific application and the architecture of the computing system.
 
-## Mapping
+### Mapping
 
 Mapping is the process of assigning agglomerated tasks to specific processors in a parallel computing environment. Effective mapping is crucial for balancing the computational load and minimizing communication overhead.
 
-### Goals
+#### Goals
 
 I. Balance the Computational Load Across Processors
 
@@ -334,7 +334,7 @@ III. Minimize the Total Execution Time
 - Optimize the assignment of tasks to reduce the overall time required for computation and communication.
 - Efficient mapping leads to faster completion of the entire workload.
 
-### Strategies
+#### Strategies
 
 I. Static Mapping
 
@@ -361,7 +361,7 @@ V. Graph Partitioning
 - Represent tasks and their communication as a graph, where nodes represent tasks and edges represent communication.
 - Use graph partitioning algorithms to divide the graph into subgraphs with minimal edge cuts, ensuring tasks with high communication needs are grouped together.
 
-### Practical Considerations
+#### Practical Considerations
 
 I. Task Placement
 
@@ -378,12 +378,12 @@ III. Communication Patterns
 - Analyze the communication patterns of tasks to identify high-communication pairs or groups.
 - Optimize mapping to localize these communication patterns as much as possible.
 
-### Does Not Apply To
+#### Does Not Apply To
 
 - In the context of **single-core processors**, mapping is irrelevant since all tasks are executed on the same processor.
 - Systems equipped with **automated task scheduling** manage task assignment internally, rendering manual mapping unnecessary.
 
-## Example Workflow in Designing Parallel Programs
+### Example Workflow in Designing Parallel Programs
 
 I. Partitioning
 
@@ -409,14 +409,14 @@ IV. Mapping
 - Use static mapping if the workload is predictable; otherwise, opt for dynamic mapping.
 - Consider the network topology to minimize communication delays.
 
-## Key Principles
+### Principles
 
 - Effective **load balancing** aims to distribute work evenly across processors to avoid idle times.
 - **Minimizing communication** is essential to reduce the amount and frequency of data exchange between tasks.
 - **Scalability** is crucial, ensuring the system can handle increasing problem sizes and processor counts efficiently.
 - Maintaining **locality** by keeping frequently communicating tasks close to each other helps reduce communication delays.
 
-## Tools and Techniques
+### Tools and Techniques
 
 - The **Message Passing Interface** (MPI) is used for communication in distributed memory systems.
 - **OpenMP** is employed for parallel programming in shared memory systems.
