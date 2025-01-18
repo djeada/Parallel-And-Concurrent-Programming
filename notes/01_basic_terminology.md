@@ -1,6 +1,6 @@
 ## Basic terminology
 
-Let's start by defining some key terms and emphasizing the distinctions between related concepts. In general those concepts are universal and may be applied to any programming language. The differences between the languages will be discussed in greater detail later, when we attempt to explain the specific approach in implementing concurrency.
+Let's start by defining some helpful terms and emphasizing the distinctions between related concepts. In general those concepts are universal and may be applied to any programming language. The differences between the languages will be discussed in greater detail later, when we attempt to explain the specific approach in implementing concurrency.
 
 ### Sequential vs Non-sequential Execution
 
@@ -64,7 +64,7 @@ Synchronous execution requires that one task must be completed before the next o
 Characteristics of Synchronous Execution:
 
 - The **blocking** nature of synchronous execution means each task waits for the previous one to complete before starting.
-- **Predictability** is a key characteristic, as the order of task completion is easier to predict.
+- **Predictability** is an important characteristic, as the order of task completion is easier to predict.
 - The **simplicity** of synchronous execution makes it straightforward to implement and understand.
 - An **analogy** for synchronous execution is waiting in line, like standing in a queue where each person waits their turn and cannot proceed until the person in front has finished.
 
@@ -104,7 +104,7 @@ A process is an instance of a program that is currently executing on a computer.
 
 The operating system is responsible for managing all processes running on the computer. It ensures that each process gets the necessary resources and time to execute its tasks while maintaining the overall efficiency and stability of the system.
 
-Key Responsibilities of the OS in Process Management:
+Responsibilities of the OS in Process Management:
 
 - The OS performs **process scheduling** by using algorithms to determine the order in which processes run, ensuring fair distribution of CPU time among processes.
 - **Resource allocation** is managed by the OS, allocating CPU time, memory, and I/O devices to processes as needed, preventing conflicts and ensuring efficient utilization.
@@ -169,7 +169,7 @@ Characteristics of Threads:
 - **Scheduling** of threads is managed by the OS, with threads within the same process sharing the same address space.
 - **Shared resources** among threads within a process include the same memory segments (code, data, and heap), except for the stack. Each thread has its own call stack to manage its function calls and local variables.
 
-Key Differences Between Processes and Threads:
+Differences Between Processes and Threads:
 
 | Aspect                  | Process                                 | Thread                                  |
 |-------------------------|-----------------------------------------|-----------------------------------------|
@@ -208,7 +208,7 @@ To optimize a software program's performance, it's crucial to identify the prima
 
 When a task's completion time mainly depends on the speed of the CPU, it is considered CPU-bound. In simpler terms, the CPU's processing power determines how quickly the task finishes. A task is CPU-bound if it spends most of its time executing computations rather than waiting for I/O operations.
 
-Key Characteristics of CPU-Bound Tasks:
+Characteristics of CPU-Bound Tasks:
 
 - **High CPU usage** is typically exhibited when tasks cause the CPU to be almost always busy, leading to the system showing high CPU utilization.
 - Tasks that have **minimal I/O wait time** indicate that they spend very little time waiting for I/O operations, such as disk reads or writes.
@@ -232,7 +232,7 @@ In this example, the CPU is continuously processing tasks with minimal waiting f
 
 A task is I/O-bound when its completion time mostly relies on the time spent waiting for input/output operations to finish. In simpler terms, the efficiency of I/O components determines how fast the task is completed. A task is I/O-bound if it spends most of its time waiting for I/O operations, such as reading from or writing to a disk, network communication, or other I/O devices.
 
-Key Characteristics of I/O-Bound Tasks:
+Characteristics of I/O-Bound Tasks:
 
 - Tasks with **high I/O wait time** spend a significant amount of time waiting for I/O operations to complete.
 - **Low CPU usage** is observed when the CPU is often idle, waiting for I/O operations to finish before it can continue processing.
