@@ -1,8 +1,8 @@
-# Hardware in Parallel Computing
+## Hardware in Parallel Computing
 
 Parallel computing is the process of breaking a task into smaller parts that can be processed simultaneously by multiple processors. These notes explore the different ways of achieving parallelism in hardware and their impact on parallel computing performance.
 
-## Ways of Achieving Parallelism
+### Ways of Achieving Parallelism
 
 Parallelism refers to the simultaneous execution of multiple tasks or processes to improve performance and efficiency. There are several ways to achieve parallelism:
 
@@ -13,7 +13,7 @@ Parallelism refers to the simultaneous execution of multiple tasks or processes 
 - In distributed computing, multiple computers are connected over a network to work on a common task, with each machine working on a portion of the problem.
 - The combined effort of multiple machines in distributed computing leads to faster computation, which is often seen in cluster computing, grid computing, and cloud computing environments.
 
-## Single-Core CPU
+### Single-Core CPU
 
 A single-core CPU can only perform one task at a time, limiting its parallel computing capabilities. Here's a detailed breakdown of how a single-core CPU processes tasks:
 
@@ -23,14 +23,14 @@ A single-core CPU can only perform one task at a time, limiting its parallel com
 - The clock speed of the CPU determines how quickly these instructions are processed, with higher clock speeds resulting in faster performance during instruction execution.
 - Because it is a single-core CPU, it processes instructions sequentially, one at a time, which limits its ability to handle multiple tasks simultaneously during sequential processing.
 
-## Multi-Core CPU
+### Multi-Core CPU
 
 Multi-core CPUs contain multiple cores within a single processor chip, each capable of executing its own thread or process. This architecture significantly improves parallel computing performance. Here's how it works:
 
 - With multiple cores each core has its own pipeline and execution engine, which allows multiple threads or processes to be handled simultaneously in a multi-core processor. This is particularly beneficial for multi-threaded applications that can distribute their workload across several cores.
 - Hyper-threading is an early form of multithreading where a single physical core appears as two logical cores to the operating system, allowing it to run multiple threads simultaneously. While this improves efficiency, it is not as effective as having true physical cores, as it still relies on shared resources within the core.
 
-## Graphics Processing Unit (GPU)
+### Graphics Processing Unit (GPU)
 
 GPUs are specialized processors designed for parallel computing, particularly data parallelism, where many small processing cores work on different parts of the same problem simultaneously. Here's a deeper look into GPUs:
 
@@ -58,7 +58,7 @@ V. What is Floating-Point Calculations per video frame?
 - The complexity and quality of these calculations are dependent on the GPU's processing power and architecture.
 - Due to the extensive computational requirements of rendering each frame, GPUs must balance two critical performance metrics: latency and throughput.
 
-## Comparison: CPU vs GPU
+### Comparison: CPU vs GPU
 
 I. CPU Architecture Diagram
 
@@ -107,7 +107,7 @@ Below is a table comparing CPUs and GPUs, emphasizing their unique features and 
 | **Cooling Requirements** | Typically requires less aggressive cooling solutions.                                      | Often requires more advanced cooling solutions due to higher power consumption and heat generation. |
 | **Market**            | Commonly found in personal computers, servers, and mobile devices.                           | Commonly found in gaming consoles, workstations, and data centers for tasks like machine learning. |
 
-## Reducing Latency vs Increasing Throughput
+### Reducing Latency vs Increasing Throughput
 
 - In computing, **latency** is the time taken to complete a single task from start to finish.
 - **Throughput** measures the number of tasks that can be completed in a given amount of time.
@@ -119,7 +119,7 @@ Below is a table comparing CPUs and GPUs, emphasizing their unique features and 
 - **Throughput**, on the other hand, is like the total number of pizzas that can be delivered in an hour using several regular cars more efficiently.
 - For GPUs, focusing on throughput is generally more beneficial because they handle many tasks at once without needing extremely fast individual components, thereby saving power and space on the chip.
 
-### Throughput-Oriented Design
+#### Throughput-Oriented Design
 
 - The aim of **throughput-oriented design** is to maximize the total execution throughput of many threads, even if individual threads take longer to execute.
 - GPUs are designed with this approach to effectively manage the parallel nature of graphics and data processing tasks.
@@ -130,7 +130,7 @@ Below is a table comparing CPUs and GPUs, emphasizing their unique features and 
 - For GPUs, having more threads to work on simultaneously is beneficial, akin to having many assembly lines in a factory to produce multiple products at once.
 - For CPUs, fewer threads are better because they function like a master craftsman focusing on one project at a time, ensuring it's completed as quickly and efficiently as possible.
 
-## Parallel Computing Architectures
+### Parallel Computing Architectures
 
 ```
 #
@@ -155,7 +155,7 @@ Below is a table comparing CPUs and GPUs, emphasizing their unique features and 
 
 ```
 
-### Types of Parallelism: Data Parallelism vs Task Parallelism
+#### Types of Parallelism: Data Parallelism vs Task Parallelism
 
 Parallelism can be broadly classified into two types, based on how tasks are divided and executed:
 
@@ -177,7 +177,7 @@ II. Task Parallelism / MIMD (Multiple Instruction, Multiple Data)
 - **Distributed Systems** such as Hadoop, cluster systems, and MPP (Massively Parallel Processing) systems distribute tasks across multiple machines, enabling the handling of large-scale data processing.
 - An **example use case** is a web server handling multiple client requests simultaneously, where each request is an independent task.
 
-### Shared Memory Architectures
+#### Shared Memory Architectures
 
 Shared memory architectures enable multiple processors to access a common global address space, facilitating communication and data sharing among processors. This means that any changes made to a memory location by one processor are immediately visible to all other processors. There are two primary types of shared memory architectures:
 
@@ -195,7 +195,7 @@ II. Non-Uniform Memory Access (NUMA)
 - **Cache-Coherent NUMA (CC-NUMA)** ensures consistency between the caches of different processors, so that all processors have a coherent view of memory. This is fully implemented in hardware and is commonly found in recent x86 chips.
 - An **example** of NUMA is modern server architectures and high-performance computing systems, where memory is divided across multiple processors, each with its local memory.
 
-### Comparison of UMA, NUMA, SIMD, and MIMD:
+#### Comparison of UMA, NUMA, SIMD, and MIMD:
 
 Here's a summary table that outlines the relevance of shared memory, UMA, NUMA, SIMD, and MIMD to both CPUs and GPUs:
 
@@ -207,11 +207,11 @@ Here's a summary table that outlines the relevance of shared memory, UMA, NUMA, 
 | **UMA (Uniform Memory Access)** | Processors share physical memory uniformly with equal access time. | Shared memory architecture in integrated systems, simplifying programming model. |
 | **NUMA (Non-Uniform Memory Access)** | Memory access time depends on the memory location relative to the processor, improving scalability. | Less common, but can be implemented in high-end systems for large-scale parallel processing. |
 
-## Distributed Computing and Cluster Computing Architectures
+### Distributed Computing and Cluster Computing Architectures
 
 Distributed computing and cluster computing are approaches to parallelism that leverage multiple machines to work on a common task. They offer significant benefits in terms of scalability, fault tolerance, and performance.
 
-### Distributed Computing
+#### Distributed Computing
 
 Distributed computing involves a network of independent computers that work together to perform a task. These computers communicate and coordinate their actions by passing messages to one another.
 
@@ -238,7 +238,7 @@ IV. Challenges
 - **Synchronization** ensures that all nodes work cohesively and data remains consistent across the system.
 - **Security** involves protecting data as it travels across potentially insecure networks, ensuring the integrity and confidentiality of information.
 
-### Cluster Computing
+#### Cluster Computing
 
 Cluster computing involves a group of closely connected computers that work together as a single system. Clusters are typically used for high-performance computing tasks.
 
@@ -265,7 +265,7 @@ IV. Challenges
 - **Cost** is a consideration, as high-speed networks and homogeneous hardware can be expensive.
 - Regular **Maintenance** is required to ensure optimal performance and reliability of the cluster system.
 
-### Comparison of Distributed and Cluster Computing
+#### Comparison of Distributed and Cluster Computing
 
 | **Aspect**           | **Distributed Computing**                                                                 | **Cluster Computing**                                                                           |
 |----------------------|--------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
