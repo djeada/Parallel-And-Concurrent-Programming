@@ -372,6 +372,12 @@ int main() {
    so partial updates are never seen)
 ```
 
+To clear up the common confusion surrounding this term, let’s clarify how it differs from related concepts:
+
+- **Atomic**: An operation that is executed as a single, indivisible step, ensuring it is free from race conditions.  
+- **Lock-free**: A property that guarantees at least one thread will always make progress, even in the presence of contention.  
+- **Wait-free**: The strongest guarantee, ensuring that every thread makes progress within a bounded number of steps, offering maximum fairness and predictability.  
+
 #### Deadlock
 
 A **deadlock** occurs when two or more threads are blocked, each waiting for a lock that another thread already holds. Because all threads are waiting on one another, no progress can be made, and the system is effectively stuck.
