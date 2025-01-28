@@ -199,8 +199,8 @@ Write Counter = 101  Write Counter = 101
 +----------------------------+
 
 ```
-In this scenario, both threads read the same value (100) before either has a chance to write back the incremented value. This leads to lost updates and an incorrect final result.
 
+In this scenario, both threads read the same value (100) before either has a chance to write back the incremented value. This leads to lost updates and an incorrect final result.
 
 #### Mutex
 
@@ -310,9 +310,24 @@ The mutex ensures that only one thread can modify the shared counter at a time, 
 
 #### Atomic
 
-An **atomic** operation ensures that a read-modify-write sequence completes as one indivisible action. This means that no other thread can interrupt or observe a partial update, preventing data races for simple shared variables without needing a heavier synchronization mechanism like a mutex.
+An **atomic** operation ensures that a read-modify-write sequence completes as one indivisible action. This means no other thread can interrupt or observe a partial update, preventing data races for simple shared variables without needing a heavier synchronization mechanism like a mutex. Atomic operations can apply to various fundamental data types (e.g., `int`, `bool`, `pointer` types) and, in many implementations, to user-defined types that are trivially copyable and do not exceed a certain size (often the size of a machine word).  
 
-**Analogy**:  
+In C++, these atomic types are provided by `std::atomic<T>`, and some specialized versions like `std::atomic_flag` offer specific functionalities. The standard guarantees that reads and writes to these types occur as single, uninterruptible steps. Operations like `load`, `store`, `fetch_add`, `fetch_sub`, `compare_exchange`, and similar can all be made atomic.
+
+**What do we gain by using atomics?**
+
+- Atomics utilize **hardware**-level instructions that are lighter than mutexes, enhancing efficiency for simple operations.
+- Operations using atomics avoid **contention** since threads don't wait for locks to be released, allowing independent progression.
+- Atomics provide **simplicity** for managing basic shared data like counters and flags, reducing the risk of race conditions.
+
+**What do we lose by using atomics?**
+
+- Using atomics requires careful management of **memory** ordering, as incorrect orderings can lead to subtle bugs.
+- Atomics are **limited** to simple operations and are not suitable for complex data structures or large objects.
+- Ensuring the correctness of higher-level algorithms with atomics can lead to **concurrency** pitfalls such as livelocks or ABA problems.
+- In scenarios with heavy contention, atomic operations may not be **faster** than other synchronization methods, depending on hardware and use case.
+
+**Analogy**:
 
 *Imagine a vending machine that instantly dispenses an item the moment you press a button and inserts your bill into a slot—no one can see a partial transaction or grab the bill out mid-transaction. The entire action (paying and getting the item) is handled as a single, uninterruptible event.*
 
@@ -354,6 +369,8 @@ int main() {
 }
 ```
 
+---
+
 **ASCII Diagram**:
 
 ```
@@ -374,9 +391,9 @@ int main() {
 
 To clear up the common confusion surrounding this term, let’s clarify how it differs from related concepts:
 
-- **Atomic**: An operation that is executed as a single, indivisible step, ensuring it is free from race conditions.  
-- **Lock-free**: A property that guarantees at least one thread will always make progress, even in the presence of contention.  
-- **Wait-free**: The strongest guarantee, ensuring that every thread makes progress within a bounded number of steps, offering maximum fairness and predictability.  
+- An operation executed as a single, indivisible step, known as **atomic**, ensures it is free from race conditions.
+- The **lock-free** property guarantees that at least one thread will always make progress, even under contention, preventing the system from blocking entirely.
+- A **wait-free** guarantee ensures that every thread makes progress within a bounded number of steps, offering maximum fairness and predictability.
 
 #### Deadlock
 
