@@ -206,7 +206,9 @@ In this scenario, both threads read the same value (100) before either has a cha
 
 - A **mutex** (short for *mutual exclusion*) ensures that only one thread can access a important section of code (and thus shared data) at any given time.
 - If one thread holds the mutex, other threads attempting to acquire it will block (or go to sleep) until the mutex is released.
+
 **Analogy**:  
+
 *Imagine a single-stall public restroom. If multiple people try to enter simultaneously, chaos ensues. Instead, a lock on the door ensures only one person can use it at a time. Similarly, a mutex ensures exclusive access to a shared resource.*
 
 **Example**:
@@ -369,9 +371,7 @@ int main() {
 }
 ```
 
----
-
-**ASCII Diagram**:
+**What is happening**:
 
 ```
              Atomic Counter
@@ -436,7 +436,7 @@ int main() {
 }
 ```
 
-**ASCII Diagram**:
+**What is happening**:
 
 ```
 Thread 1                    Thread 2
@@ -514,7 +514,7 @@ int main() {
 }
 ```
 
-**ASCII Diagram**:
+**What is happening**:
 
 ```
 Thread 1                Thread 2
@@ -587,7 +587,7 @@ int main() {
 }
 ```
 
-**ASCII Diagram**:
+**What is happening**:
 
 ```
                [Semaphore with count = 2]
@@ -940,6 +940,116 @@ int main() {
 
 In this example, `std::atomic<int>` ensures that the increment operation is atomic, preventing data races.
 
+##### Memory Orderings
+
+When using atomic operations in C++, we not only specify *which* operations should be atomic, but also *how* they synchronize with other memory operations in the program. This “how” is controlled by **memory orderings**—a set of rules that govern visibility and ordering of reads and writes.
+
+C++ provides six memory order enumerations in `std::memory_order`:
+
+1. **`std::memory_order_relaxed`**  
+2. **`std::memory_order_consume`** (mostly unimplemented in mainstream compilers)  
+3. **`std::memory_order_acquire`**  
+4. **`std::memory_order_release`**  
+5. **`std::memory_order_acq_rel`**  
+6. **`std::memory_order_seq_cst`**  
+
+Each ordering offers different guarantees about how operations on one thread become visible to other threads and in what sequence they appear to happen. Understanding these guarantees can greatly affect both the correctness and performance of concurrent code.
+
+Below is a **comparison table** that summarizes the main C++ memory orderings, their guarantees, common use cases, and potential pitfalls. Use this as a quick reference to decide which ordering is best suited for a particular concurrency scenario.
+
+| **Memory Order**               | **Brief Description**                                                          | **Key Guarantees**                                                                                                                                                                                          | **Common Use Cases**                                                                                                                    | **Pitfalls & Advice**                                                                                                                                        |
+|--------------------------------|-------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| **`std::memory_order_relaxed`** | Provides only atomicity, no ordering constraints                             | - The operation itself is atomic (indivisible)  <br/> - No guarantees about visibility or ordering relative to other operations                                                                             | - Simple counters or statistics <br/> - Non-critical flags where ordering doesn’t matter                                                                                     | - Easy to introduce data races if other parts of the program rely on the update’s order <br/> - Great performance but requires careful design                 |
+| **`std::memory_order_consume`** | Intended to enforce data dependency ordering (rarely implemented properly)   | - Theoretically only dependent reads are ordered  <br/> - In practice, compilers often treat it like `acquire`                                                                                              | - Very specialized, mostly replaced by `acquire` in real-world code                                                                                                           | - Not well supported by most compilers <br/> - Avoid in portable or production code                                                                                              |
+| **`std::memory_order_acquire`** | Prevents following reads/writes from moving before the acquire operation      | - Ensures that subsequent operations see all side effects that happened before a matching `release` <br/> - Acts as a one-way barrier after the load                                                         | - Loading a “ready” flag to know that data is now valid <br/> - Synchronizing consumer who must see the producer’s writes                                                    | - Only ensures that instructions *after* the acquire load can’t be reordered before it <br/> - Must pair with `release` for full producer-consumer semantics |
+| **`std::memory_order_release`** | Prevents preceding reads/writes from moving after the release operation       | - Ensures all prior writes are visible to a thread that does an `acquire` on the same atomic <br/> - One-way barrier before the store                                                                        | - Setting a “ready” flag after populating shared data <br/> - Synchronizing producer who writes data before signaling availability                                          | - Doesn’t prevent instructions *after* the release from moving before it <br/> - Must pair with `acquire` to guarantee another thread will observe the updates |
+| **`std::memory_order_acq_rel`** | Acquire + Release in one read-modify-write operation                          | - Combines the effects of `acquire` and `release` for RMW ops (e.g., `fetch_add`, `compare_exchange`) <br/> - Ensures no reorder before or after the operation                                              | - Updating shared state in a single atomic step where you must see previous writes and publish new writes (e.g., lock-free structures)                                     | - Can be stronger (thus slower) than needed if you only require a one-way barrier <br/> - Must be used carefully in highly concurrent scenarios              |
+| **`std::memory_order_seq_cst`** | Enforces total sequential consistency across all threads                     | - Provides a single, global order of all sequentially consistent operations <br/> - Easiest model to reason about, strongest ordering guarantee                                                             | - When correctness is paramount and performance concerns are secondary <br/> - Prototyping concurrency code before optimizing                                               | - Highest potential performance cost <br/> - May introduce unnecessary fences on weaker architectures                                                        |
+
+**What Do We Gain By Careful Use of Memory Orderings?**
+
+- **Weaker orderings** such as `relaxed`, `acquire`, and `release` can compile to more efficient instructions on some hardware, resulting in better performance compared to using a blanket `seq_cst`.
+- Careful use of memory orderings provides **control** by ensuring only the minimal necessary barriers are in place, which helps prevent the use of expensive hardware fences when they are not needed.
+
+**What Do We Lose / Need to Beware Of?**
+
+- Managing memory orderings introduces **complexity**, making it easy to introduce subtle bugs if the chosen ordering is too weak to guarantee the necessary data visibility.
+- Code that utilizes specialized memory orderings can suffer from reduced **portability** and become harder to maintain, especially when new developers join the project.
+- Using  **overly strong orderings** like `seq_cst` everywhere can lead to over-synchronization, causing potential performance losses by missing out on possible optimizations.
+
+**Analogy**
+
+Imagine you’re coordinating a relay race: 
+
+- A `release` operation is like handing the baton off—ensuring everything you’ve done (run your segment) is finished before the next runner picks it up.  
+- An `acquire` operation is the next runner receiving the baton—ensuring they see everything you did (how far you ran, the state of the race) the moment they take it.  
+- `relaxed` would be like running without caring about handing the baton off or receiving it properly—fast, but not synchronized.  
+- `seq_cst` would be like having a strict official track judge making sure everyone runs in a strictly observed, universal order—less chance of cheating but more overhead.
+
+**Example**
+
+Below is a small snippet that demonstrates `release` and `acquire`:
+
+```cpp
+#include <atomic>
+#include <vector>
+#include <thread>
+#include <iostream>
+
+struct SharedData {
+    int value;
+};
+
+std::atomic<bool> ready(false);
+SharedData data;
+
+void producer() {
+    // 1. Write to shared data
+    data.value = 42;
+
+    // 2. Publish that data is ready
+    ready.store(true, std::memory_order_release);
+}
+
+void consumer() {
+    // Wait until the data is ready
+    while (!ready.load(std::memory_order_acquire)) {
+        // spin or sleep
+    }
+
+    // Now it is guaranteed that we see data.value = 42
+    std::cout << "Shared data value = " << data.value << std::endl;
+}
+
+int main() {
+    std::thread t1(producer);
+    std::thread t2(consumer);
+    t1.join();
+    t2.join();
+    return 0;
+}
+```
+
+- The **producer** writes `data.value = 42` and then calls `ready.store(true, std::memory_order_release)`, ensuring that any subsequent acquire operation on `ready` will see the updated `data.value`.
+- The **consumer** spins until `ready.load(std::memory_order_acquire)` becomes true, and because it’s an acquire load, once it returns true, the consumer also sees `data.value = 42`.
+
+**What is happening**:
+
+```
+   Producer Thread                Consumer Thread
+         |                              |
+   data.value = 42                     ...
+         |                              |
+ ready.store(true, release)     ready.load(acquire) --> sees true
+         |                              |
+         v                              |
+    [ memory fence ]                    v
+                                 sees data.value = 42
+```
+
+- A **release** operation ensures that all writes before it, including `data.value = 42`, are visible to another thread that performs an acquire operation.
+- An **acquire** operation ensures that once `ready` is seen as `true`, the consumer consistently sees the "before-release" state, such as `data.value = 42`.
+
 ##### Performance Considerations and Best Practices
 
 - The frequent creation and destruction of threads can be costly, leading to significant overhead. To minimize this, it is advisable to use thread pools or reuse threads, which can reduce the performance impact associated with thread lifecycle management.
@@ -1186,7 +1296,11 @@ In this example, each thread has its own `local_data` value, independent of the 
 
 ##### Atomic Operations
 
-While Python lacks built-in atomic operations, certain objects, like integers in the `threading` module, can be safely incremented without explicit locking due to Python's GIL. However, for non-atomic operations, locks should be used.
+In multi-threaded Python programs, there is often confusion regarding whether certain operations are truly atomic. This confusion largely stems from the presence of the Global Interpreter Lock (GIL), which ensures that only one thread is executing Python bytecode at any given time. Some developers interpret this to mean that operations like `counter += 1` are automatically safe and cannot cause race conditions. However, this is **not** guaranteed by Python's documentation or design.
+
+While the GIL does prevent multiple threads from running Python *bytecode* simultaneously, many Python operations, including integer increments, actually consist of several steps under the hood (e.g., loading the current value, creating a new integer, and storing it). These intermediate steps can be interleaved with operations from other threads, making race conditions possible if no additional synchronization mechanism is employed. Therefore, if you need to ensure correct and consistent results when multiple threads modify a shared variable, you must use locks (like `threading.Lock`) or other thread-safe data structures.
+
+Below is an example illustrating the use of a lock to ensure a thread-safe increment of a shared `counter`:
 
 ```python
 import threading
@@ -1213,7 +1327,7 @@ for t in threads:
 print(f"Counter: {counter}")
 ```
 
-In this example, `counter_lock` ensures that the increment operation is atomic, preventing race conditions.
+In this example, `counter_lock` ensures that the increment operation is effectively atomic by preventing multiple threads from modifying `counter` at the same time. Without this lock, two or more threads could potentially load the same value of `counter`, increment it independently, and overwrite each other's updates—resulting in an incorrect final value. Keep in mind that **the GIL itself does not guarantee atomicity** for these kinds of operations, which is why locks (or other concurrency primitives) are essential when sharing mutable state across threads.
 
 ##### Performance Considerations and Best Practices
 
