@@ -102,39 +102,39 @@ A zombie process is a process that has completed its execution but still has an 
 Normal Process Termination:
 
 ```
-+-------------------+
-| Parent Process    |
-|                   |
-|  +-------------+  |
-|  | Child Proc  |  |
-|  | (Running)   |  |
-|  +-------------+  |
-|         |         |
-|         V         |
-|  Child Terminates |
-|         |         |
-|  Parent Calls wait()|
-|         |         |
-|  Child Removed    |
-+-------------------+
++----------------------+
+| Parent Process       |
+|                      |
+|  +-------------+     |
+|  | Child Proc  |     |
+|  | (Running)   |     |
+|  +-------------+     |
+|         |            |
+|         V            |
+|  Child Terminates    |
+|         |            |
+|  Parent Calls wait() |
+|         |            |
+|  Child Removed       |
++----------------------+
 ```
 
 Zombie Process Scenario:
 
 ```
-+-------------------+
-| Parent Process    |
-|                   |
-|  +-------------+  |
-|  | Child Proc  |  |
-|  | (Terminated)|  |
-|  +-------------+  |
-|         |         |
-|         V         |
-|  Parent Not Calls wait()|
-|         |         |
-|  Child Status: Zombie |
-+-------------------+
++--------------------------+
+| Parent Process           |
+|                          |
+|  +-------------+         |
+|  | Child Proc  |         |
+|  | (Terminated)|         |
+|  +-------------+         |
+|         |                |
+|         V                |
+|  Parent Not Calls wait() |
+|         |                |
+|  Child Status: Zombie    |
++--------------------------+
 ```
 
 Visualization of Zombie in Process Table:
