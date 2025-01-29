@@ -1359,13 +1359,13 @@ Here are some example code snippets demonstrating various aspects of multithread
 
 #### Examples in JavaScript (Node.js)
 
-Node.js traditionally uses a single-threaded event loop to handle asynchronous operations. However, since version 10.5.0, Node.js has included support for worker threads, which allow for multi-threaded execution. This is particularly useful for CPU-intensive tasks, which can block the event loop and degrade performance in a single-threaded environment.
+Node.js traditionally uses a single-threaded event loop to handle asynchronous operations. However, since version **10.5.0**, Node.js has included support for worker threads, which allow multi-threaded execution. This is particularly useful for **CPU-intensive** tasks (e.g., image processing, cryptography), which can block the event loop and degrade performance in a purely single-threaded environment.
 
-Worker threads in Node.js are provided by the `worker_threads` module, enabling the creation of additional JavaScript execution contexts. Each worker thread runs in its own isolated V8 instance and does not share any state with other worker threads or the main thread.
+Worker threads in Node.js are provided by the `worker_threads` module, enabling the creation of additional JavaScript execution contexts. Each worker thread runs in its own isolated V8 instance and does **not** share state with other worker threads or with the main thread. Instead, communication is accomplished by **message passing** and, optionally, by sharing specific memory buffers (e.g., `SharedArrayBuffer`).
 
 ##### Creating Worker Threads
 
-To create a new worker thread, you instantiate the `Worker` class from the `worker_threads` module. The worker is initialized with a script or code string to execute.
+To create a new worker thread, you instantiate the `Worker` class from the `worker_threads` module. The worker is initialized with a script (or a code string) to execute:
 
 ```javascript
 // main.js
@@ -1393,82 +1393,169 @@ const { parentPort } = require('worker_threads');
 parentPort.postMessage('Hello from worker');
 ```
 
-In this example, the main script creates a worker thread that runs the code in `worker.js`. The worker sends a message back to the main thread using `parentPort.postMessage()`.
+In this example:
+
+1. **`main.js`** creates a `Worker` instance pointing to the `worker.js` file.  
+2. The main thread listens for events:  
+   - **`message`**: Triggered when the worker sends data back.  
+   - **`error`**: Triggered if an uncaught exception occurs in the worker.  
+   - **`exit`**: Triggered when the worker stops execution.  
+3. **`worker.js`** obtains a reference to `parentPort` (the communication channel back to the main thread) and sends a message.
 
 ##### Handling Communication
 
-Communication between the main thread and worker threads is done using message passing via `postMessage` and `on('message', callback)`. This method ensures data is passed as serialized objects, preventing shared state issues.
+Communication between the main thread and worker threads is done via **message passing** using `postMessage` and `on('message', callback)`. This serialization-based messaging ensures that no implicit shared state is introduced.
 
 ```javascript
-// main.js continued
+// main.js (continued)
 worker.postMessage({ command: 'start', data: 'example data' });
 
-// worker.js continued
+// worker.js (continued)
+const { parentPort } = require('worker_threads');
+
 parentPort.on('message', (message) => {
   console.log(`Worker received: ${JSON.stringify(message)}`);
-  // Process message
+  // Perform CPU-intensive task or other operations
   parentPort.postMessage('Processing complete');
 });
 ```
 
-Here, the main thread sends a message to the worker, which can then respond or perform actions based on the received data.
+Here, the main thread sends a structured message to the worker with a `command` property and some `data`. The worker, upon receiving it, can process the data and then respond back to the main thread.
 
 ##### Worker Termination
 
-Workers can be terminated from either the main thread or within the worker itself. The `terminate()` method stops the worker from the main thread, while `process.exit()` can be used inside the worker.
+Workers can be terminated from **either** the main thread or within the worker itself.
+
+I. From the main thread, you can call `worker.terminate()`, which returns a Promise resolving to the exit code:
 
 ```javascript
-// Terminating from the main thread
+// main.js
 worker.terminate().then((exitCode) => {
   console.log(`Worker terminated with code ${exitCode}`);
 });
+```
 
-// Inside worker.js
+II. Inside the worker, you can terminate execution using `process.exit()`:
+
+```javascript
+// worker.js
 process.exit(0); // Graceful exit
 ```
 
+Terminating the worker ends its event loop and frees its resources. Any pending operations in the worker are discarded once termination begins.
+
 ##### Passing Data to Workers
 
-Data can be passed to workers via the `Worker` constructor or by using the `postMessage` method. Complex data structures are serialized before being sent, and only simple data types (like strings, numbers, and objects) can be efficiently transferred.
+You can also pass initial data to the worker at creation time through the `Worker` constructor using the `workerData` option:
 
 ```javascript
-// Passing initial data via constructor
+// main.js
+const { Worker } = require('worker_threads');
+
 const worker = new Worker('./worker.js', {
   workerData: { initialData: 'Hello' }
 });
-
-// Accessing workerData in worker.js
-const { workerData } = require('worker_threads');
-console.log(workerData); // Outputs: { initialData: 'Hello' }
 ```
+
+Within **`worker.js`**:
+
+```javascript
+// worker.js
+const { workerData, parentPort } = require('worker_threads');
+console.log(workerData); // { initialData: 'Hello' }
+
+// Do work, then optionally respond
+parentPort.postMessage('Worker started with initial data!');
+```
+
+This pattern is useful for small or essential bits of configuration data that the worker needs right from startup.
 
 ##### Transferring Ownership of Objects
 
-Certain objects, like `ArrayBuffer`, can be transferred to a worker thread, which moves the ownership of the object to the worker, preventing the main thread from using it.
+Some objects (like `ArrayBuffer` and `MessagePort`) can be **transferred** to a worker, meaning the main thread loses ownership and can no longer use the object once it’s transferred. This can be more efficient than copying large data structures.
 
 ```javascript
+// main.js
+const { Worker } = require('worker_threads');
 const buffer = new SharedArrayBuffer(1024);
+
 const worker = new Worker('./worker.js', { workerData: buffer });
 ```
 
-In this example, a `SharedArrayBuffer` is transferred to the worker, allowing both the main thread and worker to share memory space efficiently.
+In this snippet, a `SharedArrayBuffer` is provided to the worker. Both the main thread and the worker thread can access and modify this shared memory concurrently, which is useful for scenarios requiring **high-performance concurrent access** (e.g., streaming or real-time data processing). Synchronization in such cases typically uses `Atomics` (part of JavaScript’s standard library).
+
+##### Using `Atomics` and `SharedArrayBuffer`
+
+When sharing memory (via `SharedArrayBuffer`), JavaScript provides the `Atomics` object for performing atomic operations (e.g., `Atomics.add`, `Atomics.load`, `Atomics.store`). Unlike higher-level synchronization primitives in other languages (like mutexes or semaphores), JavaScript concurrency with `SharedArrayBuffer` and `Atomics` relies on these low-level primitives for correctness.
+
+**Example**:
+
+```javascript
+// main.js
+const { Worker } = require('worker_threads');
+const sharedBuffer = new SharedArrayBuffer(4);  // Enough for one 32-bit integer
+
+const worker = new Worker('./worker.js', { workerData: sharedBuffer });
+
+// Optionally communicate via messages as well
+worker.on('message', (msg) => {
+  console.log('Message from worker:', msg);
+});
+```
+
+```javascript
+// worker.js
+const { parentPort, workerData } = require('worker_threads');
+const { Atomics, Int32Array } = globalThis;
+
+// Interpret the shared buffer as a 32-bit integer array of length 1
+const sharedArray = new Int32Array(workerData);
+
+for (let i = 0; i < 100000; i++) {
+  // Atomically increment the integer
+  Atomics.add(sharedArray, 0, 1);
+}
+
+// Once done, send a message back
+parentPort.postMessage('Incrementing done!');
+```
+
+In this example:
+
+1. The main thread creates a `SharedArrayBuffer` of 4 bytes (enough space for an `Int32Array` element).  
+2. That buffer is passed to the worker.  
+3. The worker increments the shared integer atomically 100,000 times using `Atomics.add`.  
+4. Both threads can read the final value in `sharedArray[0]` safely, without data races.
 
 ##### Error Handling
 
-Proper error handling is crucial in worker threads. The main thread should listen for error events and handle them appropriately to avoid crashes.
+Proper error handling in multi-threaded environments is crucial:
 
 ```javascript
+// main.js
 worker.on('error', (error) => {
   console.error('Worker error:', error);
 });
+
+// worker.js
+try {
+  // perform some operation that might throw
+  throw new Error('Something went wrong');
+} catch (err) {
+  // Handle locally or propagate
+  parentPort.postMessage({ error: err.message });
+  // Optionally re-throw, or process.exit(1) for immediate termination
+}
 ```
+
+If an uncaught exception occurs in the worker, the main thread’s `error` event will fire, allowing you to clean up resources or attempt a restart. Consider carefully whether to handle errors in the worker itself or bubble them up to the main thread.
 
 ##### Performance Considerations and Best Practices
 
 - When handling CPU-intensive tasks, worker threads are particularly advantageous as they can execute computationally heavy operations without blocking the event loop. For tasks that are I/O-bound, however, the Node.js event loop is generally more efficient and sufficient.
 - It is important to avoid heavy data transfers between the main thread and worker threads because the process of serialization and deserialization can be inefficient. To enhance efficiency, shared memory structures like `SharedArrayBuffer` should be used when possible, as they allow for direct memory access without the overhead of copying data.
-- Proper management of the worker lifecycle is crucial. Workers should be terminated once they have completed their tasks to prevent resource leaks, which can occur if worker threads remain active unnecessarily and continue consuming system resources.
-- Implementing robust error handling is essential for maintaining stability and reliability in applications that utilize worker threads. This involves catching and managing exceptions and errors that may occur within worker threads, ensuring that these failures do not lead to crashes or unpredictable behavior in the main application.
+- Proper management of the worker lifecycle is important. Workers should be terminated once they have completed their tasks to prevent resource leaks, which can occur if worker threads remain active unnecessarily and continue consuming system resources.
+- Strong error handling is necessary for maintaining stability and reliability in applications that use worker threads. This involves catching and managing exceptions and errors that may occur within worker threads, making sure that these failures do not lead to crashes or unpredictable behavior in the main application.
 - Security considerations must be taken into account, as worker threads have access to the complete Node.js API and run in separate V8 instances. To mitigate security risks, it is important to avoid executing untrusted code within worker threads, as this could potentially lead to vulnerabilities and exploits in the system.
 
 ##### Example: Prime Number Calculation
