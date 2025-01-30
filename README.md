@@ -38,8 +38,6 @@ Contributions are welcome! If you have suggestions for improvements or want to a
 
 For major changes, please open an issue first to discuss your ideas.
 
-Please ensure that all tests pass and update documentation as necessary.
-
 ## License
 
 This project is licensed under the [MIT License](https://choosealicense.com/licenses/mit/).
