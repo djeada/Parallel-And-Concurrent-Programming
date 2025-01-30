@@ -43,3 +43,7 @@ Please ensure that all tests pass and update documentation as necessary.
 ## License
 
 This project is licensed under the [MIT License](https://choosealicense.com/licenses/mit/).
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=djeada/Bash-Scripts,Parallel-And-Concurrent-Programming/Parallel-And-Concurrent-Programming&type=Date)](https://star-history.com/#djeada/Bash-Scripts&Parallel-And-Concurrent-Programming/Parallel-And-Concurrent-Programming&Date)
