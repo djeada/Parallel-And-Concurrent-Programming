@@ -44,4 +44,4 @@ This project is licensed under the [MIT License](https://choosealicense.com/lice
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=djeada/Bash-Scripts,Parallel-And-Concurrent-Programming/Parallel-And-Concurrent-Programming&type=Date)](https://star-history.com/#djeada/Bash-Scripts&Parallel-And-Concurrent-Programming/Parallel-And-Concurrent-Programming&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=djeada/Parallel-And-Concurrent-Programming&type=Date)](https://star-history.com/#djeada/Parallel-And-Concurrent-Programming&Date)
