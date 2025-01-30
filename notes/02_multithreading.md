@@ -202,6 +202,10 @@ Write Counter = 101  Write Counter = 101
 
 In this scenario, both threads read the same value (100) before either has a chance to write back the incremented value. This leads to lost updates and an incorrect final result.
 
+**What do we mean by a resource?**
+
+In the context of computing and multithreading, a resource refers to any hardware or software component that applications and processes need to operate effectively. This includes elements such as CPU time, memory, storage, network bandwidth, files, and shared data structures. Resources are limited and must be managed efficiently to make sure that multiple threads or processes can access them without conflicts. Proper resource management is necessary for maintaining optimal system performance, preventing bottlenecks, and avoiding issues like deadlocks or excessive contention when multiple threads compete for the same assets.
+
 #### Mutex
 
 - A **mutex** (short for *mutual exclusion*) ensures that only one thread can access a important section of code (and thus shared data) at any given time.
@@ -637,6 +641,48 @@ It is often assumed that creating more threads will consistently boost performan
 **Multithreaded Code Is Always Harder to Write and Maintain**  
 
 While concurrency introduces challenges—such as synchronization, potential race conditions, and timing-related bugs—multithreaded code is not necessarily more difficult to manage than single-threaded code. Modern languages and frameworks provide abstractions (e.g., thread pools, futures, async/await mechanisms) that simplify parallelism. With proper design, testing strategies, and usage of these tools, writing reliable and maintainable multithreaded applications becomes more approachable.
+
+#### Problems for which multithreading is the answer
+
+- Intensive computations, such as large-scale data analysis, scientific simulations, or complex mathematical calculations that require significant processing power.
+- External clients sending requests to a process in a random and unpredictable fashion, like a PostgreSQL database handling multiple simultaneous queries from various users.
+- Tasks that can be intuitively split into independent processing steps, allowing different threads to handle separate parts of a workflow concurrently.
+- Continuous access to a large read-only data set, where multiple threads can efficiently read and process the data without needing to modify it.
+- Tasks whose performance would be unacceptable as a single thread, necessitating parallel execution to meet performance requirements.
+- Managing concurrent access to multiple resources, such as an operating system coordinating access to hardware components, memory, and peripherals.
+- Processing a stream of large data files, enabling different threads to handle different segments of the data simultaneously for faster processing.
+- Problems where each step has a clear input and output, facilitating parallel processing of sequential steps in a pipeline.
+- Processes where the workload cannot be anticipated, allowing the system to dynamically allocate threads to handle varying loads effectively.
+- Real-time data processing tasks, such as financial trading systems that require immediate handling of incoming market data to execute trades without delay.
+- Asynchronous I/O operations, where applications perform multiple file reads and writes simultaneously without blocking the main execution thread.
+- Maintaining user interface responsiveness in applications by offloading long-running tasks to background threads, ensuring the UI remains interactive.
+- Parallel data processing pipelines, like ETL (Extract, Transform, Load) processes in data warehousing, where different stages run concurrently to enhance throughput.
+- Simulation and modeling applications, such as climate models or physics simulations, that divide the environment into regions processed in parallel to speed up computations.
+- Network servers and web services that handle multiple client connections simultaneously, with each thread managing a separate client session to ensure efficient request handling.
+- Machine learning model training, where large neural networks are trained by parallelizing computations across multiple threads or cores to accelerate the learning process.
+- Multimedia processing tasks, including audio and video encoding or decoding, where different streams or segments are processed in parallel to reduce latency and improve performance.
+- Automated testing and continuous integration systems that run multiple test suites or build processes in parallel to speed up the development and deployment pipeline.
+
+#### Problems for which multithreading is not the answer
+
+- Tasks with sequential dependencies require operations to be performed in a strict order without the possibility of parallel execution, making multithreading ineffective.
+- Minimal processing tasks involve simple or quick operations where the overhead of creating and managing threads outweighs any potential performance gains.
+- High contention for shared resources occurs when multiple threads frequently compete for the same resources, leading to excessive locking and reduced performance.
+- Applications relying on single-threaded libraries or APIs are not designed to be thread-safe, making multithreading difficult or error-prone.
+- Limited hardware resources mean environments have insufficient CPU cores or memory, where adding more threads could degrade overall system performance.
+- Real-time systems with strict timing requirements need predictable and deterministic execution times, where the unpredictability of thread scheduling can cause issues.
+- Applications requiring high synchronization involve tasks that need extensive coordination between threads, resulting in bottlenecks and diminishing returns from parallelism.
+- Debugging and maintenance complexity arises in projects where the added complexity of multithreading introduces significant challenges in debugging, testing, and maintaining the codebase.
+- Deterministic execution needs are present in applications that require consistent and repeatable behavior for debugging, security, or compliance reasons, which can be disrupted by the non-deterministic nature of multithreading.
+- Environments with poor multithreading support have programming languages or runtime environments that lack robust multithreading capabilities, making implementation difficult or inefficient.
+- Tasks better suited for asynchronous programming benefit from asynchronous, non-blocking approaches that provide better performance and scalability without the complexities of multithreading.
+- Problems better addressed by multiprocessing or distributed computing involve situations where using multiple processes or distributing tasks across different machines is more effective than using multiple threads within a single process.
+- Memory-constrained applications need to minimize memory usage, as each thread consumes additional memory for its stack and management overhead.
+- Simple, single-user applications operate with a single user or do not require concurrent processing, where multithreading offers no tangible benefits.
+- Tasks with high initialization costs involve operations where the cost of starting and stopping threads is prohibitively high compared to the task's execution time.
+- Security-sensitive applications could introduce vulnerabilities through race conditions or improper handling of shared data when using multithreading.
+- Legacy codebases are existing applications that were not designed with multithreading in mind, where retrofitting multithreading could be risky or impractical.
+- Energy-constrained devices are battery-powered or low-energy devices where the additional power consumption from managing multiple threads is a concern.
 
 ### Examples
 
