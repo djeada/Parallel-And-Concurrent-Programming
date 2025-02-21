@@ -6,12 +6,12 @@ Parallel computing is the process of breaking a task into smaller parts that can
 
 Parallelism refers to the simultaneous execution of multiple tasks or processes to improve performance and efficiency. There are several ways to achieve parallelism:
 
-- Modern CPUs achieve Instruction-Level Parallelism (ILP) through techniques like pipelining, which allows different stages of instruction execution, such as fetch, decode, execute, and write-back, to overlap.
-- By integrating multiple independent cores into a single processor, multicore processing enables each core to execute its own thread or process, thereby allowing true parallel execution of multiple tasks within a single chip.
-- Multiprocessing involves the use of multiple processors within a single computer system, where each processor can work on different tasks or threads of the same task, providing substantial performance improvements for multi-threaded applications.
-- The setup of multiprocessing is commonly found in servers and high-performance workstations.
-- In distributed computing, multiple computers are connected over a network to work on a common task, with each machine working on a portion of the problem.
-- The combined effort of multiple machines in distributed computing leads to faster computation, which is often seen in cluster computing, grid computing, and cloud computing environments.
+- Modern CPUs achieve Instruction-Level Parallelism (ILP) through techniques like pipelining, which breaks down the execution of instructions into several overlapping stages—fetch, decode, execute, and write-back. This means that while one instruction is being decoded, another can be fetched, and a third can be executed simultaneously, significantly increasing throughput and minimizing idle CPU time.  
+- By integrating multiple independent cores into a single processor, multicore processing enables each core to execute its own thread or process. This design allows multiple tasks to run concurrently on the same chip, making it ideal for both multitasking and parallel execution in multi-threaded applications, thereby enhancing overall performance and energy efficiency.  
+- Multiprocessing involves the use of two or more processors within a single computer system, where each processor can handle different tasks or threads simultaneously. This approach distributes the computational load, reduces bottlenecks, and results in substantial performance improvements, especially for complex, multi-threaded applications that require concurrent processing.  
+- The setup of multiprocessing is commonly found in servers and high-performance workstations because these systems are designed to handle high volumes of data and numerous simultaneous operations. The use of multiple processors in these environments ensures that they can manage intensive workloads, provide high availability, and support rapid response times for demanding applications.  
+- In distributed computing, multiple computers are connected over a network to work on a common task. Each machine processes a portion of the overall problem independently, which not only speeds up computation but also enhances fault tolerance and scalability by distributing the workload across various nodes.  
+- The combined effort of multiple machines in distributed computing leads to faster computation and greater resilience. This approach is widely employed in cluster computing, grid computing, and cloud computing environments, where resources from many computers are pooled together to solve complex problems, analyze large datasets, and provide high-performance solutions for both scientific research and enterprise applications.
 
 ### Single-Core CPU
 
@@ -132,6 +132,21 @@ Below is a table comparing CPUs and GPUs, emphasizing their unique features and 
 
 ### Parallel Computing Architectures
 
+- Mike Flynn, *“Very High-Speed Computing Systems,”* Proc. of IEEE, 1966
+- Flynn’s taxonomy classifies computer architectures based on how many instruction streams and data streams can be processed in parallel. The four main categories are SISD, SIMD, MISD, and MIMD.
+
+**SISD (Single Instruction, Single Data)**  
+A single instruction stream operates on a single data element at a time. This is the classic, straightforward model where a uniprocessor fetches instructions and data from memory and executes them in sequence.
+
+**SIMD (Single Instruction, Multiple Data)**  
+A single instruction stream operates on multiple data elements simultaneously. This category includes array processors and vector processors, where one instruction can be applied to an entire set (or array) of data elements in parallel.
+
+**MISD (Multiple Instructions, Single Data)**  
+Multiple instructions operate on a single data element. True MISD systems are rare, but systolic array processors are sometimes considered a loose example, as they involve multiple processing elements each performing different operations on data as it flows through.
+
+**MIMD (Multiple Instructions, Multiple Data)**  
+Multiple instruction streams operate on multiple data elements concurrently. This category includes multiprocessor and multithreaded systems, where each processor or thread can execute its own sequence of instructions on its own set of data.
+
 ```
 #
                             Parallel Computer Architectures
@@ -159,24 +174,24 @@ Below is a table comparing CPUs and GPUs, emphasizing their unique features and 
 
 Parallelism can be broadly classified into two types, based on how tasks are divided and executed:
 
-I. Data Parallelism / SIMD (Single Instruction, Multiple Data)
+I. **Data Parallelism / SIMD (Single Instruction, Multiple Data)**
 
-- In **data parallelism**, the same operation is performed simultaneously on multiple data sets.
-- **Characteristics** include efficiency for tasks that involve repetitive computations on large data sets, commonly used in applications such as image processing, numerical simulations, and machine learning.
-- **GPUs** feature thousands of small cores that perform the same operation on different pieces of data, making them highly efficient for parallel processing tasks.
-- **SIMD Extensions** like SSE (Streaming SIMD Extensions) and AltiVec in CPUs enable the processors to perform vectorized operations, enhancing computational performance.
-- **Vector Processors** are designed to handle vector operations efficiently, providing significant speed advantages in tasks involving large datasets.
-- An **example use case** is applying a filter to an image, where the same operation is applied to each pixel in parallel.
+- In *data parallelism*, the same operation is performed simultaneously on multiple data sets. This approach leverages the fact that many computations—such as arithmetic operations, comparisons, or logical operations—can be performed concurrently when applied to large arrays or matrices. It minimizes the overhead of instruction control and maximizes the throughput by applying one instruction across a range of data elements.
+- Characteristics include efficiency for tasks that involve repetitive computations on large data sets, commonly used in applications such as image processing, numerical simulations, and machine learning. The uniformity in processing makes it ideal for applications where the same computation is repeated over extensive data, reducing redundancy and enabling high-speed processing of tasks like pixel manipulations in images or batch computations in scientific models.
+- *GPUs* feature thousands of small cores that perform the same operation on different pieces of data, making them highly efficient for parallel processing tasks. This architecture is particularly effective for workloads that require simultaneous processing of numerous data points. Each core executes the same instruction independently, thus dramatically speeding up tasks such as rendering graphics or performing deep learning inference.
+- *SIMD Extensions* like SSE (Streaming SIMD Extensions) and AltiVec in CPUs enable the processors to perform vectorized operations, enhancing computational performance. These specialized instruction sets allow a single CPU instruction to process multiple data elements simultaneously, reducing the number of required instructions and lowering the cycle count. This improves performance in applications that perform repetitive mathematical operations across arrays or vectors.
+- *Vector Processors* are designed to handle vector operations efficiently, providing significant speed advantages in tasks involving large datasets. Optimized for executing operations on entire data arrays rather than single elements, vector processors can accelerate workloads like linear algebra computations and other high-volume data operations, leading to substantial performance gains in scientific and engineering applications.
+- An example use case is applying a filter to an image, where the same operation is applied to each pixel in parallel. When filtering an image, each pixel undergoes the same transformation (such as blurring or edge detection) simultaneously. This parallel execution significantly reduces processing time compared to sequentially applying the filter to each pixel, especially in high-resolution images.*
 
-II. Task Parallelism / MIMD (Multiple Instruction, Multiple Data)
+II. **Task Parallelism / MIMD (Multiple Instruction, Multiple Data)**
 
-- In **task parallelism**, different operations are performed simultaneously on different data sets.
-- **Characteristics** include suitability for applications where tasks can be divided into independent or semi-independent sub-tasks, allowing for more complex and flexible parallel execution.
-- **Many-Core/SMP Systems** consist of multiple processors that each execute different tasks on different data, optimizing overall system performance.
-- **Processor Arrays and Systolic Arrays** are types of specialized hardware designed specifically for the parallel processing of tasks, improving computational efficiency.
-- **Distributed Systems** such as Hadoop, cluster systems, and MPP (Massively Parallel Processing) systems distribute tasks across multiple machines, enabling the handling of large-scale data processing.
-- An **example use case** is a web server handling multiple client requests simultaneously, where each request is an independent task.
-
+- In *task parallelism*, different operations are performed simultaneously on different data sets. This approach allows each processor or core to execute distinct instructions on separate pieces of data, making it ideal for workloads where tasks are heterogeneous and can run independently, thus optimizing resource usage.
+- Characteristics include suitability for applications where tasks can be divided into independent or semi-independent sub-tasks, allowing for more complex and flexible parallel execution. By breaking down a larger problem into smaller, distinct tasks, systems can process these sub-tasks concurrently. This increases flexibility, as each task can be optimized and executed according to its own computational requirements, leading to overall efficiency improvements in complex applications.
+- *Many-Core/SMP Systems* consist of multiple processors that each execute different tasks on different data, optimizing overall system performance. In these systems, each core or processor handles its own thread or process, which allows for simultaneous execution of diverse operations. This architecture is well-suited for multi-threaded applications, reducing the likelihood of bottlenecks and improving the system's ability to handle parallel workloads.
+- *Processor Arrays and Systolic Arrays* are types of specialized hardware designed specifically for the parallel processing of tasks, improving computational efficiency. These arrays consist of multiple processing elements arranged in a grid or pipeline structure. They facilitate rapid data movement and coordinated processing, making them highly efficient for repetitive and structured computations such as matrix multiplications or signal processing tasks.
+- *Distributed Systems* such as Hadoop, cluster systems, and MPP (Massively Parallel Processing) systems distribute tasks across multiple machines, enabling the handling of large-scale data processing. By partitioning tasks among many interconnected computers, distributed systems can tackle massive datasets that would overwhelm a single machine. This method enhances scalability and fault tolerance, ensuring that large computational tasks are managed efficiently across a network.
+- An example use case is a web server handling multiple client requests simultaneously, where each request is an independent task. In this scenario, a web server can assign each incoming client request to a different processor or thread. This allows the server to process requests concurrently, ensuring fast response times and efficient handling of multiple users without any single request delaying others.
+  
 #### Shared Memory Architectures
 
 Shared memory architectures enable multiple processors to access a common global address space, facilitating communication and data sharing among processors. This means that any changes made to a memory location by one processor are immediately visible to all other processors. There are two primary types of shared memory architectures:
