@@ -210,17 +210,17 @@ II. Non-Uniform Memory Access (NUMA)
 - **Cache-Coherent NUMA (CC-NUMA)** ensures consistency between the caches of different processors, so that all processors have a coherent view of memory. This is fully implemented in hardware and is commonly found in recent x86 chips.
 - An **example** of NUMA is modern server architectures and high-performance computing systems, where memory is divided across multiple processors, each with its local memory.
 
-#### Comparison of UMA, NUMA, SIMD, and MIMD:
+#### Comparison of UMA, NUMA, SIMD, and MIMD
 
-Here's a summary table that outlines the relevance of shared memory, UMA, NUMA, SIMD, and MIMD to both CPUs and GPUs:
+Below is a table that outlines the relevance of Shared Memory, UMA, NUMA, SIMD, and MIMD for both CPUs and GPUs:
 
-| Concept              | CPUs                                                                 | GPUs                                                                     |
-|----------------------|----------------------------------------------------------------------|-------------------------------------------------------------------------|
-| **SIMD (Single Instruction, Multiple Data)** | Used in vector processors and CPU instructions like SSE, AVX for parallel data processing. | Inherently SIMD, executing the same instruction on multiple data points in parallel. |
-| **MIMD (Multiple Instruction, Multiple Data)** | Modern multi-core CPUs execute different instructions on different data independently. | Primarily SIMD, but also exhibits MIMD characteristics with different threads or blocks executing different instructions. |
-| **Shared Memory**    | Multiple processors can access the same physical memory space.      | On-chip memory accessible by all threads within a block for fast exchange. |
-| **UMA (Uniform Memory Access)** | Processors share physical memory uniformly with equal access time. | Shared memory architecture in integrated systems, simplifying programming model. |
-| **NUMA (Non-Uniform Memory Access)** | Memory access time depends on the memory location relative to the processor, improving scalability. | Less common, but can be implemented in high-end systems for large-scale parallel processing. |
+| Concept              | CPUs                                                                                                        | GPUs                                                                                                                 |
+|----------------------|-------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| **SIMD (Single Instruction, Multiple Data)** | Use SIMD instructions (e.g., SSE, AVX, or NEON) to process multiple data elements in parallel within each core.           | Inherently rely on SIMD- or SIMT-based execution, where a single instruction is applied to multiple data elements across many threads. |
+| **MIMD (Multiple Instruction, Multiple Data)** | Modern multi-core CPUs exhibit MIMD by running different instruction streams on separate cores simultaneously.            | Mostly use SIMD at the hardware level, but can show MIMD-like behavior across different thread blocks or warps that may execute divergent instructions. |
+| **Shared Memory**    | All cores share a common physical memory space accessible to each processor, coordinated by caches and interconnects. | Provide on-chip shared memory (e.g., per-block or per-wavefront) that allows fast data exchange among threads within the same block.  |
+| **UMA (Uniform Memory Access)** | In a UMA system, all processors access the shared memory with uniform latency, simplifying memory management.                | In integrated CPU-GPU systems with a unified memory architecture, GPUs share the same memory pool with uniform access (though performance can vary). |
+| **NUMA (Non-Uniform Memory Access)** | Memory access times depend on physical proximity to specific memory regions (NUMA nodes), improving scalability for large systems. | Less common in typical GPU deployments, but can appear in high-end or multi-GPU systems for large-scale parallel processing with distributed memory. |
 
 ### Distributed Computing and Cluster Computing Architectures
 
