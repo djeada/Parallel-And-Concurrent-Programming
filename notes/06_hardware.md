@@ -170,6 +170,14 @@ Multiple instruction streams operate on multiple data elements concurrently. Thi
 
 ```
 
+#### Programming model vs hardware execution model
+
+- The programming model refers to how the programmer expresses the code, and examples include sequential, data parallel, dataflow, and multi-threaded approaches.  
+- The execution model refers to how the hardware runs the code, and examples include out-of-order, vector, array, dataflow, and multithreaded processors.  
+- A von Neumann programming model can be implemented on an out-of-order processor, which illustrates a difference between programming and execution models.  
+- An SPMD programming model can be realized by a GPU that internally uses SIMD execution, which shows another difference between software and hardware layers.  
+- Keeping these differences in mind can be helpful when choosing or designing systems that align software abstractions with hardware capabilities.  
+
 #### Types of Parallelism: Data Parallelism vs Task Parallelism
 
 Parallelism can be broadly classified into two types, based on how tasks are divided and executed:
