@@ -1,6 +1,4 @@
 ## GPU Programming
-
-**Why GPUs?**  
 GPUs (Graphics Processing Units) excel at performing the same operation on many data elements in parallel. Originally, GPUs were used just for rendering images, but their highly parallel nature also makes them ideal for general-purpose tasks with large data sets, such as scientific simulations, machine learning, and other compute-intensive workloads.
 
 **What’s special about GPU programming?**  
