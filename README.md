@@ -27,6 +27,9 @@ Concurrent and parallel programming are powerful techniques that can enhance the
 - [Understanding Asyncio](https://lucumr.pocoo.org/2016/10/30/i-dont-understand-asyncio/)
 - [Node.js API Documentation](https://www.cs.unb.ca/~bremner/teaching/cs2613/books/nodejs-api/)
 
+- asynchronous programming with c++ packt
+
+
 ## Contributing
 
 Contributions are welcome! If you have suggestions for improvements or want to add new content, please follow these steps:
