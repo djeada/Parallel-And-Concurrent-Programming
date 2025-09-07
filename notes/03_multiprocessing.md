@@ -430,7 +430,7 @@ In an operating system with multiple *processes*, deadlock can occur when proces
 
 1. *Mutual exclusion* – a resource can only be held by one process at a time.
 2. *Hold and wait* – a process holds resources while requesting more.
-3. **No preemption* – the OS cannot forcibly take resources away.
+3. *No preemption* – the OS cannot forcibly take resources away.
 4. *Circular wait* – processes form a cycle, each waiting on the next.
 
 *Example snapshot:*
