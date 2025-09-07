@@ -684,6 +684,29 @@ While concurrency introduces challenges—such as synchronization, potential rac
 - Legacy codebases are existing applications that were not designed with multithreading in mind, where retrofitting multithreading could be risky or impractical.
 - Energy-constrained devices are battery-powered or low-energy devices where the additional power consumption from managing multiple threads is a concern.
 
+#### Typical Applications
+
+| Use case | Pattern summary | C++ (preferred) | Python (preferred) | Why this choice | Shutdown behavior |
+|---|---|---|---|---|---|
+| High-throughput web server: handle many requests | Worker pool reuses threads for each request | Thread pool (joinable) | ThreadPoolExecutor (joinable) | Limits thread count, good control of lifecycle, back-pressure via queue | Stop accepting work, drain queue, join pool |
+| Background logging/telemetry uploader | Fire-and-forget uploader reading from a queue | jthread (auto-join) | Daemon thread | Non-critical work; jthread lets you cancel; daemon won’t block exit | On shutdown, try flush; daemons may drop work |
+| Periodic metrics/health pinger | Loop with sleep to send heartbeats | jthread (auto-join) | Daemon thread | Runs for app lifetime; easy cancel/stop; ok if it ends abruptly | Signal stop, allow one last send if needed |
+| GUI app: offload long task (keep UI responsive) | Worker thread performs blocking work, reports progress | Joinable thread (or QThread) | Joinable thread | Ensure task finishes/cleans up before closing app | Signal cancel, join before window closes |
+| Real-time sensor acquisition → queue | Reader thread pushes samples to a bounded queue | Joinable thread (or jthread) | Joinable thread | Data loss unacceptable; deterministic shutdown | Stop signal, flush buffer, join |
+| Producer→consumer pipeline (download→parse→write) | Stage per thread, connected by queues | Joinable threads or pool | Joinable threads with queue | Back-pressure and orderly teardown | Send sentinels, join in stage order |
+| Parallel I/O (e.g., web scraping many hosts) | Cap concurrency using pool/executor | Thread pool (joinable) | ThreadPoolExecutor (joinable) | I/O-bound; pooling avoids oversubscription | Shutdown executor, wait=True |
+| CPU-bound parallel compute (e.g., image filters) | True parallelism for heavy CPU tasks | Thread pool (joinable) | Use processes (multiprocessing) | C++ threads run in parallel; Python GIL limits CPU threads | Join pool / close process pool |
+| Connection timeout watchdog | Sleeps, then cancels/alerts if overdue | jthread (auto-join) | Daemon thread or Timer | Short-lived helper; safe if it dies at exit | Cancel timer / stop token |
+| Cache warmer / prefetcher | Preloads likely-needed data in background | Detached thread | Daemon thread | Best-effort; shouldn’t block shutdown | Allow early exit; no guarantees |
+| Background email/SMS sender in a web app | Queue of messages consumed by workers | Thread pool (joinable) | ThreadPoolExecutor (joinable) | Must ensure delivery or retry logic | Drain queue, join; otherwise use external task queue |
+| Game asset streaming loader | Loads textures/models while game runs | Joinable thread | Joinable thread | Coordinate with main loop; avoid torn state | Signal cancel, join before scene swap |
+| Game telemetry/analytics uploader | Buffers and uploads non-critical events | Detached thread | Daemon thread | Don’t stall frame rate or exit | Best-effort flush only |
+| File system watcher (hot-reload) | Watches dirs and enqueues change events | Joinable thread | Joinable thread | Needs clean shutdown to release handles | Stop watcher, join |
+| DB connection keepalive / pool maintenance | Occasional pings, cleanup of idle conns | jthread (auto-join) | Daemon thread | Low-importance periodic task | Cancel on stop; ok to skip final ping |
+| CLI tool spawns background maintenance (e.g., log rotation) | Helper that outlives brief main work | Detached thread | Daemon thread | Main shouldn’t wait; tolerates early exit | No join; rely on OS cleanup |
+| Small chat server: one thread per client (naïve) | Spawn per connection, handle then exit | Detached thread (small scale only) | Joinable thread (or executor) | Detached avoids bookkeeping; Python prefers controlled join | Prefer pool for scale; join on shutdown |
+| Market data listener → queue | Network read loop pushes updates | Joinable thread (or jthread) | Joinable thread | Data integrity and ordering matter | Signal stop, flush, join |
+
 ### Examples
 
 #### Examples in C++
