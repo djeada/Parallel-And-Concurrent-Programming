@@ -401,21 +401,418 @@ Resource contention arises when multiple processes compete for the same limited 
 - Some processes may be perpetually delayed or blocked from accessing required resources, leading to inefficiencies.
 - Efficiently scheduling processes to optimize resource use while minimizing contention is a complex problem, often requiring dynamic adjustment based on current system load.
 
-### Process Management Techniques
+### Process Management Techniques 
 
-Efficiently managing processes involves various techniques to ensure smooth operation, resource optimization, and system stability.
+Process management keeps concurrent work safe and fast by following these best practices:
 
-#### Process Synchronization
+- Guard shared state with the right synchronization primitive (e.g., mutex, read-write lock, semaphore).
+- Enforce a consistent lock order to prevent deadlocks.
+- Prefer atomic operations for frequently updated ("hot") counters or flags.
+- Shape workflow with bounded queues and rate limits to avoid overload.
+- Balance work dynamically using techniques like a central queue or work stealing.
+- Scale out behind a load balancer (LB) when possible.
+- Track key metrics such as p95 latency and queue depth to monitor system health.
+### Process Synchronization
 
-Process synchronization is crucial to prevent data corruption and ensure consistency when multiple processes access shared resources. Techniques like locks, semaphores, and monitors are used to coordinate access. For example, a lock can prevent multiple processes from modifying a shared resource simultaneously, while a semaphore can manage a limited number of concurrent accesses. Monitors provide a high-level abstraction for managing mutual exclusion and condition synchronization.
+Process synchronization is the coordination of concurrent processes so they can safely share resources without conflicts or inconsistent results. In a multiprogramming OS, processes often need to access critical sections—code that touches shared data or devices. Synchronization mechanisms (locks, semaphores, monitors, condition variables) ensure mutual exclusion (only one process at a time in a critical section) and proper ordering of operations, preventing race conditions, deadlocks, or starvation while allowing maximum parallelism where possible.
+
+**Pick the right primitive**
+
+* **Mutex**: single owner of a critical section.
+* **RW Lock**: many readers or one writer.
+* **Counting Semaphore**: N identical resources (e.g., a pool of 8 DB conns).
+* **Condition Variable / Monitor**: wait for a state change.
+* **Barrier**: wait until *all* threads reach a point.
+* **Atomics (CAS/fetch-add)**: tiny, hot counters/flags without kernel hops.
+
+```
+[Threads] -> [Wait Queue] -> [ CRITICAL SECTION ] -> [Release]
+                 ^                                     |
+                 +----------(blocked)------------------+
+```
+
+**Deadlock snapshot + prevention**
+
+In an operating system with multiple *processes*, deadlock can occur when processes compete for limited resources (files, devices, memory segments). The four necessary conditions are:
+
+1. *Mutual exclusion* – a resource can only be held by one process at a time.
+2. *Hold and wait* – a process holds resources while requesting more.
+3. *No preemption* – the OS cannot forcibly take resources away.
+4. *Circular wait* – processes form a cycle, each waiting on the next.
+
+*Example snapshot:*
+
+```
+ P1 holds DB, waiting for Cache
+ P2 holds Cache, waiting for DB
+ → Both processes stuck forever
+```
+
+✅ *Prevention (resource ordering):*
+
+Impose a strict global order for resource acquisition. If every process requests resources in the same order, cycles cannot form.
+
+```
+Order: DB (1) → Cache (2) → Log (3)
+
+P1: lock(DB) -> lock(Cache) -> ...
+P2: lock(DB) -> lock(Cache) -> ...
+# Never request Cache before DB
+```
+
+This breaks the *circular wait* condition, preventing deadlock among processes.
+
+**Semaphore patterns (bounded pool)**
+
+A *counting semaphore* can control access to a *pool of limited resources* (e.g., DB connections, worker threads, file handles). The semaphore’s counter tracks how many slots are available.
+
+* `wait(sem)` decrements the counter; if it’s zero, the process waits until a slot is free.
+* `signal(sem)` increments the counter, releasing a slot back to the pool.
+* At most `capacity` processes can use the resource concurrently.
+
+```c
+// counting semaphore initialized to 8
+wait(sem);          // acquire a slot (block if all 8 in use)
+resource_use();     // critical work using one resource
+signal(sem);        // release slot (increment counter)
+```
+
+✅ This ensures *bounded concurrency*: no more than 8 processes can enter the critical section simultaneously.
+
+**Producer–Consumer with semaphores (bounded buffer)**
+
+The *producer–consumer problem* models two types of processes:
+
+* *Producers* generate items and place them into a buffer.
+* *Consumers* take items out of the buffer for processing.
+
+To ensure *synchronization* and avoid race conditions:
+
+* `empty` counts free slots in the buffer.
+* `full` counts filled slots.
+* `m` (a binary semaphore) enforces mutual exclusion on the buffer itself.
+
+```pseudo
+sem empty = N;   // free slots available
+sem full  = 0;   // items available
+sem m     = 1;   // mutex for buffer
+
+Producer:                  Consumer:
+wait(empty)                wait(full)     // wait if none full
+wait(m)                    wait(m)        // lock buffer
+enqueue(x)                 x = dequeue()
+signal(m)                  signal(m)      // unlock buffer
+signal(full)               signal(empty)  // update counters
+```
+
+✅ Ensures producers stop when the buffer is full, and consumers stop when it’s empty.
+✅ Mutex `m` ensures only one process manipulates the buffer at a time.
+
+**Monitor sketch (one place to put state + waiting)**
+
+A *monitor* is a high-level concurrency construct that combines:
+
+* *Shared state* (e.g., a queue, buffer, or counter).
+* *Mutual exclusion* (only one process/thread active inside).
+* *Condition variables* to allow processes to wait and signal events.
+
+**Bounded Buffer example (producer/consumer):**
+
+```pseudo
+monitor BoundedQ {
+  queue q; int cap;
+  cond not_full, not_empty;
+
+  put(x):
+    while q.size == cap: wait(not_full)
+    q.push(x)
+    signal(not_empty)
+
+  get():
+    while q.empty(): wait(not_empty)
+    x = q.pop()
+    signal(not_full)
+    return x
+}
+```
+
+✅ Producers call `put` and wait if the buffer is full.
+✅ Consumers call `get` and wait if the buffer is empty.
+➡️ The monitor enforces both **safety** (no race conditions) and **liveness** (progress when conditions change).
+
+**Readers–Writers (favor readers, simple)**
+
+The *readers–writers problem* arises when multiple processes/threads need *concurrent read access* to a shared resource, but *writes must be exclusive*.
+
+* *Readers* can share the lock as long as no writer holds it.
+* *Writers* need exclusive access, blocking all readers.
+* In this simple version, *readers are favored*: many readers can “pile in” and delay a waiting writer.
+
+```pseudo
+rw_lock:
+  read_lock():
+    atomic_inc(readers)
+    if readers == 1: lock(wmutex)     # first reader blocks writers
+
+  read_unlock():
+    atomic_dec(readers)
+    if readers == 0: unlock(wmutex)   # last reader releases writers
+
+  write_lock():
+    lock(wmutex)                      # exclusive access
+
+  write_unlock():
+    unlock(wmutex)
+```
+
+✅ *Pros:* simple, efficient for read-heavy workloads.
+⚠️ *Con:* writers may starve if readers keep arriving.
+
+*When to avoid locks*: Short counters? Use `atomic_fetch_add`; Hot flags? Use `atomic<bool>`; High contention lists? Use queues with **Multi-Producer Single-Consumer (MPSC)/Single-Producer Single-Consumer (SPSC)** lock-free structures.
 
 #### Load Balancing
 
-Load balancing distributes workloads across multiple processes or processors to ensure optimal use of resources and reduce wait times. Effective load balancing considers the current load on each process, the available system resources, and the nature of the tasks. Techniques for load balancing can be static (pre-determined distribution) or dynamic (adjusting based on real-time system state).
+Load balancing in multiprocessing is the strategy of distributing tasks across multiple workers so that no single worker becomes a bottleneck. A good load balancer keeps all workers busy, minimizes idle time, and adapts to uneven or unpredictable workloads. Approaches range from simple central queues (easy but can bottleneck), to static splits (fast but fragile to imbalance), to more scalable techniques like dynamic scheduling, power of two choices, or work stealing, each trading off simplicity, overhead, and scalability.
+
+**Central queue (simple & effective)**
+
+* All tasks go into a *single shared queue*.
+* *Workers* repeatedly pop from it.
+* *Backpressure* is naturally expressed by the queue length (longer queue → system is overloaded).
+
+```
+          +-----------+
+Producers→|   QUEUE   |← shared
+          +-----------+
+            ^   ^   ^
+            |   |   |
+           W1  W2  W3     (workers pop tasks)
+```
+
+✅ *Pros:* simple, fair, and effective at balancing load.
+⚠️ *Cons:* contention on the queue can become a bottleneck at high thread counts.
+
+**Work stealing (scales on many threads)**
+
+* Each *worker thread* owns a *double-ended queue (deque)* of tasks.
+* *Owner* takes tasks from the *bottom* (LIFO, good for cache locality).
+* *Idle workers* steal from the *top* of others’ deques (FIFO, avoids contention).
+
+```
+ Worker 1 (busy)                  Worker 2 (idle)
+ ┌─────────────────┐              ┌─────────────────┐
+ │ [ d | e | q | u | e ] <---- steal from top ----  │
+ └─────────────────┘              └─────────────────┘
+             ^                                   ^
+          pops bottom                       steals top
+```
+
+✅ *Why it scales well:*
+
+* No central queue → avoids bottlenecks.
+* Most operations are local (fast).
+* Stealing is rare (only when idle), so contention is low.
+* Balances work automatically across many threads.
+
+**“Power of Two Choices” (low-cost balancing)**
+
+Instead of checking **all workers**, each task just samples **two random workers** and goes to the one with the shorter queue.
+
+$$
+\text{Assign}(T) = \arg\min{Q(A), Q(B)}
+$$
+
+This tiny bit of choice dramatically reduces the maximum queue length compared to pure random assignment.
+
+```
+        Incoming Task T
+               │
+       ┌───────┴────────┐
+   Pick 2 random      Workers
+   {A, B}              ...
+        │
+   Compare queues
+        │
+  Send T to shorter
+```
+
+**Why Dynamic Scheduling Helps**
+
+We have **10 tasks (in ms):**
+
+$$
+[50, 50, 50, 50, 50, 50, 50, 50, 50, 500]
+$$
+
+**Static split (5 + 5 tasks):**
+
+* Worker A: $5 \times 50 = 250 \,\text{ms}$
+* Worker B: $4 \times 50 + 500 = 700 \,\text{ms}$
+* Both run in parallel → total time ≈ **700 ms** (dominated by slow worker).
+
+```
+Static:
+ Worker A: [50][50][50][50][50]   → 250 ms
+ Worker B: [50][50][50][50][500]  → 700 ms
+ Total = 700 ms
+```
+
+**Dynamic (central queue):**
+
+* Workers keep pulling tasks as they finish.
+* The long $500$ ms task runs alone on one worker,
+  while the other clears all 9 short tasks ($9 \times 50 = 450$ ms).
+* Total time = max(500, 450) = **500 ms**.
+
+```
+Dynamic:
+ Worker A: [500]                  → 500 ms
+ Worker B: [50]...[50] (9×)       → 450 ms
+ Total = 500 ms
+```
+
+✅ **Dynamic scheduling reduces idle time** and balances uneven workloads better than static partitioning.
+
+**Cluster patterns you’ll actually use**
+
+* *Round-robin* (evenly spread): web backends w/ similar handlers.
+* *Least-connections* (reduce tail latency): mixed endpoints.
+* *Consistent hashing* (stickiness, cache locality):
+
+```
+[  hash ring  ]
+A----B--------C---------A----B--------C
+key→hash(key) -> next node clockwise
+```
+
+**What to measure (and act on)**
+
+* *Queue length* → add workers / increase concurrency.
+* *p95/p99 latency* → skew/hotspots; enable stealing or least-loaded.
+* *Throughput vs. saturation point* → stop increasing concurrency past knee.
+* *Steal rate / rebalancing rate* → if high, partitioning is off.
 
 #### Scalability
 
-Scalability refers to the ability of a system to handle increasing workloads by adding more resources, such as additional processes or hardware. Scalability is critical for performance improvement and involves designing systems that can efficiently utilize additional resources without significant overhead. This includes choosing appropriate algorithms, data structures, and communication methods that can scale effectively as the system grows.
+Multiprocessing scalability is the ability of a system to effectively use additional CPUs or cores to achieve higher performance as workload increases. A scalable multiprocessing design keeps all processors busy with minimal contention, balances load across workers, and reduces overhead from coordination. The goal is near-linear speedup—doubling the number of processors should ideally almost double throughput—though in practice limits arise from synchronization, communication costs, and sequential portions of code.
+
+**Vertical vs Horizontal Scaling**
+
+*Vertical (scale-up):* 
+
+Add more power (CPU/RAM) to a single machine.
+→ Simpler, but limited by hardware ceiling.
+
+```
+┌───────────────┐
+│   BIGGER BOX  │   (more CPU / RAM)
+└───────────────┘
+```
+
+*Horizontal (scale-out):*
+
+Add more machines behind a load balancer.
+→ Scales further, but adds complexity (sync, failures, distribution).
+
+```
+              ┌───────────┐
+              │   LB      │
+              └─────┬─────┘
+        ┌───────────┼───────────┐
+        │           │           │
+   ┌────▼────┐ ┌────▼────┐ ┌────▼────┐
+   │ Server1 │ │ Server2 │ │ Server3 │  (N copies)
+   └─────────┘ └─────────┘ └─────────┘
+```
+
+**Amdahl’s Law:**
+
+For a fixed-size problem, the speedup is limited by the sequential fraction $S$:
+
+$$
+\text{Speedup}_{\text{Amdahl}} = \frac{1}{S + \frac{1-S}{P}}
+$$
+
+Example: if $S = 0.2$ (20% sequential, 80% parallel) and $P = 8$:
+
+$$
+\text{Speedup} = \frac{1}{0.2 + \frac{0.8}{8}} = 3.33\times
+$$
+
+**Gustafson’s Law:**
+
+For scaling problem sizes with more processors, the speedup is estimated as:
+
+$$
+\text{Speedup}_{\text{Gustafson}} \approx P - S \cdot (P - 1)
+$$
+
+Example: with $S = 0.05$ and $P = 32$:
+
+$$
+\text{Speedup} \approx 32 - 0.05 \times 31 = 30.45\times
+$$
+
+**Contention & false sharing**
+
+When multiple processors update different variables that happen to reside in the *same cache line*, they can cause *false sharing*: the cache line bounces between cores even though the variables are logically independent. This leads to unnecessary contention and degraded scalability.
+
+*Bad (false sharing):*
+
+```c
+struct Counters { 
+    int a; 
+    int b;   // shares cache line with a
+};
+```
+
+*Fix (pad or align to cache line, e.g. 64B):*
+
+```c
+struct Counters { 
+    alignas(64) int a; 
+    alignas(64) int b;  // each on its own cache line
+};
+```
+
+✅ Now `a` and `b` can be updated independently by different cores without interfering in the cache.
+
+**NUMA awareness checklist**
+
+* Pin threads: `taskset -c 0-7 ./app`
+* Local alloc: start thread on node then allocate.
+* Big pools per-NUMA node; avoid cross-node chatter.
+
+**Backpressure & queues**
+
+* Prefer *bounded* queues; drop/timeout instead of infinite growth.
+* Use *circuit breakers* for downstreams; add *jittered backoff*.
+
+### Typical Applications
+
+| Use case | Pattern summary | C++ (preferred) | Python (preferred) | Why this choice | Shutdown behavior |
+|---|---|---|---|---|---|
+| CPU-bound data processing (e.g., image filtering, simulations) | Split data into chunks; run each chunk in a separate process | Worker processes via fork/exec + waitpid (or job system); supervised | ProcessPoolExecutor / multiprocessing.Pool (joinable) | True parallelism across cores; isolates crashes | Close/terminate pool, join with timeout; handle partial results |
+| Batch video/audio transcoding | One media file per process; reuse a process pool | Process pool; spawn encoder subprocesses; wait on children | ProcessPoolExecutor / Pool.imap_unordered | Heavy CPU; process-per-job isolates codec crashes/leaks | Graceful: close & join; on cancel: terminate outstanding workers |
+| Parallel compilation/build systems | Spawn compiler/linker processes concurrently | Subprocess fan-out; wait for all; cap by cores | ProcessPoolExecutor for compile tasks | Compilers are external processes; natural fit | Propagate cancel; kill/terminate remaining jobs |
+| Web server CPU-heavy tasks (e.g., image resize, PDF render) | Pre-fork N worker processes; jobs via IPC/queue | Pre-fork model; master accepts, workers process | Gunicorn-style worker processes / ProcessPoolExecutor | Avoids GIL; isolates per-request crashes | Stop accepting, drain queue, graceful worker shutdown; SIGTERM then SIGKILL |
+| ML inference (CPU) at scale | Warm worker processes with loaded models; serve via IPC/RPC | Worker processes pinned to cores/NUMA; shared mem for tensors | Multiprocessing workers; torch.multiprocessing or ProcessPoolExecutor | Reuse loaded models; parallelize safely; isolate OOMs | Stop intake, finish inflight, join; recycle on memory creep |
+| Distributed training (1 process per GPU) | Launcher spawns one worker per device; collective communication | MPI processes or custom multiprocess with NCCL | torchrun/torch.multiprocessing spawn (joinable) | Process-per-GPU is the standard isolation model | Barrier then orderly exit; abort on failed rank |
+| ETL / data pipeline (extract→transform→load) | Stage-per-process; bounded queues for back-pressure | Multiple processes with POSIX MQ/shared memory or ZeroMQ | multiprocessing.Process + Queue / Pool | Transforms are CPU-heavy; isolate faults; control memory | Send sentinels; close queues; join in stage order |
+| Secure sandbox for untrusted code/plugins | Run plugin in locked-down process w/ low privileges | Fork, drop caps/seccomp/chroot; monitor via supervisor | Spawn Process with reduced perms; communicate over pipes | Process boundaries improve security/isolation | Timeout and terminate; collect logs/core for audit |
+| Memory-leaky native libraries | Encapsulate leak-prone work in short-lived child processes | Spawn helper process per batch; restart often | ProcessPoolExecutor with max_tasks_per_child | Let OS reclaim memory on process exit | Let tasks finish, then recycle workers |
+| CLI orchestration / pipelines | Chain external tools; stream via pipes | spawn/exec pipeline; wait in order | subprocess + multiprocessing for fan-out stages | Leverage existing tools; parallelize independent steps | Close unused pipe ends; terminate on error; collect return codes |
+| GUI app: heavy compute off main process | Compute in child process; UI talks over IPC | Helper process; shared memory/ring buffer | multiprocessing.Process (joinable) with Queue/Manager | Avoid UI freezes/crashes; bypass GIL | Cancel, flush IPC, join before closing UI |
+| Real-time market data parsing (CPU-heavy decode) | I/O thread feeds a parse process pool | Dedicated I/O proc + parse pool; lock-free shared mem | Process pool for decode; threads for I/O | Keep latency low; parallelize CPU parse safely | Stop intake, drain, terminate leftover workers |
+| Web scraping at scale (parse/compute heavy) | Async/threads fetch; processes parse/compute | Fetcher process + parse pool; queue between | asyncio + ProcessPoolExecutor for CPU parsing | Split I/O-bound from CPU-bound for throughput | Cancel fetchers, finish parse queue, join pool |
+| High-availability service: master + worker processes | Master supervises N workers; respawns on crash | Pre-fork with master; managed by systemd on prod | multiprocessing with a master; or supervisor/gunicorn prefork | Crash isolation and auto-restart resilience | Master stops intake, signals workers, waits; force-kill stragglers |
+| Scheduled jobs / background services | Run as daemon/service outside main app | Daemonized process (double-fork/setsid) or systemd service | Standalone service process; avoid daemonic=True for critical work | Independent lifecycle; restart policy via OS | Handle SIGTERM cleanly; flush and exit |
+| Large file compression/decompression | Chunk file and process chunks across workers | Worker processes; shared memory for chunk buffers | ProcessPoolExecutor; map over chunks | CPU-bound; avoids GIL and limits memory contention | Join pool; verify chunk order and final assembly |
+| Scientific Monte Carlo simulations | Independent trials per process; aggregate results | Fork/exec workers; RNG seeds per process | multiprocessing.Pool with initializer seeding | Embarrassingly parallel workload | Close & join; checkpoint partial aggregates |
+| MapReduce-style local batch | Map tasks in pool; reduce in parent process | Process pool; IPC for intermediate results | Pool.map + reduce step; or joblib (loky backend) | Clear separation of compute and aggregation | Complete reducers; handle failures idempotently |
+| Image thumbnail generation service | Queue of images; N worker processes | Pre-fork workers, shared cache via shm/IPC | ProcessPoolExecutor; pre-load libraries per worker | CPU-heavy libraries; avoids GIL; isolates crashes | Stop intake, drain queue, join pool |
+| PDF rendering/sanitization sandbox | Render in low-privilege process; return raster | Sandboxed child (seccomp/AppArmor); monitor | Spawn Process; drop privileges; time limits | Mitigate exploit risk from hostile inputs | Timeout -> terminate; clean temp files |
+| Geo-spatial tiling/rasterization | Partition space into tiles; process tiles in parallel | Process pool; memory-mapped files for tiles | ProcessPoolExecutor; chunked tile jobs | Compute & memory intensive; isolation helps | Flush tile cache; join and verify coverage |
 
 ### Alternatives to Multiprocessing
 
