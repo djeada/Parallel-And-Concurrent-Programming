@@ -403,8 +403,15 @@ Resource contention arises when multiple processes compete for the same limited 
 
 ### Process Management Techniques 
 
-Process management keeps concurrent work safe and fast: guard shared state with the right primitive (mutex/RW/semaphore), enforce lock order, prefer atomics for hot counters. Shape flow with bounded queues and rate limits, balance dynamically (central queue/work stealing), scale out behind an LB, and track p95 latency and queue depth.
+Process management keeps concurrent work safe and fast by following these best practices:
 
+- Guard shared state with the right synchronization primitive (e.g., mutex, read-write lock, semaphore).
+- Enforce a consistent lock order to prevent deadlocks.
+- Prefer atomic operations for frequently updated ("hot") counters or flags.
+- Shape workflow with bounded queues and rate limits to avoid overload.
+- Balance work dynamically using techniques like a central queue or work stealing.
+- Scale out behind a load balancer (LB) when possible.
+- Track key metrics such as p95 latency and queue depth to monitor system health.
 ### Process Synchronization
 
 Process synchronization is the coordination of concurrent processes so they can safely share resources without conflicts or inconsistent results. In a multiprogramming OS, processes often need to access critical sections—code that touches shared data or devices. Synchronization mechanisms (locks, semaphores, monitors, condition variables) ensure mutual exclusion (only one process at a time in a critical section) and proper ordering of operations, preventing race conditions, deadlocks, or starvation while allowing maximum parallelism where possible.
