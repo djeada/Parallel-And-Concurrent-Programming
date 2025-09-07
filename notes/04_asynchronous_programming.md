@@ -163,7 +163,7 @@ An async event loop offloads blocking/CPU-heavy bits to a thread (or process) po
 
 **Practical tips**
 
-* Blocking APIs should be offloaded to a pool rather than called directly in an *async thread*, since doing so keeps the event loop responsive, whereas failing to offload causes the entire system to stall; for instance, a blocking database driver can freeze an async web server if not isolated.
+* Blocking APIs should be offloaded to a pool rather than called directly in an *async event loop*, since doing so keeps the event loop responsive, whereas failing to offload causes the entire system to stall; for instance, a blocking database driver can freeze an async web server if not isolated.
 * Using *structured concurrency* through task groups or scopes ensures that tasks complete or are cleaned up together, while omitting it risks resource leaks and orphaned operations; a file upload service benefits by grouping related subtasks under one scope for reliable cancellation.
 * Applying *timeouts*, cancellation, and backpressure mechanisms maintains responsiveness under load, whereas skipping them allows unbounded waits or uncontrolled demand; for example, an API gateway can enforce request timeouts and throttle traffic to prevent overload.
 * Thread-based programs run more reliably when they emphasize *immutable data* or message passing, which minimizes shared state, while ignoring this practice increases the risk of race conditions; a logging service illustrates this by passing immutable log messages through queues instead of sharing mutable buffers.
