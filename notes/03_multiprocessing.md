@@ -568,7 +568,7 @@ rw_lock:
 ✅ *Pros:* simple, efficient for read-heavy workloads.
 ⚠️ *Con:* writers may starve if readers keep arriving.
 
-*When to avoid locks*: Short counters? Use `atomic_fetch_add`; Hot flags? Use `atomic<bool>`; High contention lists? Use queues with **MPSC/SPSC** lock-free structures.
+*When to avoid locks*: Short counters? Use `atomic_fetch_add`; Hot flags? Use `atomic<bool>`; High contention lists? Use queues with **Multi-Producer Single-Consumer (MPSC)/Single-Producer Single-Consumer (SPSC)** lock-free structures.
 
 #### Load Balancing
 
