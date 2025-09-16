@@ -42,7 +42,7 @@ A web server process, for example, receives a request and assigns it to a thread
 ### Advantages of Threads over Processes
 
 * Multithreading has several advantages over using multiple processes.
-* One key advantage is better responsiveness, allowing a program to remain responsive even when part of it is performing a lengthy operation.
+* One advantage is better responsiveness, allowing a program to remain responsive even when part of it is performing a lengthy operation.
 * Another benefit is faster context transitions between threads compared to processes, as threads share the same memory space.
 * Threads also improve resource sharing since code, data, and files can be shared across all threads within a process.
 
@@ -848,7 +848,7 @@ In this example, `std::lock_guard` automatically locks the mutex on creation and
 
 ##### Deadlocks and Avoidance
 
-Deadlocks occur when two or more threads are waiting for each other to release resources, resulting in a standstill. To avoid deadlocks, it's crucial to lock multiple resources in a consistent order, use try-lock mechanisms, or employ higher-level concurrency primitives like `std::lock` or condition variables.
+Deadlocks occur when two or more threads are waiting for each other to release resources, resulting in a standstill. To avoid deadlocks, you need to lock multiple resources in a consistent order, use try-lock mechanisms, or employ higher-level concurrency primitives like `std::lock` or condition variables.
 
 ```cpp
 #include <iostream>
@@ -1026,7 +1026,7 @@ Each ordering offers different guarantees about how operations on one thread bec
 
 Below is a **comparison table** that summarizes the main C++ memory orderings, their guarantees, common use cases, and potential pitfalls. Use this as a quick reference to decide which ordering is best suited for a particular concurrency scenario.
 
-| **Memory Order**               | **Brief Description**                                                          | **Key Guarantees**                                                                                                                                                                                          | **Common Use Cases**                                                                                                                    | **Pitfalls & Advice**                                                                                                                                        |
+| **Memory Order**               | **Brief Description**                                                          | **Guarantees**                                                                                                                                                                                          | **Common Use Cases**                                                                                                                    | **Pitfalls & Advice**                                                                                                                                        |
 |--------------------------------|-------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
 | **`std::memory_order_relaxed`** | Provides only atomicity, no ordering constraints                             | - The operation itself is atomic (indivisible)  <br/> - No guarantees about visibility or ordering relative to other operations                                                                             | - Simple counters or statistics <br/> - Non-critical flags where ordering doesn’t matter                                                                                     | - Easy to introduce data races if other parts of the program rely on the update’s order <br/> - Great performance but requires careful design                 |
 | **`std::memory_order_consume`** | Intended to enforce data dependency ordering (rarely implemented properly)   | - Theoretically only dependent reads are ordered  <br/> - In practice, compilers often treat it like `acquire`                                                                                              | - Very specialized, mostly replaced by `acquire` in real-world code                                                                                                           | - Not well supported by most compilers <br/> - Avoid in portable or production code                                                                                              |
@@ -1123,7 +1123,7 @@ int main() {
 
 - The frequent creation and destruction of threads can be costly, leading to significant overhead. To minimize this, it is advisable to use thread pools or reuse threads, which can reduce the performance impact associated with thread lifecycle management.
 - Synchronization mechanisms, such as mutexes, should be used sparingly because excessive synchronization can lead to contention and reduced performance. It is important to apply these mechanisms only when necessary to avoid unnecessary delays and overhead.
-- To avoid data races, it is crucial to always protect shared data with appropriate synchronization primitives. This ensures that only one thread can access the data at a time, preventing concurrent modifications that could lead to inconsistent or incorrect data states.
+- To avoid data races, always protect shared data with appropriate synchronization primitives. This ensures that only one thread can access the data at a time, preventing concurrent modifications that could lead to inconsistent or incorrect data states.
 - Utilizing modern features introduced in C++11 and later, such as `std::thread`, `std::mutex`, `std::lock_guard`, and `std::future`, can greatly simplify thread management and help avoid common pitfalls. These features provide robust and standardized ways to handle concurrency, making the code more maintainable and less error-prone.
 
 Here are some example code snippets demonstrating various aspects of multithreading in C++:
@@ -1401,7 +1401,7 @@ In this example, `counter_lock` ensures that the increment operation is effectiv
 ##### Performance Considerations and Best Practices
 
 - It is important to avoid creating an excessive number of threads, as this can lead to significant context switching overhead and increased memory usage. To manage a fixed number of threads efficiently, thread pools like `concurrent.futures.ThreadPoolExecutor` should be used.
-- Minimizing lock contention is crucial for performance. To achieve this, fine-grained locks can be implemented, and the time spent in critical sections should be minimized to reduce the likelihood of threads waiting for access to shared resources.
+- Minimizing lock contention is good for performance. To achieve this, fine-grained locks can be implemented, and the time spent in critical sections should be minimized to reduce the likelihood of threads waiting for access to shared resources.
 - Appropriate synchronization mechanisms, such as locks, semaphores, and condition variables, should be used to coordinate thread activities and prevent data races. This ensures that threads operate safely without corrupting shared data.
 - Understanding the Global Interpreter Lock (GIL) is essential, especially in Python. The GIL can limit the effectiveness of threading in CPU-bound applications by allowing only one thread to execute Python bytecode at a time. In such cases, using multiprocessing or other parallelism strategies may be more effective than threading.
 - For background tasks, daemon threads should be used, as they automatically exit when the program terminates. This can be done by setting `thread.setDaemon(True)`, ensuring that these threads do not prevent the application from closing if they are still running.
@@ -1598,7 +1598,7 @@ In this example:
 
 ##### Error Handling
 
-Proper error handling in multi-threaded environments is crucial:
+Handling errors in multi-threaded environments isn’t easy, but it’s something you can’t skip:
 
 ```javascript
 // main.js
