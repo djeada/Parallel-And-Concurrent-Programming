@@ -531,7 +531,7 @@ Inside each node:
 
 ```bash
 mpicc -O3 -march=native -fopenmp heat2d.c -o heat2d
-./heat2d --nx 512 --ny 512 --steps 10 --tile 256 --verify analytic
+./heat2d --nx 512 --ny 512 --steps 10 --tile 512 --verify analytic
 ```
 
 **Distribute across servers (rank layout)**
