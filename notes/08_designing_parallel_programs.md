@@ -459,7 +459,7 @@ Each step:
 
 **How:** merge 2×2 blocks into a tile; thread inside each rank.
 
-* The cluster consists of four hosts, each with two sockets and 16 cores per socket, giving 32 cores per host, along with 128 GB of RAM and a 100 Gb/s InfiniBand interconnect.
+* The cluster consists of four hosts, each with two sockets and 16 cores per socket, giving 32 cores per host, along with 128 GB of RAM and a 100 Gbps InfiniBand interconnect.
 * In the earlier configuration, there were 64 MPI ranks, each responsible for a 512×512 block, which resulted in many small halo messages.
 * In the new configuration, there are 16 MPI ranks, each owning a 1024×1024 tile arranged as a 2×2 block, with OpenMP threads used inside each rank; this approach produces fewer but larger messages.
 * For a 1024×1024 tile, the per-edge message size is 1024 × 1 × 8 bytes, which equals 8 KB, leading to about 32 KB per rank per step when all four edges are included.
