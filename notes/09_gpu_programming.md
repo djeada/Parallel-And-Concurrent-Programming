@@ -520,4 +520,4 @@ Below is a table of common CUDA concepts. Each row outlines the **concept**, giv
 
 - This table is not exhaustive. Advanced CUDA concepts include streams, events, unified memory, texture memory, constant memory, warp-level primitives, cooperative groups, and more.  
 - The examples shown above are simplified to illustrate syntax and usage. Real-world code often includes error checking on all CUDA function calls (e.g., checking the return value of `cudaMalloc`, `cudaMemcpy`, etc.)  
-- The concept of **warps** is a lower-level detail (hardware grouping of threads) It is usually not directly controlled in the kernel code, but it’s useful to understand for performance tuning.
+- The concept of **warps** is a lower-level detail (hardware grouping of threads). It is usually not directly controlled in the kernel code, but it’s useful to understand for performance tuning.
