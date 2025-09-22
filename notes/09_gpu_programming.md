@@ -70,7 +70,7 @@ A **vector processor** is an architecture that operates on entire vectors (1D ar
 **Benefits**
 
 * Each pipeline stage can process a different element in parallel.
-* No intra-vector data dependencies mean simpler hardware scheduling (no waiting for one element to finish before starting the next)
+* No intra-vector data dependencies mean simpler hardware scheduling (no waiting for one element to finish before starting the next).
 * Regular memory access patterns (especially stride-1) are easy to fetch into registers or caches.
 
 ### Strides
