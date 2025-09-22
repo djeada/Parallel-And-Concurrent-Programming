@@ -90,7 +90,7 @@ A(3,0) & A(3,1) & A(3,2) & A(3,3)
 \end{bmatrix}
 $$
 
-In memory (row-major), row 0 is first, then row 1, etc. Accessing a **row** is contiguous ($\text{stride} = 1$), but accessing a **column** is not contiguous ($\text{stride} = \text{number of columns}$)
+In memory (row-major), row 0 is first, then row 1, etc.. Accessing a **row** is contiguous ($\text{stride} = 1$), but accessing a **column** is not contiguous ($\text{stride} = \text{number of columns}$)
 
 #### Matrix multiplication
 
