@@ -164,10 +164,10 @@ Global communication involves data exchange between tasks located on different p
 In a distributed computing system, tasks running on separate machines need to communicate over a network.
 
 ```
-+-------------+       +-------------+
++-------------+        +-------------+
 | Processor 1 | <----> | Processor 2 |
-| Task A      |       | Task B      |
-+-------------+       +-------------+
+| Task A      |        | Task B      |
++-------------+        +-------------+
       |                     |
       +---------------------+
              Network
