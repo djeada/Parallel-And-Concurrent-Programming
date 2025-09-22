@@ -54,7 +54,7 @@ II. **Vector Processors (Temporal Parallelism)**
 - Hardware cost is lower because the functional units are shared in time.  
 - It takes multiple cycles to get all elements processed since they move through the pipeline in sequence.
 
-In modern GPUs, there are elements of both approaches. You can think of each GPU “core” as being replicated (spatial parallelism), but within each core, pipelined operations occur (temporal parallelism) This combination helps GPUs handle large-scale parallelism efficiently.
+In modern GPUs, there are elements of both approaches. You can think of each GPU “core” as being replicated (spatial parallelism), but within each core, pipelined operations occur (temporal parallelism). This combination helps GPUs handle large-scale parallelism efficiently.
 
 ### Vector Processor
 
