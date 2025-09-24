@@ -35,88 +35,117 @@ II. Minimize Dependencies Between Tasks
 
 I. Domain Decomposition
 
-Domain decomposition involves splitting the data into partitions, with each partition processed by a separate task. This method is highly effective in scenarios where the data can be naturally divided into distinct segments.
+Domain decomposition splits your **data space** into chunks that different workers handle in parallel. The trick is to choose chunks so each worker mostly uses its own data, only syncing at boundaries.
 
-Example:
+Example (concrete & step-by-step):
 
-In a weather simulation, the geographical area can be divided into smaller regions, with each region processed independently.
+* Suppose you’re blurring a **4000×4000 image**. Cut it into 4 tiles of **2000×2000**: top-left, top-right, bottom-left, bottom-right.
+* Each worker blurs its own tile. Because blur needs neighbor pixels, each tile also reads a tiny border from adjacent tiles (often called **halo/ghost cells**).
+* After processing, you stitch the 4 blurred tiles back together.
+  Why this works: most computations are **local** (each pixel depends on nearby pixels), so each tile can run independently and fast, with small, predictable communication at the edges.
+
+(Another mental model: In a weather sim, split the map into regions; each core updates temperature/wind in its region, only exchanging **border values** with neighbors after each timestep.)
 
 II. Functional Decomposition
 
-Functional decomposition divides the computation into separate functional tasks, each performing a distinct part of the overall computation. This method focuses on breaking down the operations rather than the data.
+Functional decomposition splits by **kind of work**, not by data. You build a pipeline of stages; each stage does one job well.
 
-Example:
+Example (web request pipeline):
 
-In a web application, different tasks such as user authentication, data retrieval, and UI rendering can be handled by separate services.
+* **Auth stage:** check the token/cookie; if invalid, stop.
+* **Data stage:** query the database for the user’s posts.
+* **Transform stage:** sort and format the posts.
+* **Render stage:** turn the result into HTML or JSON.
+  Each stage can scale independently (lots of data? scale the Data stage), and it’s easier to test (mock inputs/outputs per stage).
 
-IIII. Cyclic Decomposition
+(Another quick one: for large matrix multiplication on a GPU pipeline: **Load → Multiply → Accumulate → Store**. Same idea—different steps, specialized workers.)
 
-Cyclic decomposition is primarily used in the context of permutations and group theory. It breaks down a permutation into a collection of disjoint cycles, where each cycle represents a sequence of elements that are permuted among themselves.
+III. Cyclic Decomposition
 
-Example:
+Cyclic decomposition (group theory) takes a **permutation**—a rule that reorders items—and breaks it into **disjoint cycles**. A cycle tells you how items rotate among themselves; disjoint means cycles don’t share elements, so they’re independent “mini-loops.”
 
-Consider the permutation of the set ${1, 2, 3, 4}$ given by:
+Where does the permutation come from?
+Anywhere you reorder labels/indices. Examples:
+
+* **Rotating seats** at a table: everyone moves to the next chair.
+* **Shuffling an array** by a fixed pattern (e.g., “send item i to position p(i)”).
+* **Renaming variables** in a compiler pass.
+
+Concrete example:
+
+You have items labeled $\{1,2,3,4\}$. A “rotate left among the first three, keep 4” rule sends
+
+* $1 \mapsto 2$, $2 \mapsto 3$, $3 \mapsto 1$, and $4 \mapsto 4$.
+
+In **two-line notation** that’s
 
 $$
-\sigma = \begin{pmatrix}
+\sigma =
+\begin{pmatrix}
 1 & 2 & 3 & 4 \\
 2 & 3 & 1 & 4
-\end{pmatrix}
+\end{pmatrix}.
 $$
 
-This permutation can be decomposed into disjoint cycles as follows:
+How to decompose into cycles (step-by-step):
+
+1. Start with the smallest label not yet used: **1**.  Follow where it goes: $1 \to 2$, then $2 \to 3$, then $3 \to 1$. You’ve returned to 1, so close the cycle: **$(1\,2\,3)$**.
+2. Next unused label: **4**. Follow it: $4 \to 4$. That’s a 1-cycle (a fixed point): **$(4)$**.
+
+So the cyclic decomposition is:
 
 $$
-\sigma = (1 \to 2 \to 3 \to 1)(4)
+\sigma = (1\,2\,3)(4).
 $$
 
-Here, the cycle $(1 → 2 → 3 → 1)$ indicates that 1 is sent to 2, 2 is sent to 3, and 3 is sent back to 1. The cycle $(4)$ indicates that 4 remains fixed.
+What this tells you:
+
+* Apply $\sigma$ once: $1\!\to\!2,\,2\!\to\!3,\,3\!\to\!1$; 4 stays put.
+* Apply $\sigma$ three times: the 3-cycle returns everyone in that cycle to start (order 3); 4 still stays put.
+
+Mini table to visualize the mapping:
+
+|  input | 1 | 2 | 3 | 4 |
+| -----: | - | - | - | - |
+| output | 2 | 3 | 1 | 4 |
+
+You can trace arrows $1\to2\to3\to1$ and $4\to4$ to “see” the cycles.
 
 IV. Block Decomposition
 
-Block decomposition is a technique used in matrix theory and linear algebra. It involves partitioning a matrix into smaller submatrices (blocks). This can simplify computations and is useful for analyzing the structure of the matrix.
+Block decomposition slices a matrix into **submatrices (blocks)** so you operate on them as units. This clarifies structure (e.g., block-diagonal) and speeds things up (cache-friendly, reuse kernels).
 
-Example:
+Example (numbers + why it helps):
 
-Consider a matrix $A$ of size $4 \times 4$:
+Let
 
 $$
-A = \begin{pmatrix}
-a_{11} & a_{12} & a_{13} & a_{14} \\
-a_{21} & a_{22} & a_{23} & a_{24} \\
-a_{31} & a_{32} & a_{33} & a_{34} \\
-a_{41} & a_{42} & a_{43} & a_{44}
+A=\begin{pmatrix}
+1 & 2 & 9 & 8\\
+0 & 3 & 7 & 6\\
+4 & 5 & 0 & 0\\
+4 & 5 & 0 & 0
 \end{pmatrix}
-$$
-
-This matrix can be decomposed into blocks:
-
-$$
-A = \begin{pmatrix}
-A_{11} & A_{12} \\
+=
+\begin{pmatrix}
+A_{11} & A_{12}\\
 A_{21} & A_{22}
 \end{pmatrix}
 $$
 
-where each block is a submatrix:
-
 $$
-A_{11} = \begin{pmatrix}
-a_{11} & a_{12} \\
-a_{21} & a_{22}
-\end{pmatrix}, \quad A_{12} = \begin{pmatrix}
-a_{13} & a_{14} \\
-a_{23} & a_{24}
-\end{pmatrix}, \quad A_{21} = \begin{pmatrix}
-a_{31} & a_{32} \\
-a_{41} & a_{42}
-\end{pmatrix}, \quad A_{22} = \begin{pmatrix}
-a_{33} & a_{34} \\
-a_{43} & a_{44}
-\end{pmatrix}
+A_{11}=\begin{pmatrix}1&2\\0&3\end{pmatrix}, 
+A_{12}=\begin{pmatrix}9&8\\7&6\end{pmatrix}, 
+A_{21}=\begin{pmatrix}4&5\\4&5\end{pmatrix}, 
+A_{22}=\begin{pmatrix}0&0\\0&0\end{pmatrix} 
 $$
 
-Block decomposition helps in performing matrix operations more efficiently by working with smaller submatrices.
+* **Block multiplication:** $C = A B$ can be done via
+  $C_{11}=A_{11}B_{11}+A_{12}B_{21}$, $C_{12}=A_{11}B_{12}+A_{12}B_{22}$, etc. You reuse fast kernels on smaller chunks.
+* **Solving block systems:** If $A_{11}$ is easy to invert (e.g., triangular) and $A_{22}$ is simple (here zeros), you can use **Schur complements** to solve $Ax=b$ in stages.
+* **Structure spotting:** If $A_{12}$ and $A_{21}$ were zero, $A$ would be block-diagonal, meaning two independent smaller problems—great for parallelism.
+
+Bottom line: with blocks, you trade one huge problem for a few tidy medium-sized ones, which are simpler to reason about and often faster to compute.
 
 ### Communication
 
@@ -131,8 +160,6 @@ I. Minimize the Volume and Frequency of Communication
 II. Optimize the Use of Network Resources:
 
 - Efficient use of network bandwidth and minimizing latency ensures faster data transfer and better utilization of computational resources.
-
-I apologize for the omission. Here is the full text with ASCII graphics and examples for each type of communication, including the example for point-to-point communication.
 
 ### Types of Communication
 
