@@ -125,8 +125,7 @@ A=\begin{pmatrix}
 0 & 3 & 7 & 6\\
 4 & 5 & 0 & 0\\
 4 & 5 & 0 & 0
-\end{pmatrix}
-=
+\end{pmatrix} =
 \begin{pmatrix}
 A_{11} & A_{12}\\
 A_{21} & A_{22}
@@ -134,10 +133,22 @@ A_{21} & A_{22}
 $$
 
 $$
-A_{11}=\begin{pmatrix}1&2\\0&3\end{pmatrix}, 
-A_{12}=\begin{pmatrix}9&8\\7&6\end{pmatrix}, 
-A_{21}=\begin{pmatrix}4&5\\4&5\end{pmatrix}, 
-A_{22}=\begin{pmatrix}0&0\\0&0\end{pmatrix} 
+A_{11}=\begin{pmatrix}
+1 & 2\\
+0 & 3\end
+{pmatrix}, \quad
+A_{12}=\begin{pmatrix}
+9 & 8\\
+7 & 6
+\end{pmatrix}, \quad
+A_{21}=\begin{pmatrix}
+4 & 5\\
+4 & 5
+\end{pmatrix}, \quad
+A_{22}=\begin{pmatrix}
+0 & 0\\
+0 & 0
+\end{pmatrix}
 $$
 
 * **Block multiplication:** $C = A B$ can be done via
@@ -155,11 +166,11 @@ Communication in parallel computing involves the exchange of data between tasks.
 
 I. Minimize the Volume and Frequency of Communication
 
-- Reducing the amount of data exchanged and the number of communications can significantly decrease overhead and improve overall performance.
+Reducing the amount of data exchanged and the number of communications can significantly decrease overhead and improve overall performance.
 
 II. Optimize the Use of Network Resources:
 
-- Efficient use of network bandwidth and minimizing latency ensures faster data transfer and better utilization of computational resources.
+Efficient use of network bandwidth and minimizing latency ensures faster data transfer and better utilization of computational resources.
 
 ### Types of Communication
 
