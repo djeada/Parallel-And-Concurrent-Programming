@@ -230,6 +230,7 @@ Collective communication involves multiple tasks and includes operations such as
 In scatter communication, a single process sends different pieces of data to multiple processes. Each process receives a unique piece of the data.
 
 ```
+#
       +-----------------------+
       |         ABC           |
       +-----------------------+
@@ -246,6 +247,7 @@ In scatter communication, a single process sends different pieces of data to mul
 In broadcast communication, a single process sends the same piece of data to all other processes.
 
 ```
+#
       +-----------------------+
       |         ABC           |
       +-----------------------+
