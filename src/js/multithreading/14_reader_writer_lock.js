@@ -89,13 +89,14 @@ if (isMainThread) {
   const { type, threadId, sharedArrayBuffer } = workerData;
   const sharedData = new Int32Array(sharedArrayBuffer);
 
-  const acquireReadLock = () => {
+  const acquireReadLock = async () => {
     // Wait while there are active or waiting writers
     while (
       Atomics.load(sharedData, 2) > 0 ||
       Atomics.load(sharedData, 3) > 0
     ) {
-      Atomics.wait(sharedData, 2, 1);
+      // Use a short timeout to avoid burning CPU while waiting
+      await sleep(10);
     }
     // Increment reader count
     Atomics.add(sharedData, 1, 1);
@@ -103,10 +104,9 @@ if (isMainThread) {
 
   const releaseReadLock = () => {
     Atomics.sub(sharedData, 1, 1);
-    Atomics.notify(sharedData, 1, 1);
   };
 
-  const acquireWriteLock = () => {
+  const acquireWriteLock = async () => {
     // Signal that we're waiting to write
     Atomics.add(sharedData, 3, 1);
 
@@ -115,25 +115,24 @@ if (isMainThread) {
       Atomics.load(sharedData, 1) > 0 ||
       Atomics.load(sharedData, 2) > 0
     ) {
-      Atomics.wait(sharedData, 1, 0);
+      // Use a short timeout to avoid burning CPU while waiting
+      await sleep(10);
     }
 
-    // We're now waiting, try to become active writer
+    // We're now ready, become active writer
     Atomics.sub(sharedData, 3, 1);
     Atomics.add(sharedData, 2, 1);
   };
 
   const releaseWriteLock = () => {
     Atomics.sub(sharedData, 2, 1);
-    Atomics.notify(sharedData, 2, 1);
-    Atomics.notify(sharedData, 1, 1);
   };
 
   const runReader = async () => {
     while (true) {
       await sleep(Math.random() * 500 + 200);
       
-      acquireReadLock();
+      await acquireReadLock();
       const value = sharedData[0];
       parentPort.postMessage({ type: "read", threadId, value });
       await sleep(100); // Simulate read time
@@ -145,7 +144,7 @@ if (isMainThread) {
     while (true) {
       await sleep(Math.random() * 1000 + 500);
       
-      acquireWriteLock();
+      await acquireWriteLock();
       sharedData[0]++;
       const value = sharedData[0];
       parentPort.postMessage({ type: "write", threadId, value });
