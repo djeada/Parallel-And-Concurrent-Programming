@@ -1,15 +1,25 @@
 /*
-This script demonstrates the use of a semaphore to limit concurrent access to a 
-resource in an asynchronous environment. A semaphore allows a specified number 
-of tasks to access a resource simultaneously, while other tasks must wait until 
-a slot becomes available.
+ * Semaphore Pattern for Async Concurrency Control
+ * 
+ * This script demonstrates the use of a semaphore to limit concurrent access to a 
+ * resource in an asynchronous environment. A semaphore allows a specified number 
+ * of tasks to access a resource simultaneously, while other tasks must wait until 
+ * a slot becomes available.
+ * 
+ * Key concepts:
+ * - Semaphore implementation using Promises
+ * - Limiting concurrent access (e.g., connection pools, rate limiting)
+ * - FIFO queue for fair access
+ * - try/finally pattern for guaranteed release
+ */
 
-In this example, we create a simple Semaphore class and use it to limit 
-concurrent access to a simulated resource to a maximum of 3 tasks at a time.
-*/
+"use strict";
 
 class Semaphore {
   constructor(maxConcurrent) {
+    if (maxConcurrent < 1) {
+      throw new Error("Semaphore maxConcurrent must be at least 1");
+    }
     this.maxConcurrent = maxConcurrent;
     this.current = 0;
     this.queue = [];
@@ -34,28 +44,65 @@ class Semaphore {
       this.current--;
     }
   }
-}
 
-const resourceSemaphore = new Semaphore(3);
-
-async function limitedResource(taskId) {
-  await resourceSemaphore.acquire();
-  console.log(`Task ${taskId} is using the limited resource.`);
-  await new Promise((resolve) =>
-    setTimeout(resolve, Math.floor(Math.random() * 2000) + 500)
-  );
-  console.log(`Task ${taskId} is done using the limited resource.`);
-  resourceSemaphore.release();
-}
-
-async function main() {
-  const tasks = [];
-
-  for (let i = 0; i < 10; i++) {
-    tasks.push(limitedResource(i));
+  get available() {
+    return this.maxConcurrent - this.current;
   }
 
-  await Promise.all(tasks);
+  get waiting() {
+    return this.queue.length;
+  }
 }
 
-main();
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const limitedResource = async (semaphore, taskId) => {
+  const waitStart = Date.now();
+  
+  await semaphore.acquire();
+  const waitTime = Date.now() - waitStart;
+  
+  try {
+    console.log(
+      `  Task ${taskId}: acquired resource (waited ${waitTime}ms, ` +
+      `${semaphore.available}/${semaphore.maxConcurrent} slots available)`
+    );
+    
+    // Simulate resource usage
+    const workTime = Math.floor(Math.random() * 1500) + 500;
+    await sleep(workTime);
+    
+    console.log(`  Task ${taskId}: releasing resource after ${workTime}ms of work`);
+  } finally {
+    semaphore.release();
+  }
+};
+
+const main = async () => {
+  const MAX_CONCURRENT = 3;
+  const NUM_TASKS = 10;
+
+  console.log("=== Semaphore Demo ===");
+  console.log(`Max concurrent access: ${MAX_CONCURRENT}`);
+  console.log(`Number of tasks: ${NUM_TASKS}\n`);
+
+  const semaphore = new Semaphore(MAX_CONCURRENT);
+  const startTime = Date.now();
+
+  const tasks = Array.from({ length: NUM_TASKS }, (_, i) =>
+    limitedResource(semaphore, i)
+  );
+
+  await Promise.all(tasks);
+
+  const totalTime = Date.now() - startTime;
+  console.log(`\nAll tasks completed in ${totalTime}ms`);
+  console.log(
+    `Without semaphore, all tasks would start immediately.`
+  );
+  console.log(
+    `With semaphore (limit ${MAX_CONCURRENT}), tasks were properly queued.`
+  );
+};
+
+main().catch(console.error);

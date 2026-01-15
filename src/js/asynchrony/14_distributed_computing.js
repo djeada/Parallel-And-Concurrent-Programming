@@ -1,123 +1,261 @@
 /*
-This script demonstrates a simple distributed computing pattern using Node.js's
-built-in 'net' module. It shows how a task server can dispatch tasks to workers
-and how clients can receive results. 
+ * Distributed Computing Pattern with TCP Sockets
+ * 
+ * This script demonstrates a simple distributed computing pattern using Node.js's
+ * built-in 'net' module. It shows how to implement:
+ * - A task server that dispatches work to workers
+ * - Workers that process tasks and return results
+ * - Clients that receive computation results
+ * 
+ * Usage:
+ *   node 14_distributed_computing.js server   - Start the task server
+ *   node 14_distributed_computing.js worker   - Start a worker
+ *   node 14_distributed_computing.js client   - Start a result client
+ * 
+ * Key concepts:
+ * - TCP socket communication
+ * - Task distribution patterns
+ * - Async message handling
+ * - Connection lifecycle management
+ */
 
-Run this script with one of the following roles:
-  - node 14_distributed_computing.js server   (starts the task server)
-  - node 14_distributed_computing.js worker   (starts a worker that processes tasks)
-  - node 14_distributed_computing.js client   (starts a client that receives results)
-*/
+"use strict";
 
 const net = require("net");
 const readline = require("readline");
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const CONFIG = {
+  host: "127.0.0.1",
+  port: 8888,
+  taskIntervalMs: 1000,
+};
 
 class TaskServer {
   constructor(host, port) {
     this.host = host;
     this.port = port;
+    this.clients = new Map();
+    this.taskId = 0;
+    this.server = null;
   }
 
-  dispatchTasks() {
-    const server = net.createServer((socket) => {
-      console.log("Client connected");
+  start() {
+    this.server = net.createServer((socket) => {
+      const clientId = `${socket.remoteAddress}:${socket.remotePort}`;
+      console.log(`Client connected: ${clientId}`);
 
-      const intervalId = setInterval(() => {
-        const task = Math.floor(Math.random() * 100) + 1;
-        console.log(`Dispatching task: ${task}`);
-        socket.write(`task ${task}\n`);
-      }, 1000);
+      const clientInfo = {
+        socket,
+        intervalId: null,
+      };
+
+      // Start dispatching tasks to this client
+      clientInfo.intervalId = setInterval(() => {
+        const task = {
+          id: ++this.taskId,
+          data: Math.floor(Math.random() * 100) + 1,
+          type: "compute",
+          timestamp: Date.now(),
+        };
+        
+        try {
+          socket.write(JSON.stringify(task) + "\n");
+          console.log(`  Dispatched task ${task.id} (data: ${task.data}) to ${clientId}`);
+        } catch (err) {
+          console.error(`  Error sending to ${clientId}:`, err.message);
+        }
+      }, CONFIG.taskIntervalMs);
+
+      this.clients.set(clientId, clientInfo);
+
+      // Handle incoming results from workers
+      const rl = readline.createInterface({ input: socket });
+      rl.on("line", (line) => {
+        try {
+          const result = JSON.parse(line);
+          console.log(`  Received result from ${clientId}:`, result);
+        } catch (err) {
+          console.log(`  Received message from ${clientId}: ${line}`);
+        }
+      });
 
       socket.on("close", () => {
-        clearInterval(intervalId);
-        console.log("Client disconnected");
+        clearInterval(clientInfo.intervalId);
+        this.clients.delete(clientId);
+        console.log(`Client disconnected: ${clientId}`);
       });
 
       socket.on("error", (err) => {
-        clearInterval(intervalId);
-        console.error("Socket error:", err.message);
+        clearInterval(clientInfo.intervalId);
+        this.clients.delete(clientId);
+        console.error(`Client error (${clientId}):`, err.message);
       });
     });
 
-    server.listen(this.port, this.host);
-    console.log(`Task server listening on ${this.host}:${this.port}`);
+    this.server.listen(this.port, this.host, () => {
+      console.log("=== Task Server ===");
+      console.log(`Listening on ${this.host}:${this.port}`);
+      console.log("Waiting for workers to connect...\n");
+    });
+
+    this.server.on("error", (err) => {
+      console.error("Server error:", err.message);
+    });
+  }
+
+  stop() {
+    this.clients.forEach((info) => {
+      clearInterval(info.intervalId);
+      info.socket.destroy();
+    });
+    this.server?.close();
+    console.log("Server stopped");
   }
 }
 
 class Worker {
-  async performTask(host, port) {
-    const client = net.createConnection({ host, port }, () => {
-      console.log("Connected to server");
-      const rl = readline.createInterface({ input: client });
+  constructor(host, port) {
+    this.host = host;
+    this.port = port;
+    this.processedCount = 0;
+  }
+
+  async connect() {
+    return new Promise((resolve, reject) => {
+      this.client = net.createConnection({ host: this.host, port: this.port }, () => {
+        console.log("=== Worker ===");
+        console.log(`Connected to server at ${this.host}:${this.port}`);
+        console.log("Waiting for tasks...\n");
+        resolve();
+      });
+
+      const rl = readline.createInterface({ input: this.client });
 
       rl.on("line", async (line) => {
-        const parts = line.split(" ");
-        if (parts.length >= 2) {
-          const task = parseInt(parts[1], 10);
-          console.log(`Performing task: ${task}`);
-          await sleep(Math.random() * 1500 + 500);
-          const result = task * 2;
-          console.log(`Completed task: ${task}, result: ${result}`);
+        try {
+          const task = JSON.parse(line);
+          await this.processTask(task);
+        } catch (err) {
+          console.error("Error processing task:", err.message);
         }
       });
-    });
 
-    client.on("error", (err) => {
-      console.error("Connection error:", err.message);
+      this.client.on("error", (err) => {
+        console.error("Connection error:", err.message);
+        reject(err);
+      });
+
+      this.client.on("close", () => {
+        console.log("Connection closed");
+        console.log(`Total tasks processed: ${this.processedCount}`);
+      });
     });
+  }
+
+  async processTask(task) {
+    console.log(`  Processing task ${task.id} (data: ${task.data})...`);
+    
+    // Simulate computation
+    await sleep(Math.random() * 1000 + 500);
+    
+    const result = {
+      taskId: task.id,
+      result: task.data * 2,
+      processedAt: Date.now(),
+    };
+    
+    this.processedCount++;
+    console.log(`  Completed task ${task.id}: ${task.data} * 2 = ${result.result}`);
+    
+    // Send result back to server
+    this.client.write(JSON.stringify(result) + "\n");
   }
 }
 
 class Client {
-  async receiveResults(host, port) {
-    const client = net.createConnection({ host, port }, () => {
-      console.log("Connected to server");
-      const rl = readline.createInterface({ input: client });
+  constructor(host, port) {
+    this.host = host;
+    this.port = port;
+    this.receivedCount = 0;
+  }
+
+  async connect() {
+    return new Promise((resolve, reject) => {
+      this.client = net.createConnection({ host: this.host, port: this.port }, () => {
+        console.log("=== Result Client ===");
+        console.log(`Connected to server at ${this.host}:${this.port}`);
+        console.log("Receiving tasks/results...\n");
+        resolve();
+      });
+
+      const rl = readline.createInterface({ input: this.client });
 
       rl.on("line", (line) => {
-        const parts = line.split(" ");
-        if (parts.length >= 2) {
-          const result = parseInt(parts[1], 10);
-          console.log(`Client received result: ${result}`);
+        try {
+          const data = JSON.parse(line);
+          this.receivedCount++;
+          console.log(`  [${this.receivedCount}] Received:`, data);
+        } catch (err) {
+          console.log(`  Received: ${line}`);
         }
       });
-    });
 
-    client.on("error", (err) => {
-      console.error("Connection error:", err.message);
+      this.client.on("error", (err) => {
+        console.error("Connection error:", err.message);
+        reject(err);
+      });
+
+      this.client.on("close", () => {
+        console.log("Connection closed");
+        console.log(`Total messages received: ${this.receivedCount}`);
+      });
     });
   }
 }
 
-async function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function printUsage() {
+const printUsage = () => {
   console.log("Usage: node 14_distributed_computing.js <role>");
-  console.log("Roles: server, worker, client");
+  console.log("\nRoles:");
+  console.log("  server  - Start the task server");
+  console.log("  worker  - Start a worker that processes tasks");
+  console.log("  client  - Start a client that receives data");
   process.exit(1);
-}
+};
 
-async function main() {
+const main = async () => {
   const role = process.argv[2];
-  const host = "localhost";
-  const port = 8888;
 
   if (!role || !["server", "worker", "client"].includes(role)) {
     printUsage();
   }
 
-  if (role === "server") {
-    const taskServer = new TaskServer(host, port);
-    taskServer.dispatchTasks();
-  } else if (role === "worker") {
-    const worker = new Worker();
-    await worker.performTask(host, port);
-  } else if (role === "client") {
-    const client = new Client();
-    await client.receiveResults(host, port);
-  }
-}
+  // Graceful shutdown handler
+  const setupShutdown = (cleanup) => {
+    process.on("SIGINT", () => {
+      console.log("\nShutting down...");
+      cleanup();
+      process.exit(0);
+    });
+  };
 
-main();
+  if (role === "server") {
+    const server = new TaskServer(CONFIG.host, CONFIG.port);
+    setupShutdown(() => server.stop());
+    server.start();
+  } else if (role === "worker") {
+    const worker = new Worker(CONFIG.host, CONFIG.port);
+    setupShutdown(() => worker.client?.destroy());
+    await worker.connect();
+  } else if (role === "client") {
+    const client = new Client(CONFIG.host, CONFIG.port);
+    setupShutdown(() => client.client?.destroy());
+    await client.connect();
+  }
+};
+
+main().catch((err) => {
+  console.error("Fatal error:", err.message);
+  process.exit(1);
+});

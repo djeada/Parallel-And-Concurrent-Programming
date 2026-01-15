@@ -1,45 +1,71 @@
+/*
+ * Creating and Managing Async Tasks (Futures/Promises)
+ * 
+ * This script demonstrates how to create and manage asynchronous tasks in JavaScript.
+ * It compares synchronous (blocking) execution with asynchronous (non-blocking)
+ * execution using Promises - JavaScript's equivalent to Futures in other languages.
+ * 
+ * Key concepts:
+ * - Promise.all() for parallel task execution
+ * - Blocking vs non-blocking operations
+ * - Performance measurement with performance.now()
+ */
+
+"use strict";
+
 const { performance } = require("perf_hooks");
 
-function slowSquareSync(x) {
-  console.log(`Starting slow square computation for ${x}`);
-  const startTime = new Date();
-  while (new Date() - startTime < 2000) {}
-  const result = x * x;
-  console.log(`Finished slow square computation for ${x}`);
-  return result;
-}
+const COMPUTATION_DELAY_MS = 2000;
 
-async function slowSquareAsync(x) {
-  console.log(`Starting slow square computation for ${x}`);
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+const slowSquareSync = (x) => {
+  console.log(`  Starting slow square computation for ${x}`);
+  const startTime = Date.now();
+  while (Date.now() - startTime < COMPUTATION_DELAY_MS) {
+    // Busy wait (blocking)
+  }
   const result = x * x;
-  console.log(`Finished slow square computation for ${x}`);
+  console.log(`  Finished slow square computation for ${x} = ${result}`);
   return result;
-}
+};
 
-function synchronousExecution() {
-  const start_time = performance.now();
+const slowSquareAsync = async (x) => {
+  console.log(`  Starting slow square computation for ${x}`);
+  await new Promise((resolve) => setTimeout(resolve, COMPUTATION_DELAY_MS));
+  const result = x * x;
+  console.log(`  Finished slow square computation for ${x} = ${result}`);
+  return result;
+};
+
+const synchronousExecution = () => {
+  console.log("\n=== Synchronous Execution ===");
+  const startTime = performance.now();
 
   const result1 = slowSquareSync(3);
   const result2 = slowSquareSync(4);
 
-  const elapsed_time = performance.now() - start_time;
-  console.log(`\nSynchronous execution took ${elapsed_time / 1000} seconds.`);
-  console.log(`Results: ${result1}, ${result2}`);
-}
+  const elapsedTime = (performance.now() - startTime) / 1000;
+  console.log(`Synchronous execution took ${elapsedTime.toFixed(2)} seconds.`);
+  console.log(`Results: [${result1}, ${result2}]`);
+};
 
-async function asynchronousExecution() {
-  const start_time = performance.now();
+const asynchronousExecution = async () => {
+  console.log("\n=== Asynchronous Execution ===");
+  const startTime = performance.now();
 
-  const promise1 = slowSquareAsync(3);
-  const promise2 = slowSquareAsync(4);
+  const results = await Promise.all([slowSquareAsync(3), slowSquareAsync(4)]);
 
-  const results = await Promise.all([promise1, promise2]);
+  const elapsedTime = (performance.now() - startTime) / 1000;
+  console.log(`Asynchronous execution took ${elapsedTime.toFixed(2)} seconds.`);
+  console.log(`Results: [${results.join(", ")}]`);
+};
 
-  const elapsed_time = performance.now() - start_time;
-  console.log(`\nAsynchronous execution took ${elapsed_time / 1000} seconds.`);
-  console.log(`Results: ${results}`);
-}
+const main = async () => {
+  synchronousExecution();
+  await asynchronousExecution();
+  
+  console.log("\n=== Summary ===");
+  console.log("Synchronous: ~4 seconds (tasks run sequentially)");
+  console.log("Asynchronous: ~2 seconds (tasks run in parallel)");
+};
 
-synchronousExecution();
-asynchronousExecution();
+main().catch(console.error);

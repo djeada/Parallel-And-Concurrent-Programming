@@ -1,13 +1,20 @@
 /*
-This script demonstrates the use of an async mutex to protect access to shared 
-resources in an asynchronous environment. In this example, we simulate a bank 
-account with two async functions attempting to transfer money concurrently.
-The use of an async mutex (lock) is crucial to prevent race conditions that 
-could lead to incorrect account balances.
+ * Mutex (Mutual Exclusion) Pattern for Async Operations
+ * 
+ * This script demonstrates the use of an async mutex to protect access to shared 
+ * resources in an asynchronous environment. A mutex ensures only one task can 
+ * access the critical section at a time.
+ * 
+ * Example: Bank account transfers where balance updates must be atomic.
+ * 
+ * Key concepts:
+ * - Mutex implementation using Promises
+ * - Critical section protection
+ * - try/finally pattern for guaranteed release
+ * - FIFO queue for fair access
+ */
 
-We implement a simple Mutex class using Promises to ensure only one task can 
-access the critical section at a time.
-*/
+"use strict";
 
 class Mutex {
   constructor() {
@@ -34,45 +41,99 @@ class Mutex {
       this.locked = false;
     }
   }
+
+  get isLocked() {
+    return this.locked;
+  }
+
+  get queueLength() {
+    return this.queue.length;
+  }
 }
 
-const mutex = new Mutex();
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 class BankAccount {
-  constructor(balance) {
-    this.balance = balance;
+  constructor(initialBalance, mutex) {
+    this.balance = initialBalance;
+    this.mutex = mutex;
+    this.transactionLog = [];
   }
 
-  async transfer(amount) {
-    await mutex.acquire();
+  async transfer(amount, description = "") {
+    await this.mutex.acquire();
+    
     try {
-      console.log(`Transferring ${amount}...`);
-      await new Promise((resolve) => setTimeout(resolve, 100)); // Simulate some processing time
+      const prevBalance = this.balance;
+      console.log(`  [${description}] Starting transfer of ${amount}...`);
+      
+      // Simulate processing time (e.g., database operations)
+      await sleep(100);
+      
       this.balance += amount;
+      
+      this.transactionLog.push({
+        amount,
+        description,
+        prevBalance,
+        newBalance: this.balance,
+        timestamp: new Date().toISOString(),
+      });
+      
       console.log(
-        `Transfer of ${amount} complete. New balance: ${this.balance}`
+        `  [${description}] Transfer complete: ${prevBalance} -> ${this.balance}`
       );
     } finally {
-      mutex.release();
+      this.mutex.release();
     }
   }
-}
 
-async function transferMoney(account, amounts) {
-  for (const amount of amounts) {
-    await account.transfer(amount);
+  getStatement() {
+    return this.transactionLog;
   }
 }
 
-async function main() {
-  const account = new BankAccount(100);
+const transferSeries = async (account, transfers) => {
+  for (const { amount, description } of transfers) {
+    await account.transfer(amount, description);
+  }
+};
 
-  const transfer1 = transferMoney(account, [50, -20, 30]);
-  const transfer2 = transferMoney(account, [-10, 60, -10]);
+const main = async () => {
+  console.log("=== Mutex Demo: Bank Account Transfers ===\n");
 
-  await Promise.all([transfer1, transfer2]);
+  const mutex = new Mutex();
+  const account = new BankAccount(100, mutex);
 
-  console.log(`Final account balance: ${account.balance}`);
-}
+  console.log(`Initial balance: $${account.balance}`);
+  console.log("Starting concurrent transfers...\n");
 
-main();
+  // Two series of transfers running concurrently
+  const series1 = transferSeries(account, [
+    { amount: 50, description: "Deposit-1" },
+    { amount: -20, description: "Withdrawal-1" },
+    { amount: 30, description: "Deposit-2" },
+  ]);
+
+  const series2 = transferSeries(account, [
+    { amount: -10, description: "Fee-1" },
+    { amount: 60, description: "Deposit-3" },
+    { amount: -10, description: "Fee-2" },
+  ]);
+
+  await Promise.all([series1, series2]);
+
+  console.log(`\n=== Final Results ===`);
+  console.log(`Final balance: $${account.balance}`);
+  console.log(`Expected: $${100 + 50 - 20 + 30 - 10 + 60 - 10} (all transactions applied)`);
+
+  console.log("\nTransaction Log:");
+  account.getStatement().forEach((tx, i) => {
+    console.log(
+      `  ${i + 1}. [${tx.description}] ${tx.amount >= 0 ? "+" : ""}${tx.amount} ` +
+      `(${tx.prevBalance} -> ${tx.newBalance})`
+    );
+  });
+};
+
+main().catch(console.error);
