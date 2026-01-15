@@ -17,8 +17,9 @@
 const { spawn, fork } = require("child_process");
 const fs = require("fs");
 const path = require("path");
+const os = require("os");
 
-const SHARED_FILE = path.join("/tmp", `shared_data_${process.pid}.txt`);
+const SHARED_FILE = path.join(os.tmpdir(), `shared_data_${process.pid}.txt`);
 
 class ProcessManager {
   constructor(numProcesses) {

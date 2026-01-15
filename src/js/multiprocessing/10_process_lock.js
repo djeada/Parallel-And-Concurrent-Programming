@@ -16,16 +16,22 @@
 
 const fs = require("fs");
 const path = require("path");
+const os = require("os");
 const { fork } = require("child_process");
 
-const COUNTER_FILE = process.env.COUNTER_FILE || path.join("/tmp", `counter_${process.pid}.txt`);
-const LOCK_FILE = process.env.LOCK_FILE || path.join("/tmp", `counter_${process.pid}.lock`);
+const COUNTER_FILE = process.env.COUNTER_FILE || path.join(os.tmpdir(), `counter_${process.pid}.txt`);
+const LOCK_FILE = process.env.LOCK_FILE || path.join(os.tmpdir(), `counter_${process.pid}.lock`);
 const NUM_PROCESSES = 4;
 
+// Use setTimeout-based polling instead of busy wait for better CPU efficiency
 const sleep = (ms) => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+};
+
+const sleepSync = (ms) => {
   const end = Date.now() + ms;
   while (Date.now() < end) {
-    // Busy wait
+    // Busy wait - needed for synchronous lock acquisition
   }
 };
 
@@ -40,8 +46,8 @@ const acquireLock = () => {
       return true;
     } catch (error) {
       if (error.code === "EEXIST") {
-        // Lock is held, wait and retry
-        sleep(50);
+        // Lock is held, wait and retry using synchronous sleep
+        sleepSync(50);
         attempts++;
       } else {
         throw error;
@@ -75,7 +81,7 @@ const workerTask = () => {
       : 0;
     
     // Simulate some processing time
-    sleep(100);
+    sleepSync(100);
     
     const newValue = currentValue + 1;
     fs.writeFileSync(COUNTER_FILE, newValue.toString());

@@ -19,6 +19,8 @@
 
 const { fork } = require("child_process");
 
+const DEADLOCK_TIMEOUT_MS = 5000;
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 if (process.argv.length === 2) {
@@ -80,7 +82,7 @@ if (process.argv.length === 2) {
     workerA.kill();
     workerB.kill();
     process.exit(0);
-  }, 5000);
+  }, DEADLOCK_TIMEOUT_MS);
 
 } else {
   // Worker process
