@@ -22,11 +22,13 @@ def roofline_performance(operational_intensity, peak_flops, peak_bandwidth):
     return min(memory_bound, peak_flops)
 
 
-# Hardware specifications (example GPU-like specs)
-peak_flops_gpu = 10000  # GFLOP/s (10 TFLOP/s)
-peak_bandwidth_gpu = 900  # GB/s
-peak_flops_cpu = 500  # GFLOP/s
-peak_bandwidth_cpu = 100  # GB/s
+# Hardware specifications (representative values for educational purposes)
+# GPU specs are representative of high-end gaming/compute GPUs (e.g., NVIDIA A100-like)
+# CPU specs are representative of high-end server CPUs (e.g., Intel Xeon-like)
+peak_flops_gpu = 10000  # GFLOP/s (10 TFLOP/s) - FP32 peak performance
+peak_bandwidth_gpu = 900  # GB/s - HBM2e memory bandwidth
+peak_flops_cpu = 500  # GFLOP/s - Multi-core server CPU with AVX-512
+peak_bandwidth_cpu = 100  # GB/s - DDR4/DDR5 memory bandwidth
 
 # Operational intensity range (FLOP/Byte)
 oi = np.logspace(-2, 3, 1000)
@@ -97,10 +99,17 @@ ax1.fill_between(
 ax2 = axes[1]
 
 # Simulated bandwidth utilization for different access patterns
+# GPU memory coalescing: threads in a warp should access consecutive memory addresses
+# Strided access causes multiple memory transactions, reducing effective bandwidth
 stride_values = [1, 2, 4, 8, 16, 32, 64, 128]
-# Coalesced access gets best bandwidth, strided access degrades
-coalesced_efficiency = [100, 50, 25, 12.5, 6.25, 3.125, 1.5625, 0.78125]
-# Random access is even worse
+
+# Model: Bandwidth efficiency decreases proportionally to stride
+# Stride 1 (coalesced) = 100% efficiency
+# Stride N = 100/N efficiency (each access fetches a full cache line but uses 1/N)
+coalesced_efficiency = [100 / s for s in stride_values]
+
+# Random access is capped at very low efficiency due to cache line waste
+# and lack of spatial locality
 random_efficiency = [min(e, 5) for e in coalesced_efficiency]
 
 x_pos = np.arange(len(stride_values))

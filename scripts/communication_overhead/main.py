@@ -103,15 +103,40 @@ ax3 = axes[1, 0]
 # Allreduce: O(log p)
 # Alltoall: O(p)
 
+
 def broadcast_time(p, msg_size, alpha, beta):
+    """
+    Calculate broadcast communication time using binomial tree algorithm.
+    
+    Broadcast sends same data from root to all processes using a tree pattern.
+    Time complexity: O(log p) messages with full message size each.
+    
+    Formula: T = log2(p) * (alpha + beta * msg_size)
+    """
     return np.log2(p) * (alpha + beta * msg_size)
 
 
 def allreduce_time(p, msg_size, alpha, beta):
+    """
+    Calculate allreduce communication time using recursive halving-doubling.
+    
+    Allreduce combines data from all processes and distributes result to all.
+    Consists of reduce-scatter followed by allgather, each O(log p).
+    
+    Formula: T = 2 * log2(p) * (alpha + beta * msg_size)
+    """
     return 2 * np.log2(p) * (alpha + beta * msg_size)
 
 
 def alltoall_time(p, msg_size, alpha, beta):
+    """
+    Calculate all-to-all communication time.
+    
+    All-to-all sends unique data from each process to every other process.
+    Each process sends p-1 messages of size msg_size/p.
+    
+    Formula: T = (p - 1) * (alpha + beta * msg_size/p)
+    """
     return (p - 1) * (alpha + beta * msg_size / p)
 
 
