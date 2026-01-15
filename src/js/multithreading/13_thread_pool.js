@@ -68,10 +68,11 @@ if (isMainThread) {
       } else if (results.length === NUM_TASKS) {
         // All tasks done
         const elapsed = Date.now() - startTime;
+        const totalProcessingTime = results.reduce((sum, r) => sum + r.processingTime, 0);
         console.log(`\n=== Results ===`);
         console.log(`Total tasks completed: ${results.length}`);
-        console.log(`Total time: ${elapsed}ms`);
-        console.log(`Average time per task: ${(elapsed / NUM_TASKS).toFixed(0)}ms`);
+        console.log(`Total wall time: ${elapsed}ms`);
+        console.log(`Avg processing time per task: ${(totalProcessingTime / NUM_TASKS).toFixed(0)}ms`);
         worker.terminate();
       } else {
         worker.terminate();

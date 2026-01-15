@@ -95,7 +95,7 @@ if (isMainThread) {
       Atomics.load(sharedData, 2) > 0 ||
       Atomics.load(sharedData, 3) > 0
     ) {
-      Atomics.wait(sharedData, 2, 1, 100);
+      Atomics.wait(sharedData, 2, 1);
     }
     // Increment reader count
     Atomics.add(sharedData, 1, 1);
@@ -115,7 +115,7 @@ if (isMainThread) {
       Atomics.load(sharedData, 1) > 0 ||
       Atomics.load(sharedData, 2) > 0
     ) {
-      Atomics.wait(sharedData, 1, 0, 100);
+      Atomics.wait(sharedData, 1, 0);
     }
 
     // We're now waiting, try to become active writer

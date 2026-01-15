@@ -30,7 +30,7 @@ const fetchUrl = async (url) => {
   try {
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
     const data = await response.json();
     return { url, contentLength: JSON.stringify(data).length, success: true };

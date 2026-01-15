@@ -19,19 +19,28 @@ const os = require("os");
 const NUM_CPUS = os.cpus().length;
 
 const merge = (left, right) => {
-  const result = [];
+  const result = new Array(left.length + right.length);
   let leftIdx = 0;
   let rightIdx = 0;
+  let resultIdx = 0;
 
   while (leftIdx < left.length && rightIdx < right.length) {
     if (left[leftIdx] < right[rightIdx]) {
-      result.push(left[leftIdx++]);
+      result[resultIdx++] = left[leftIdx++];
     } else {
-      result.push(right[rightIdx++]);
+      result[resultIdx++] = right[rightIdx++];
     }
   }
 
-  return [...result, ...left.slice(leftIdx), ...right.slice(rightIdx)];
+  while (leftIdx < left.length) {
+    result[resultIdx++] = left[leftIdx++];
+  }
+  
+  while (rightIdx < right.length) {
+    result[resultIdx++] = right[rightIdx++];
+  }
+
+  return result;
 };
 
 const mergeSort = (arr) => {

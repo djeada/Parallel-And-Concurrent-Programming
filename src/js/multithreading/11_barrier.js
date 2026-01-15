@@ -79,10 +79,8 @@ if (isMainThread) {
       Atomics.store(view, 1, 1); // Set released flag
       Atomics.notify(view, 1); // Wake all waiting threads
     } else {
-      // Wait for released flag to become 1
-      while (Atomics.load(view, 1) === 0) {
-        Atomics.wait(view, 1, 0, 100); // Wait with timeout
-      }
+      // Wait for released flag to become 1 (efficient blocking)
+      Atomics.wait(view, 1, 0);
     }
   };
 

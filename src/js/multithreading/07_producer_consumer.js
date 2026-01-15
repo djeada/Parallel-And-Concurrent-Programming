@@ -101,27 +101,29 @@ if (isMainThread) {
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
   const put = (item) => {
-    // Wait for space in queue
+    // Wait for space in queue using Atomics.wait for efficiency
     while (Atomics.load(queue, queueSize) >= queueSize) {
-      // Busy wait - in real code, use Atomics.wait
+      Atomics.wait(queue, queueSize, queueSize, 50);
     }
 
     const writeIdx = Atomics.load(queue, queueSize + 1) % queueSize;
     Atomics.store(queue, writeIdx, item);
     Atomics.add(queue, queueSize + 1, 1);
     Atomics.add(queue, queueSize, 1);
+    Atomics.notify(queue, queueSize, 1); // Notify consumers
   };
 
   const get = () => {
-    // Wait for items in queue
+    // Wait for items in queue using Atomics.wait for efficiency
     while (Atomics.load(queue, queueSize) <= 0) {
-      // Busy wait - in real code, use Atomics.wait
+      Atomics.wait(queue, queueSize, 0, 50);
     }
 
     const readIdx = Atomics.load(queue, queueSize + 2) % queueSize;
     const item = Atomics.load(queue, readIdx);
     Atomics.add(queue, queueSize + 2, 1);
     Atomics.add(queue, queueSize, -1);
+    Atomics.notify(queue, queueSize, 1); // Notify producers
     return item;
   };
 
