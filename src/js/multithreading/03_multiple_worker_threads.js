@@ -1,3 +1,20 @@
+/*
+ * Multiple Worker Threads Example
+ *
+ * This script demonstrates running multiple worker threads concurrently.
+ * It shows how to:
+ * - Create multiple workers executing different functions
+ * - Pass data to workers via workerData
+ * - Track completion of all workers
+ *
+ * Key concepts:
+ * - Concurrent worker execution
+ * - Function dispatch based on workerData
+ * - Worker coordination and completion tracking
+ */
+
+"use strict";
+
 const {
   Worker,
   isMainThread,
@@ -5,59 +22,66 @@ const {
   workerData,
 } = require("worker_threads");
 
-function foo(x) {
-  console.log(
-    `Function foo() starts, Thread id: ${workerData.threadId}, arg: ${x}`
-  );
-  setTimeout(() => {
-    console.log(
-      `Function foo() finishes, Thread id: ${workerData.threadId}, arg: ${x}`
-    );
-  }, 1000);
-}
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function bar(x) {
-  console.log(
-    `Function bar() starts, Thread id: ${workerData.threadId}, arg: ${x}`
-  );
-  setTimeout(() => {
-    console.log(
-      `Function bar() finishes, Thread id: ${workerData.threadId}, arg: ${x}`
-    );
-  }, 100);
-}
+const foo = async (x) => {
+  const { threadId } = workerData;
+  parentPort.postMessage(`foo() starting with arg: ${x}`);
+  await sleep(1000);
+  parentPort.postMessage(`foo() completed with arg: ${x}`);
+};
 
-if (isMainThread) {
-  console.log("Main thread starts");
+const bar = async (x) => {
+  const { threadId } = workerData;
+  parentPort.postMessage(`bar() starting with arg: ${x}`);
+  await sleep(100);
+  parentPort.postMessage(`bar() completed with arg: ${x}`);
+};
 
-  const threads = [];
+const main = () => {
+  console.log("=== Multiple Worker Threads Demo ===\n");
+  console.log("Starting workers...\n");
 
-  for (let i = 0; i < 5; i++) {
-    threads.push(
-      new Worker(__filename, {
-        workerData: { functionName: "foo", args: [i], threadId: i },
-      })
-    );
+  const workers = [];
+  const NUM_FOO_WORKERS = 5;
+  const NUM_BAR_WORKERS = 5;
+
+  // Create foo workers
+  for (let i = 0; i < NUM_FOO_WORKERS; i++) {
+    const worker = new Worker(__filename, {
+      workerData: { functionName: "foo", args: [i], threadId: i },
+    });
+    worker.on("message", (msg) => console.log(`  [Thread ${i}] ${msg}`));
+    worker.on("error", (err) => console.error(`  [Thread ${i}] Error: ${err.message}`));
+    workers.push(worker);
   }
 
-  for (let i = 5; i < 10; i++) {
-    threads.push(
-      new Worker(__filename, {
-        workerData: { functionName: "bar", args: [i], threadId: i },
-      })
-    );
+  // Create bar workers
+  for (let i = NUM_FOO_WORKERS; i < NUM_FOO_WORKERS + NUM_BAR_WORKERS; i++) {
+    const worker = new Worker(__filename, {
+      workerData: { functionName: "bar", args: [i], threadId: i },
+    });
+    worker.on("message", (msg) => console.log(`  [Thread ${i}] ${msg}`));
+    worker.on("error", (err) => console.error(`  [Thread ${i}] Error: ${err.message}`));
+    workers.push(worker);
   }
 
   let finishedThreads = 0;
+  const startTime = Date.now();
 
-  for (const thread of threads) {
-    thread.on("exit", () => {
+  for (const worker of workers) {
+    worker.on("exit", (code) => {
       finishedThreads++;
-      if (finishedThreads === threads.length) {
-        console.log("Main thread finishes");
+      if (finishedThreads === workers.length) {
+        const elapsed = Date.now() - startTime;
+        console.log(`\n=== All ${workers.length} workers finished in ${elapsed}ms ===`);
       }
     });
   }
+};
+
+if (isMainThread) {
+  main();
 } else {
   const { functionName, args } = workerData;
 

@@ -1,4 +1,17 @@
-const axios = require("axios");
+/*
+ * Parallel HTTP Fetching with Worker Threads
+ *
+ * This script demonstrates parallel HTTP requests using worker threads.
+ * It compares sequential vs concurrent fetching performance.
+ *
+ * Key concepts:
+ * - Using native fetch API (Node.js 18+)
+ * - Parallel execution with worker threads
+ * - Performance comparison between sequential and concurrent approaches
+ */
+
+"use strict";
+
 const {
   Worker,
   isMainThread,
@@ -6,73 +19,101 @@ const {
   workerData,
 } = require("worker_threads");
 
-const urls = [
-  "https://www.example.com",
-  "https://www.example.org",
-  "https://www.example.net",
-  "https://www.example.edu",
+const URLS = [
+  "https://jsonplaceholder.typicode.com/posts/1",
+  "https://jsonplaceholder.typicode.com/posts/2",
+  "https://jsonplaceholder.typicode.com/posts/3",
+  "https://jsonplaceholder.typicode.com/posts/4",
 ];
 
-async function fetchUrl(url) {
-  const response = await axios.get(url);
-  const contentLength = response.data.length;
-  return { url, contentLength };
-}
+const fetchUrl = async (url) => {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    return { url, contentLength: JSON.stringify(data).length, success: true };
+  } catch (error) {
+    return { url, error: error.message, success: false };
+  }
+};
 
-async function nonConcurrentFetch() {
-  const nonConcurrentResults = {};
+const sequentialFetch = async (urls) => {
+  console.log("--- Sequential Fetching ---");
   const startTime = Date.now();
+  const results = [];
 
   for (const url of urls) {
-    const { url: fetchedUrl, contentLength } = await fetchUrl(url);
-    nonConcurrentResults[fetchedUrl] = contentLength;
-    console.log(
-      `Non-concurrent - URL: ${fetchedUrl}, Content Length: ${contentLength}`
-    );
+    const result = await fetchUrl(url);
+    if (result.success) {
+      console.log(`  Fetched ${url} (${result.contentLength} chars)`);
+    } else {
+      console.log(`  Failed ${url}: ${result.error}`);
+    }
+    results.push(result);
   }
 
-  console.log(
-    `Non-concurrent results: ${JSON.stringify(nonConcurrentResults)}`
-  );
-  console.log(
-    `Non-concurrent time taken: ${(Date.now() - startTime) / 1000} seconds`
-  );
-}
+  const elapsed = Date.now() - startTime;
+  console.log(`Sequential time: ${elapsed}ms\n`);
+  return { results, elapsed };
+};
+
+const parallelFetchWithWorkers = async (urls) => {
+  console.log("--- Parallel Fetching with Workers ---");
+  const startTime = Date.now();
+
+  const workerPromises = urls.map((url) => {
+    return new Promise((resolve) => {
+      const worker = new Worker(__filename, { workerData: url });
+      
+      worker.on("message", (result) => {
+        if (result.success) {
+          console.log(`  Fetched ${result.url} (${result.contentLength} chars)`);
+        } else {
+          console.log(`  Failed ${result.url}: ${result.error}`);
+        }
+        resolve(result);
+      });
+      
+      worker.on("error", (error) => {
+        resolve({ url, error: error.message, success: false });
+      });
+    });
+  });
+
+  const results = await Promise.all(workerPromises);
+  const elapsed = Date.now() - startTime;
+  console.log(`Parallel time: ${elapsed}ms\n`);
+  return { results, elapsed };
+};
+
+const main = async () => {
+  console.log("=== Parallel Fetch Demo ===");
+  console.log(`URLs to fetch: ${URLS.length}\n`);
+
+  try {
+    const sequential = await sequentialFetch(URLS);
+    const parallel = await parallelFetchWithWorkers(URLS);
+
+    console.log("=== Performance Summary ===");
+    console.log(`Sequential: ${sequential.elapsed}ms`);
+    console.log(`Parallel:   ${parallel.elapsed}ms`);
+    
+    if (parallel.elapsed < sequential.elapsed) {
+      const speedup = (sequential.elapsed / parallel.elapsed).toFixed(2);
+      console.log(`Speedup:    ${speedup}x faster with parallel workers`);
+    }
+  } catch (error) {
+    console.error("Error:", error.message);
+  }
+};
 
 if (isMainThread) {
-  (async () => {
-    // Non-concurrent fetching
-    await nonConcurrentFetch();
-
-    // Concurrent fetching
-    const startTime = Date.now();
-    const workers = [];
-
-    for (const url of urls) {
-      const worker = new Worker(__filename, { workerData: url });
-      worker.on("message", ({ url, contentLength }) => {
-        console.log(
-          `Concurrent - URL: ${url}, Content Length: ${contentLength}`
-        );
-      });
-      workers.push(worker);
-    }
-
-    for (const worker of workers) {
-      await new Promise((resolve) => {
-        worker.on("exit", () => {
-          resolve();
-        });
-      });
-    }
-
-    console.log(
-      `Concurrent time taken: ${(Date.now() - startTime) / 1000} seconds`
-    );
-  })();
+  main();
 } else {
   (async () => {
-    const { url, contentLength } = await fetchUrl(workerData);
-    parentPort.postMessage({ url, contentLength });
+    const result = await fetchUrl(workerData);
+    parentPort.postMessage(result);
   })();
 }
