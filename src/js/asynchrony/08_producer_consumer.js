@@ -61,8 +61,11 @@ const consumer = async (queue, consumerId, numItems) => {
   while (consumed < numItems) {
     const item = await queue.get();
     
+    // Check for poison pill (graceful termination signal)
     if (item === POISON_PILL) {
-      console.log(`  Consumer ${consumerId}: received poison pill, stopping`);
+      console.log(`  Consumer ${consumerId}: received termination signal, stopping`);
+      // Re-insert poison pill for other consumers
+      queue.put(POISON_PILL);
       break;
     }
     

@@ -32,25 +32,25 @@ class AsyncBarrier {
   }
 
   async wait() {
-    const currentGeneration = this.generation;
+    const myGeneration = this.generation;
     this.count++;
 
     if (this.count >= this.numParties) {
-      // Last one to arrive - release everyone and reset
+      // Last one to arrive - release everyone and reset for next phase
       this.count = 0;
       this.generation++;
       
-      // Resolve all waiting promises
+      // Resolve all waiting promises from this generation
       const waitersToResolve = this.waiters;
       this.waiters = [];
-      waitersToResolve.forEach((resolve) => resolve(true));
+      waitersToResolve.forEach(({ resolve }) => resolve(true));
       
       return true; // Indicates this was the last one
     }
 
-    // Not the last one - wait for others
+    // Not the last one - wait for others in this generation
     return new Promise((resolve) => {
-      this.waiters.push(resolve);
+      this.waiters.push({ resolve, generation: myGeneration });
     });
   }
 

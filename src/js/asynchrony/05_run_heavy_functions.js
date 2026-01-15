@@ -18,29 +18,35 @@ const readline = require("readline");
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const heavyComputation = async (taskId, durationMs = 5000) => {
+const heavyComputation = async (taskId, iterations = 1000000) => {
   console.log(`  [Task ${taskId}] Starting heavy computation...`);
   const startTime = Date.now();
   
-  // Simulate heavy computation with periodic yields to event loop
-  const chunks = 10;
-  const chunkDuration = durationMs / chunks;
+  let result = 0;
+  const chunkSize = 100000; // Process in chunks to yield to event loop
   
-  for (let i = 0; i < chunks; i++) {
-    await sleep(chunkDuration);
+  for (let i = 0; i < iterations; i += chunkSize) {
+    // Do actual CPU work
+    const end = Math.min(i + chunkSize, iterations);
+    for (let j = i; j < end; j++) {
+      result += Math.sqrt(j) * Math.sin(j);
+    }
+    
+    // Yield to event loop periodically to keep it responsive
+    await new Promise((resolve) => setImmediate(resolve));
   }
   
   const elapsed = Date.now() - startTime;
-  console.log(`  [Task ${taskId}] Completed in ${elapsed}ms`);
-  return { taskId, elapsed };
+  console.log(`  [Task ${taskId}] Completed in ${elapsed}ms (result: ${result.toFixed(2)})`);
+  return { taskId, elapsed, result };
 };
 
-const runHeavyFunctions = async (numTasks = 6) => {
+const runHeavyFunctions = async (numTasks = 4) => {
   console.log(`\nStarting ${numTasks} heavy computations in parallel...`);
   const startTime = Date.now();
 
   const tasks = Array.from({ length: numTasks }, (_, i) =>
-    heavyComputation(i, 5000)
+    heavyComputation(i, 1000000)
   );
 
   const results = await Promise.all(tasks);

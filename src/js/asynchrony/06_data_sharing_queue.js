@@ -26,7 +26,7 @@ class AsyncQueue {
 
   async put(item) {
     // If queue is full, wait for space
-    if (this.items.length >= this.maxSize) {
+    while (this.items.length >= this.maxSize) {
       await new Promise((resolve) => this.waitingProducers.push(resolve));
     }
 
@@ -43,7 +43,7 @@ class AsyncQueue {
     // If items available, return immediately
     if (this.items.length > 0) {
       const item = this.items.shift();
-      // Notify waiting producer if any
+      // Notify one waiting producer if any
       if (this.waitingProducers.length > 0) {
         const resolve = this.waitingProducers.shift();
         resolve();

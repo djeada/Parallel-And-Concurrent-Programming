@@ -77,7 +77,8 @@ class TaskServer {
           const result = JSON.parse(line);
           console.log(`  Received result from ${clientId}:`, result);
         } catch (err) {
-          console.log(`  Received message from ${clientId}: ${line}`);
+          console.log(`  Received non-JSON message from ${clientId}: ${line}`);
+          console.log(`  Parse error: ${err.message}`);
         }
       });
 
@@ -198,7 +199,8 @@ class Client {
           this.receivedCount++;
           console.log(`  [${this.receivedCount}] Received:`, data);
         } catch (err) {
-          console.log(`  Received: ${line}`);
+          console.log(`  Received non-JSON message: ${line}`);
+          console.log(`  Parse error: ${err.message}`);
         }
       });
 
