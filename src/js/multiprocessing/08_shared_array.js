@@ -1,39 +1,92 @@
+/*
+ * Shared Array Pattern
+ *
+ * This script demonstrates simulating shared array state between processes
+ * using message passing. Each child process modifies the array through the
+ * parent process, which acts as the state manager.
+ *
+ * Key concepts:
+ * - Array state management across processes
+ * - Centralized state in parent process
+ * - Coordinated modifications
+ * - State broadcast to children
+ */
+
+"use strict";
+
 const { fork } = require("child_process");
 
+const ARRAY_SIZE = 5;
+const NUM_ITERATIONS = 3;
+const INTERVAL_MS = 500;
+
 if (process.argv[2] === "child") {
+  // Child process - sends increment/decrement requests for array
+  const action = process.argv[3];
+  let count = 0;
+
+  const doAction = () => {
+    if (count >= NUM_ITERATIONS) {
+      process.send({ action: "done" });
+      return;
+    }
+    
+    process.send({ action });
+    count++;
+  };
+
   process.on("message", (message) => {
-    if (message.action === "increment") {
-      process.send({ action: "increment" });
-    } else if (message.action === "decrement") {
-      process.send({ action: "decrement" });
+    if (message.type === "arrayUpdate") {
+      console.log(`  [${action}er] Array is now: [${message.array.join(", ")}]`);
+    } else if (message.type === "continue") {
+      setTimeout(doAction, INTERVAL_MS);
     }
   });
+
+  // Start the action cycle
+  doAction();
+
 } else {
-  const child1 = fork(__filename, ["child"]);
-  const child2 = fork(__filename, ["child"]);
+  // Parent process - manages shared array
+  console.log("=== Shared Array Demo ===\n");
+  console.log(`Array size: ${ARRAY_SIZE}`);
+  console.log(`Iterations per child: ${NUM_ITERATIONS}\n`);
 
-  let sharedArray = [0, 0, 0];
+  let sharedArray = new Array(ARRAY_SIZE).fill(0);
+  let completedProcesses = 0;
 
-  child1.on("message", (message) => {
+  const incrementer = fork(__filename, ["child", "increment"]);
+  const decrementer = fork(__filename, ["child", "decrement"]);
+
+  const handleMessage = (childName, child) => (message) => {
     if (message.action === "increment") {
-      sharedArray = sharedArray.map((value) => value + 1);
-      console.log(`Shared array incremented by child1: ${sharedArray}`);
-      setTimeout(() => {
-        child1.send({ action: "increment" });
-      }, 1000);
+      sharedArray = sharedArray.map((v) => v + 1);
+      console.log(`[Parent] ${childName} incremented -> [${sharedArray.join(", ")}]`);
+      child.send({ type: "arrayUpdate", array: sharedArray });
+      child.send({ type: "continue" });
+    } else if (message.action === "decrement") {
+      sharedArray = sharedArray.map((v) => v - 1);
+      console.log(`[Parent] ${childName} decremented -> [${sharedArray.join(", ")}]`);
+      child.send({ type: "arrayUpdate", array: sharedArray });
+      child.send({ type: "continue" });
+    } else if (message.action === "done") {
+      completedProcesses++;
+      console.log(`[Parent] ${childName} completed`);
+      
+      if (completedProcesses === 2) {
+        console.log(`\n=== Final Result ===`);
+        console.log(`Shared array: [${sharedArray.join(", ")}]`);
+        console.log(`Expected: all zeros (${NUM_ITERATIONS} increments + ${NUM_ITERATIONS} decrements)`);
+        console.log(`Sum: ${sharedArray.reduce((a, b) => a + b, 0)}`);
+        incrementer.kill();
+        decrementer.kill();
+      }
     }
-  });
+  };
 
-  child2.on("message", (message) => {
-    if (message.action === "decrement") {
-      sharedArray = sharedArray.map((value) => value - 1);
-      console.log(`Shared array decremented by child2: ${sharedArray}`);
-      setTimeout(() => {
-        child2.send({ action: "decrement" });
-      }, 1000);
-    }
-  });
+  incrementer.on("message", handleMessage("Incrementer", incrementer));
+  decrementer.on("message", handleMessage("Decrementer", decrementer));
 
-  child1.send({ action: "increment" });
-  child2.send({ action: "decrement" });
+  incrementer.on("error", (err) => console.error(`Incrementer error: ${err.message}`));
+  decrementer.on("error", (err) => console.error(`Decrementer error: ${err.message}`));
 }

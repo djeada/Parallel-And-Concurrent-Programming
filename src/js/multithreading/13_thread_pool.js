@@ -1,4 +1,18 @@
-// thread_pool_example.js
+/*
+ * Thread Pool Pattern
+ *
+ * This script demonstrates a simple thread pool implementation.
+ * A fixed number of workers process tasks from a queue, maximizing
+ * resource utilization without creating too many threads.
+ *
+ * Key concepts:
+ * - Fixed pool of worker threads
+ * - Task queue processing
+ * - Worker reuse for multiple tasks
+ */
+
+"use strict";
+
 const {
   Worker,
   isMainThread,
@@ -6,40 +20,86 @@ const {
   workerData,
 } = require("worker_threads");
 
-function worker(taskId) {
-  console.log(`Task ${taskId} is starting...`);
-  const sleepDuration = Math.floor(Math.random() * 3000) + 1000; // Simulate some work
-  setTimeout(() => {
-    const result = taskId * 2;
-    console.log(`Task ${taskId} is finished. Result: ${result}`);
-    parentPort.postMessage({ taskId, result });
-  }, sleepDuration);
-}
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 if (isMainThread) {
-  const numTasks = 10;
-  const numWorkers = 3;
-  const taskQueue = Array.from({ length: numTasks }, (_, i) => i);
-  const workers = [];
-  let completedTasks = 0;
+  console.log("=== Thread Pool Demo ===\n");
 
-  function createWorker() {
-    const taskId = taskQueue.shift();
-    if (taskId === undefined) return;
+  const NUM_WORKERS = 3;
+  const NUM_TASKS = 10;
 
-    const worker = new Worker(__filename, { workerData: taskId });
-    worker.on("message", ({ taskId, result }) => {
-      console.log(`Task ${taskId} result collected: ${result}`);
-      completedTasks++;
-      if (completedTasks < numTasks) {
-        createWorker();
+  console.log(`Worker pool size: ${NUM_WORKERS}`);
+  console.log(`Total tasks: ${NUM_TASKS}\n`);
+
+  const taskQueue = Array.from({ length: NUM_TASKS }, (_, i) => ({
+    id: i,
+    data: Math.floor(Math.random() * 100),
+  }));
+
+  const results = [];
+  let activeTasks = 0;
+  const startTime = Date.now();
+
+  const processNextTask = (worker, workerId) => {
+    const task = taskQueue.shift();
+    if (!task) {
+      worker.terminate();
+      return;
+    }
+
+    activeTasks++;
+    console.log(`  [Worker ${workerId}] Starting task ${task.id}`);
+    worker.postMessage(task);
+  };
+
+  // Create worker pool
+  for (let i = 0; i < NUM_WORKERS; i++) {
+    const worker = new Worker(__filename);
+    const workerId = i;
+
+    worker.on("message", (result) => {
+      activeTasks--;
+      console.log(`  [Worker ${workerId}] Completed task ${result.taskId} (result: ${result.result})`);
+      results.push(result);
+
+      if (taskQueue.length > 0) {
+        // Process next task
+        processNextTask(worker, workerId);
+      } else if (results.length === NUM_TASKS) {
+        // All tasks done
+        const elapsed = Date.now() - startTime;
+        const totalProcessingTime = results.reduce((sum, r) => sum + r.processingTime, 0);
+        console.log(`\n=== Results ===`);
+        console.log(`Total tasks completed: ${results.length}`);
+        console.log(`Total wall time: ${elapsed}ms`);
+        console.log(`Avg processing time per task: ${(totalProcessingTime / NUM_TASKS).toFixed(0)}ms`);
+        worker.terminate();
+      } else {
+        worker.terminate();
       }
     });
+
+    worker.on("error", (error) => {
+      console.error(`Worker ${workerId} error:`, error.message);
+    });
+
+    // Start processing
+    processNextTask(worker, workerId);
   }
 
-  for (let i = 0; i < numWorkers; i++) {
-    createWorker();
-  }
 } else {
-  worker(workerData);
+  parentPort.on("message", async (task) => {
+    // Simulate variable processing time
+    const processingTime = Math.floor(Math.random() * 1000) + 500;
+    await sleep(processingTime);
+
+    // Calculate result
+    const result = {
+      taskId: task.id,
+      result: task.data * 2,
+      processingTime,
+    };
+
+    parentPort.postMessage(result);
+  });
 }

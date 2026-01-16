@@ -1,65 +1,117 @@
 /*
-This script demonstrates the producer-consumer pattern using Node.js's async and promises.
-The producer creates items and puts them into a queue, while the consumer takes items from the queue and processes them.
-This pattern is useful when you want to separate the creation and processing of items, allowing them to run concurrently.
-*/
+ * Producer-Consumer Pattern with Async Queue
+ * 
+ * This script demonstrates the producer-consumer pattern using an async queue.
+ * Producers create items and add them to a shared queue, while consumers take
+ * items from the queue and process them.
+ * 
+ * Key concepts:
+ * - Async queue with blocking get/put operations
+ * - Multiple producers and consumers
+ * - Proper termination with poison pills
+ * - Concurrent task coordination
+ */
+
+"use strict";
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 class AsyncQueue {
   constructor() {
-    this.queue = [];
-    this.resolveQueue = [];
+    this.items = [];
+    this.waitingConsumers = [];
   }
 
   put(item) {
-    if (this.resolveQueue.length > 0) {
-      this.resolveQueue.shift()(item);
+    if (this.waitingConsumers.length > 0) {
+      const resolve = this.waitingConsumers.shift();
+      resolve(item);
     } else {
-      this.queue.push(item);
+      this.items.push(item);
     }
   }
 
   async get() {
-    if (this.queue.length > 0) {
-      return this.queue.shift();
-    } else {
-      return new Promise((resolve) => this.resolveQueue.push(resolve));
+    if (this.items.length > 0) {
+      return this.items.shift();
     }
+    return new Promise((resolve) => this.waitingConsumers.push(resolve));
+  }
+
+  get size() {
+    return this.items.length;
   }
 }
 
-async function producer(queue, producerId) {
-  for (let i = 0; i < 5; ++i) {
-    const item = `Item ${i} from producer ${producerId}`;
+const POISON_PILL = Symbol("POISON_PILL");
+
+const producer = async (queue, producerId, numItems) => {
+  for (let i = 0; i < numItems; i++) {
+    const item = { producerId, itemId: i, timestamp: Date.now() };
     queue.put(item);
-    console.log(`Producer ${producerId} produced ${item}`);
-    await sleep(Math.random() * 1500 + 500);
+    console.log(`  Producer ${producerId}: produced item ${i}`);
+    await sleep(Math.random() * 1000 + 200);
   }
-}
+  console.log(`  Producer ${producerId}: finished producing`);
+};
 
-async function consumer(queue, consumerId) {
-  for (let i = 0; i < 5; ++i) {
+const consumer = async (queue, consumerId, numItems) => {
+  let consumed = 0;
+  
+  while (consumed < numItems) {
     const item = await queue.get();
-    console.log(`Consumer ${consumerId} consumed ${item}`);
-    await sleep(Math.random() * 1500 + 500);
+    
+    // Check for poison pill (graceful termination signal)
+    if (item === POISON_PILL) {
+      console.log(`  Consumer ${consumerId}: received termination signal, stopping`);
+      // Re-insert poison pill for other consumers
+      queue.put(POISON_PILL);
+      break;
+    }
+    
+    // Simulate processing time
+    await sleep(Math.random() * 800 + 100);
+    consumed++;
+    
+    console.log(
+      `  Consumer ${consumerId}: processed item ${item.itemId} ` +
+      `from producer ${item.producerId}`
+    );
   }
-}
+  
+  console.log(`  Consumer ${consumerId}: finished consuming (${consumed} items)`);
+};
 
-async function main() {
+const main = async () => {
+  console.log("=== Producer-Consumer Pattern Demo ===\n");
+
+  const NUM_PRODUCERS = 3;
+  const NUM_CONSUMERS = 3;
+  const ITEMS_PER_PRODUCER = 4;
+  const ITEMS_PER_CONSUMER = 4;
+
   const queue = new AsyncQueue();
+  const startTime = Date.now();
 
-  const producers = [];
-  for (let i = 0; i < 3; ++i) {
-    producers.push(producer(queue, i));
-  }
+  // Start producers
+  const producers = Array.from({ length: NUM_PRODUCERS }, (_, i) =>
+    producer(queue, i, ITEMS_PER_PRODUCER)
+  );
 
-  const consumers = [];
-  for (let i = 0; i < 3; ++i) {
-    consumers.push(consumer(queue, i));
-  }
+  // Start consumers
+  const consumers = Array.from({ length: NUM_CONSUMERS }, (_, i) =>
+    consumer(queue, i, ITEMS_PER_CONSUMER)
+  );
 
+  // Wait for all tasks to complete
   await Promise.all([...producers, ...consumers]);
-}
 
-main();
+  const elapsed = Date.now() - startTime;
+  console.log(`\n=== Summary ===`);
+  console.log(`Total time: ${elapsed}ms`);
+  console.log(`Producers: ${NUM_PRODUCERS}, each produced ${ITEMS_PER_PRODUCER} items`);
+  console.log(`Consumers: ${NUM_CONSUMERS}, each consumed ${ITEMS_PER_CONSUMER} items`);
+  console.log(`Queue size at end: ${queue.size}`);
+};
+
+main().catch(console.error);

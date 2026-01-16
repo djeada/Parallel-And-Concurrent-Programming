@@ -1,37 +1,109 @@
+/*
+ * Async Barrier Pattern
+ * 
+ * This script demonstrates the barrier synchronization pattern for async tasks.
+ * A barrier ensures that multiple tasks wait for each other at a synchronization
+ * point before any of them can proceed.
+ * 
+ * Use cases:
+ * - Phased computations where all tasks must complete phase N before starting phase N+1
+ * - Coordinating parallel initialization
+ * - Ensuring all workers are ready before starting main computation
+ * 
+ * Key concepts:
+ * - Barrier implementation using Promises
+ * - Reusable barriers for multiple phases
+ * - Task synchronization
+ */
+
+"use strict";
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 class AsyncBarrier {
-  constructor(numTasks) {
-    this.numTasks = numTasks;
-    this.counter = 0;
-    this.resolveBarrier = null;
-    this.barrierPromise = new Promise((resolve) => {
-      this.resolveBarrier = resolve;
-    });
+  constructor(numParties) {
+    if (numParties < 1) {
+      throw new Error("Barrier requires at least 1 party");
+    }
+    this.numParties = numParties;
+    this.count = 0;
+    this.generation = 0;
+    this.waiters = [];
   }
 
   async wait() {
-    this.counter++;
-    if (this.counter >= this.numTasks) {
-      this.resolveBarrier();
+    const myGeneration = this.generation;
+    this.count++;
+
+    if (this.count >= this.numParties) {
+      // Last one to arrive - release everyone and reset for next phase
+      this.count = 0;
+      this.generation++;
+      
+      // Resolve all waiting promises from this generation
+      const waitersToResolve = this.waiters;
+      this.waiters = [];
+      waitersToResolve.forEach(({ resolve }) => resolve(true));
+      
+      return true; // Indicates this was the last one
     }
-    await this.barrierPromise;
+
+    // Not the last one - wait for others in this generation
+    return new Promise((resolve) => {
+      this.waiters.push({ resolve, generation: myGeneration });
+    });
+  }
+
+  get waiting() {
+    return this.count;
+  }
+
+  get parties() {
+    return this.numParties;
   }
 }
 
-async function task(id, barrier) {
-  console.log(`Task ${id} starting...`);
-  await new Promise((resolve) => setTimeout(resolve, Math.random() * 1000));
-  console.log(`Task ${id} finished...`);
+const task = async (taskId, barrier, phases = 2) => {
+  for (let phase = 1; phase <= phases; phase++) {
+    // Simulate work with random duration
+    const workTime = Math.floor(Math.random() * 800) + 200;
+    console.log(`  Task ${taskId}: starting phase ${phase} (${workTime}ms work)`);
+    
+    await sleep(workTime);
+    
+    console.log(`  Task ${taskId}: finished phase ${phase}, waiting at barrier...`);
+    
+    const wasLast = await barrier.wait();
+    
+    if (wasLast) {
+      console.log(`  Task ${taskId}: was last to arrive, barrier released!`);
+    }
+    
+    console.log(`  Task ${taskId}: passed barrier, continuing to phase ${phase + 1}`);
+  }
+  
+  console.log(`  Task ${taskId}: completed all phases`);
+};
 
-  await barrier.wait();
-  console.log(`Task ${id} after the barrier...`);
-}
+const main = async () => {
+  const NUM_TASKS = 4;
+  const NUM_PHASES = 3;
 
-async function main() {
-  const numTasks = 5;
-  const barrier = new AsyncBarrier(numTasks);
+  console.log("=== Async Barrier Demo ===");
+  console.log(`Tasks: ${NUM_TASKS}, Phases: ${NUM_PHASES}`);
+  console.log("All tasks must complete each phase before any can proceed.\n");
 
-  const tasks = Array.from({ length: numTasks }, (_, i) => task(i, barrier));
+  const barrier = new AsyncBarrier(NUM_TASKS);
+  const startTime = Date.now();
+
+  const tasks = Array.from({ length: NUM_TASKS }, (_, i) =>
+    task(i, barrier, NUM_PHASES)
+  );
+
   await Promise.all(tasks);
-}
 
-main();
+  const elapsed = Date.now() - startTime;
+  console.log(`\n=== All tasks completed in ${elapsed}ms ===`);
+};
+
+main().catch(console.error);

@@ -1,69 +1,120 @@
+/*
+ * Barrier Synchronization with Worker Threads
+ *
+ * This script demonstrates barrier synchronization pattern using Atomics.
+ * A barrier ensures all threads reach a synchronization point before any
+ * can proceed past it.
+ *
+ * Key concepts:
+ * - Atomics.add for counting arrivals
+ * - Atomics.wait/notify for blocking and releasing threads
+ * - All threads wait until the last one arrives
+ */
+
+"use strict";
+
 const {
   Worker,
   isMainThread,
   parentPort,
   workerData,
 } = require("worker_threads");
-const EventEmitter = require("events");
 
-class Barrier {
-  constructor(numThreads, sharedBuffer) {
-    this.numThreads = numThreads;
-    this.sharedBuffer = sharedBuffer;
-    this.count = new Int32Array(sharedBuffer, 0, 1);
-    this.emitter = new EventEmitter();
-  }
-
-  wait() {
-    const count = Atomics.add(this.count, 0, 1);
-
-    if (count === this.numThreads - 1) {
-      this.emitter.emit("release");
-    } else {
-      return new Promise((resolve) => {
-        this.emitter.once("release", resolve);
-      });
-    }
-  }
-}
-
-async function worker(barrier, threadId) {
-  console.log(`Thread ${threadId} is starting...`);
-
-  const sleepDuration = Math.floor(Math.random() * 2000) + 1000;
-  setTimeout(async () => {
-    console.log(`Thread ${threadId} is waiting at the barrier...`);
-
-    await barrier.wait(); // Wait for all threads to reach the barrier
-
-    console.log(`Thread ${threadId} is resuming after the barrier...`);
-    parentPort.postMessage("done");
-  }, sleepDuration);
-}
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 if (isMainThread) {
-  const numThreads = 5;
-  const sharedBuffer = new SharedArrayBuffer(4);
-  const barrier = new Barrier(numThreads, sharedBuffer);
-  const workers = [];
+  console.log("=== Barrier Synchronization Demo ===\n");
 
+  const NUM_THREADS = 5;
+  
+  // Shared memory: [count (4 bytes), released flag (4 bytes)]
+  const sharedBuffer = new SharedArrayBuffer(8);
+  const view = new Int32Array(sharedBuffer);
+  view[0] = 0; // count
+  view[1] = 0; // released flag
+
+  console.log(`Threads: ${NUM_THREADS}`);
+  console.log("All threads must reach barrier before any can proceed.\n");
+
+  const workers = [];
   let completedThreads = 0;
 
-  for (let i = 0; i < numThreads; i++) {
+  for (let i = 0; i < NUM_THREADS; i++) {
     const worker = new Worker(__filename, {
-      workerData: { sharedBuffer, threadId: i },
+      workerData: { 
+        sharedBuffer, 
+        threadId: i,
+        numThreads: NUM_THREADS,
+      },
     });
-    workers.push(worker);
+
     worker.on("message", (message) => {
-      if (message === "done") {
+      if (message.type === "status") {
+        console.log(`  [Thread ${message.threadId}] ${message.text}`);
+      } else if (message.type === "done") {
         completedThreads++;
-        if (completedThreads === numThreads) {
-          console.log("All threads have passed the barrier.");
+        if (completedThreads === NUM_THREADS) {
+          console.log("\n=== All threads completed ===");
         }
       }
     });
+
+    worker.on("error", (error) => {
+      console.error(`Thread ${i} error:`, error.message);
+    });
+
+    workers.push(worker);
   }
+
 } else {
-  const barrier = new Barrier(workerData.numThreads, workerData.sharedBuffer);
-  worker(barrier, workerData.threadId);
+  const { sharedBuffer, threadId, numThreads } = workerData;
+  const view = new Int32Array(sharedBuffer);
+
+  const barrierWait = () => {
+    // Increment count atomically
+    const arrivedCount = Atomics.add(view, 0, 1) + 1;
+
+    if (arrivedCount === numThreads) {
+      // Last thread to arrive - release everyone
+      Atomics.store(view, 1, 1); // Set released flag
+      Atomics.notify(view, 1); // Wake all waiting threads
+    } else {
+      // Wait for released flag to become 1 (efficient blocking)
+      Atomics.wait(view, 1, 0);
+    }
+  };
+
+  const run = async () => {
+    // Simulate work before barrier
+    const workTime = Math.floor(Math.random() * 2000) + 500;
+    parentPort.postMessage({
+      type: "status",
+      threadId,
+      text: `Starting work (${workTime}ms)...`,
+    });
+
+    await sleep(workTime);
+
+    parentPort.postMessage({
+      type: "status",
+      threadId,
+      text: "Reached barrier, waiting for others...",
+    });
+
+    // Wait at barrier
+    barrierWait();
+
+    parentPort.postMessage({
+      type: "status",
+      threadId,
+      text: "Passed barrier! Continuing execution...",
+    });
+
+    // Work after barrier
+    await sleep(500);
+
+    parentPort.postMessage({ type: "done", threadId });
+  };
+
+  run();
 }

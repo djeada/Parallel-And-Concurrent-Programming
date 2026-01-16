@@ -1,53 +1,63 @@
 /*
-This program demonstrates the difference between synchronous and asynchronous
-approaches to handling I/O-bound tasks using Node.js. The synchronous version
-runs the tasks sequentially using blocking functions, while the asynchronous
-version takes advantage of Promises and async/await to run the tasks concurrently.
-This allows for better resource utilization and improved performance when dealing
-with I/O-bound tasks.
+ * Synchronous vs Asynchronous Execution in JavaScript
+ * 
+ * This program demonstrates the difference between synchronous and asynchronous
+ * approaches to handling I/O-bound tasks using Node.js.
+ * 
+ * - Synchronous: Tasks run sequentially using blocking operations
+ * - Asynchronous: Tasks run concurrently using Promises and async/await
+ * 
+ * The asynchronous approach allows better resource utilization and improved
+ * performance when dealing with I/O-bound tasks.
+ */
 
-The program contains two functions, syncMain() and asyncMain(), which
-demonstrate the synchronous and asynchronous approaches, respectively. The
-execution time for each approach is measured and displayed to show the performance
-difference.
-*/
+"use strict";
 
-const { promisify } = require("util");
-const sleep = promisify(setTimeout);
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function syncTask(taskId, sleepTime) {
+const syncTask = (taskId, sleepTimeSeconds) => {
   console.log(`Task ${taskId} started.`);
   const start = Date.now();
-  while (Date.now() - start < sleepTime * 1000);
+  while (Date.now() - start < sleepTimeSeconds * 1000) {
+    // Busy wait (blocking)
+  }
   console.log(`Task ${taskId} finished.`);
-}
+};
 
-function syncMain() {
+const syncMain = () => {
+  console.log("\n=== Synchronous Execution ===");
   const startTime = Date.now();
 
   syncTask(1, 2);
   syncTask(2, 1);
 
   const elapsedTime = (Date.now() - startTime) / 1000;
-  console.log(`Synchronous execution took ${elapsedTime} seconds.`);
-}
+  console.log(`Synchronous execution took ${elapsedTime.toFixed(2)} seconds.\n`);
+};
 
-async function asyncTask(taskId, sleepTime) {
+const asyncTask = async (taskId, sleepTimeSeconds) => {
   console.log(`Task ${taskId} started.`);
-  await sleep(sleepTime * 1000);
+  await sleep(sleepTimeSeconds * 1000);
   console.log(`Task ${taskId} finished.`);
-}
+};
 
-async function asyncMain() {
+const asyncMain = async () => {
+  console.log("=== Asynchronous Execution ===");
   const startTime = Date.now();
 
-  const task1 = asyncTask(1, 2);
-  const task2 = asyncTask(2, 1);
-  await Promise.all([task1, task2]);
+  await Promise.all([asyncTask(1, 2), asyncTask(2, 1)]);
 
   const elapsedTime = (Date.now() - startTime) / 1000;
-  console.log(`Asynchronous execution took ${elapsedTime} seconds.`);
-}
+  console.log(`Asynchronous execution took ${elapsedTime.toFixed(2)} seconds.\n`);
+};
 
-syncMain();
-asyncMain();
+const main = async () => {
+  syncMain();
+  await asyncMain();
+  
+  console.log("=== Summary ===");
+  console.log("Synchronous: ~3 seconds (2s + 1s sequential)");
+  console.log("Asynchronous: ~2 seconds (tasks run in parallel)");
+};
+
+main().catch(console.error);

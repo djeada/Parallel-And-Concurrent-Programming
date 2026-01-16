@@ -1,45 +1,69 @@
 /*
-This program demonstrates the concept of zombie processes in Node.js. A zombie process is
-a child process that has terminated but has not been reaped by its parent process. The
-operating system keeps an entry in the process table for the terminated child process,
-holding information about its termination status until the parent process collects this
-information.
+ * Zombie Process Demonstration
+ *
+ * This script demonstrates zombie processes in Node.js. A zombie process is a
+ * child process that has terminated but whose parent has not yet collected
+ * its exit status (via wait/waitpid). The process remains in the process table.
+ *
+ * Key concepts:
+ * - Process termination without cleanup
+ * - Parent not calling wait() on child
+ * - Process table entry retention
+ * - Resource leak from zombies
+ *
+ * WARNING: This creates a zombie process intentionally for educational purposes.
+ * The zombie is cleaned up when this script exits.
+ */
 
-In this example, we create a child process that terminates but isn't reaped by its
-parent, becoming a zombie. After the child process exits, you can check the process
-list (using commands like 'ps' or 'top') to see that the child process is in a 'zombie'
-state.
-
-WARNING: This example intentionally creates a zombie process. You should manually kill
-the parent process after running the program to avoid having a zombie process lingering
-on your system.
-*/
+"use strict";
 
 const { spawn } = require("child_process");
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 if (process.argv[2] === "child") {
-  // Child process
-  console.log(`Child process (PID: ${process.pid}) started.`);
+  // Child process - will become zombie after termination
+  console.log(`[Child] Started (PID: ${process.pid})`);
+  console.log(`[Child] Will exit in 1 second...`);
+  
   setTimeout(() => {
-    console.log(`Child process (PID: ${process.pid}) finished.`);
+    console.log(`[Child] Exiting now`);
     process.exit(0);
-  }, 2000);
+  }, 1000);
+
 } else {
-  // Parent process
+  // Parent process - intentionally doesn't wait for child
+  console.log("=== Zombie Process Demo ===\n");
+  console.log(`[Parent] Started (PID: ${process.pid})`);
+  
   const child = spawn(process.execPath, [__filename, "child"], {
     detached: true,
     stdio: "inherit",
   });
-
-  console.log(`Parent process (PID: ${process.pid}) started.`);
-  console.log(
-    `Parent process (PID: ${process.pid}) is NOT waiting for the child process to terminate.`
-  );
-  console.log(
-    `Child process (PID: ${child.pid}) will become a zombie after termination.`
-  );
-
-  setTimeout(() => {
-    console.log(`Parent process (PID: ${process.pid}) finished.`);
-  }, 10000);
+  
+  console.log(`[Parent] Created child (PID: ${child.pid})`);
+  console.log(`[Parent] NOT waiting for child to exit (no wait() call)`);
+  console.log(`[Parent] Child will become zombie after termination\n`);
+  
+  // Don't wait for child - this creates a zombie when child exits
+  // child.unref() - we don't call this to keep parent running
+  
+  const checkZombie = async () => {
+    await sleep(3000);
+    
+    console.log("\n[Parent] After child termination:");
+    console.log(`[Parent] Child ${child.pid} is now a zombie (defunct)`);
+    console.log("[Parent] It exists in process table but consumes no resources");
+    console.log("[Parent] Run 'ps aux | grep defunct' to see zombies\n");
+    
+    await sleep(2000);
+    
+    console.log("[Parent] Now cleaning up by exiting...");
+    console.log("[Parent] When parent exits, init will reap the zombie");
+    console.log("\n=== Demo Complete ===");
+    
+    process.exit(0);
+  };
+  
+  checkZombie();
 }
