@@ -1,128 +1,130 @@
-#include <thread>
-#include <cmath>
-#include <cstdlib>
-#include <chrono>
+/**
+ * Parallel Merge Sort
+ *
+ * This example demonstrates divide-and-conquer parallelism using merge sort.
+ * The algorithm splits work recursively, with each thread handling a subtree.
+ *
+ * Key concepts:
+ * - Divide-and-conquer parallelism: split problem, solve in parallel, combine
+ * - Depth-limited parallelism: stop spawning threads beyond a threshold
+ * - Thread overhead: too many threads can hurt performance
+ * - Compare parallel vs sequential to see actual speedup
+ *
+ * The depth limit prevents creating too many threads. Beyond a certain depth,
+ * sequential execution is more efficient due to thread creation overhead.
+ */
+
 #include <algorithm>
+#include <chrono>
+#include <cmath>
 #include <iostream>
+#include <thread>
+#include <vector>
 
-// Function declarations
-void merge(int *array, unsigned int left, unsigned int mid, unsigned int right);
-void sequential_merge_sort(int *array, unsigned int left, unsigned int right);
-void parallel_merge_sort(int *array, unsigned int left, unsigned int right, unsigned int depth = 0);
-void evaluate_performance(int num_elements, int num_eval_runs);
+// Merge two sorted subarrays: [left..mid] and [mid+1..right]
+void merge(std::vector<int>& arr, int left, int mid, int right) {
+    std::vector<int> temp(right - left + 1);
+    int i = left, j = mid + 1, k = 0;
 
-// Sequential implementation of merge sort
-void sequential_merge_sort(int *array, unsigned int left, unsigned int right) {
+    while (i <= mid && j <= right) {
+        if (arr[i] <= arr[j]) {
+            temp[k++] = arr[i++];
+        } else {
+            temp[k++] = arr[j++];
+        }
+    }
+
+    while (i <= mid) temp[k++] = arr[i++];
+    while (j <= right) temp[k++] = arr[j++];
+
+    std::copy(temp.begin(), temp.end(), arr.begin() + left);
+}
+
+// Sequential merge sort
+void sequential_sort(std::vector<int>& arr, int left, int right) {
     if (left < right) {
-        unsigned int mid = (left + right) / 2; // find the middle point
-        sequential_merge_sort(array, left, mid); // sort the left half
-        sequential_merge_sort(array, mid + 1, right); // sort the right half
-        merge(array, left, mid, right); // merge the two sorted halves
+        int mid = left + (right - left) / 2;
+        sequential_sort(arr, left, mid);
+        sequential_sort(arr, mid + 1, right);
+        merge(arr, left, mid, right);
     }
 }
 
-// Parallel implementation of merge sort
-void parallel_merge_sort(int *array, unsigned int left, unsigned int right, unsigned int depth = 0) {
-    if (depth >= std::log(std::thread::hardware_concurrency())) {
-        sequential_merge_sort(array, left, right);
-    } else {
-        unsigned int mid = (left + right) / 2;
-        std::thread left_thread = std::thread(parallel_merge_sort, array, left, mid, depth + 1);
-        parallel_merge_sort(array, mid + 1, right, depth + 1);
+// Parallel merge sort with depth limiting
+void parallel_sort(std::vector<int>& arr, int left, int right, int depth = 0) {
+    // Stop spawning threads beyond log2(num_cores) depth
+    int max_depth = static_cast<int>(std::log2(
+        std::thread::hardware_concurrency()));
+
+    if (left >= right) return;
+
+    int mid = left + (right - left) / 2;
+
+    if (depth < max_depth) {
+        // Spawn thread for left half, do right half ourselves
+        std::thread left_thread(parallel_sort, std::ref(arr),
+                                left, mid, depth + 1);
+        parallel_sort(arr, mid + 1, right, depth + 1);
         left_thread.join();
-        merge(array, left, mid, right);
+    } else {
+        // Beyond depth limit, use sequential sort
+        sequential_sort(arr, left, mid);
+        sequential_sort(arr, mid + 1, right);
     }
+
+    merge(arr, left, mid, right);
 }
 
-// Helper function to merge two sorted subarrays array[left..mid] and array[mid+1..right] into array
-void merge(int *array, unsigned int left, unsigned int mid, unsigned int right) {
-    unsigned int num_left = mid - left + 1; // number of elements in left subarray
-    unsigned int num_right = right - mid; // number of elements in right subarray
-    
-    // copy data into temporary left and right subarrays to be merged
-    int array_left[num_left], array_right[num_right];
-    std::copy(&array[left], &array[mid + 1], array_left);
-    std::copy(&array[mid + 1], &array[right + 1], array_right);
-    
-    // initialize indices for array_left, array_right, and input subarrays
-    unsigned int index_left = 0;    // index to get elements from array_left
-    unsigned int index_right = 0;    // index to get elements from array_right
-    unsigned int index_insert = left; // index to insert elements into input array
-    
-    // merge temporary subarrays into original input array
-    while ((index_left < num_left) || (index_right < num_right)) {
-        if ((index_left < num_left) && (index_right < num_right)) {
-            if (array_left[index_left] <= array_right[index_right]) {
-                array[index_insert] = array_left[index_left];
-                index_left++;
-            } else {
-                array[index_insert] = array_right[index_right];
-                index_right++;
-            }
-        }
-        // copy any remaining elements of array_left into array
-        else if (index_left < num_left) {
-            array[index_insert] = array_left[index_left];
-            index_left++;
-        }
-        // copy any remaining elements of array_right into array
-        else if (index_right < num_right) {
-            array[index_insert] = array_right[index_right];
-            index_right++;
-        }
-        index_insert++;
-    }
-}
-
-// Function to evaluate and compare the performance of sequential and parallel implementations
-void evaluate_performance(int num_elements, int num_eval_runs) {
-    int original_array[num_elements], sequential_result[num_elements], parallel_result[num_elements];
-    for (int i = 0; i < num_elements; i++) {
-        original_array[i] = rand();
+void benchmark(int size, int runs) {
+    // Initialize array with random values
+    std::vector<int> original(size);
+    for (int i = 0; i < size; ++i) {
+        original[i] = rand();
     }
 
-    std::cout << "Evaluating Sequential Implementation..." << std::endl;
-    std::chrono::duration<double> sequential_time(0);
-    std::copy(&original_array[0], &original_array[num_elements], sequential_result);
-    sequential_merge_sort(sequential_result, 0, num_elements - 1); // "warm up"    
-    for (int i = 0; i < num_eval_runs; i++) {
-        std::copy(&original_array[0], &original_array[num_elements], sequential_result); // reset result array
-        auto start_time = std::chrono::high_resolution_clock::now();
-        sequential_merge_sort(sequential_result, 0, num_elements - 1);
-        sequential_time += std::chrono::high_resolution_clock::now() - start_time;
+    using namespace std::chrono;
+
+    // Benchmark sequential
+    std::cout << "Evaluating Sequential Merge Sort...\n";
+    duration<double> seq_time(0);
+    std::vector<int> seq_arr = original;
+    sequential_sort(seq_arr, 0, size - 1);
+
+    for (int r = 0; r < runs; ++r) {
+        std::vector<int> arr = original;
+        auto start = high_resolution_clock::now();
+        sequential_sort(arr, 0, size - 1);
+        seq_time += high_resolution_clock::now() - start;
     }
-    sequential_time /= num_eval_runs;
-    
-    std::cout << "Evaluating Parallel Implementation..." << std::endl;
-    std::chrono::duration<double> parallel_time(0);
-    std::copy(&original_array[0], &original_array[num_elements], parallel_result);
-    parallel_merge_sort(parallel_result, 0, num_elements - 1); // "warm up"
-    for (int i = 0; i < num_eval_runs; i++) {
-        std::copy(&original_array[0], &original_array[num_elements], parallel_result); // reset result array
-        auto start_time = std::chrono::high_resolution_clock::now();
-        parallel_merge_sort(parallel_result, 0, num_elements - 1);
-        parallel_time += std::chrono::high_resolution_clock::now() - start_time;
+    seq_time /= runs;
+
+    // Benchmark parallel
+    std::cout << "Evaluating Parallel Merge Sort...\n";
+    duration<double> par_time(0);
+    std::vector<int> par_arr = original;
+    parallel_sort(par_arr, 0, size - 1);
+
+    for (int r = 0; r < runs; ++r) {
+        std::vector<int> arr = original;
+        auto start = high_resolution_clock::now();
+        parallel_sort(arr, 0, size - 1);
+        par_time += high_resolution_clock::now() - start;
     }
-    parallel_time /= num_eval_runs;
-    
-    // verify sequential and parallel results are the same
-    for (int i = 0; i < num_elements; i++) {
-        if (sequential_result[i] != parallel_result[i]) {
-            std::cerr << "ERROR: Result mismatch at index " << i << "!" << std::endl;
-            return;
-        }
+    par_time /= runs;
+
+    // Verify results
+    if (seq_arr != par_arr) {
+        std::cerr << "ERROR: Results don't match!\n";
+        return;
     }
-    std::cout << "Average Sequential Time: " << sequential_time.count() * 1000 << " ms" << std::endl;
-    std::cout << "  Average Parallel Time: " << parallel_time.count() * 1000 << " ms" << std::endl;
-    std::cout << "Speedup: " << sequential_time / parallel_time << std::endl;
-    std::cout << "Efficiency: " << 100 * (sequential_time / parallel_time) / std::thread::hardware_concurrency() << "%" << std::endl;
+
+    std::cout << "\nResults (" << size << " elements):\n";
+    std::cout << "  Sequential: " << seq_time.count() * 1000 << " ms\n";
+    std::cout << "  Parallel:   " << par_time.count() * 1000 << " ms\n";
+    std::cout << "  Speedup:    " << seq_time / par_time << "x\n";
 }
 
 int main() {
-    const int NUM_EVAL_RUNS = 100;
-    const int NUM_ELEMENTS = 1000; // number of elements to sort
-    
-    evaluate_performance(NUM_ELEMENTS, NUM_EVAL_RUNS);
-
+    benchmark(100000, 5);
     return 0;
 }

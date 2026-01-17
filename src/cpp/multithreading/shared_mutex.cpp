@@ -1,51 +1,81 @@
-#include <thread>
-#include <mutex>
-#include <chrono>
-#include <shared_mutex>
+/**
+ * Shared Mutex (Reader-Writer Lock)
+ *
+ * This example demonstrates std::shared_mutex, which allows multiple
+ * readers OR a single writer at any time.
+ *
+ * Key concepts:
+ * - Multiple threads can hold a shared (read) lock simultaneously
+ * - Only one thread can hold an exclusive (write) lock
+ * - Writers wait for all readers to release before acquiring
+ * - lock_shared() / unlock_shared() for readers
+ * - lock() / unlock() for writers
+ *
+ * Use when reads are much more frequent than writes.
+ */
+
 #include <array>
-#include <cstdio>
+#include <chrono>
+#include <iostream>
+#include <mutex>
+#include <shared_mutex>
+#include <thread>
+#include <vector>
 
-char ITEMS[5][15] = {"Laptops", "Monitors", "Keyboards", "Mice", "Printers"};
-int item_stock[5] = {10, 15, 20, 25, 30};
-std::shared_mutex inventory_mutex;
+struct Inventory {
+    std::array<std::string, 5> items = {
+        "Laptops", "Monitors", "Keyboards", "Mice", "Printers"
+    };
+    std::array<int, 5> stock = {10, 15, 20, 25, 30};
+    std::shared_mutex mutex;
+};
 
-void inventory_reader(const int id) {
-    for (int i = 0; i < 5; i++) {
-        inventory_mutex.lock_shared();
-        printf("Reader-%d sees %s stock is %d\n", id, ITEMS[i], item_stock[i]);
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        inventory_mutex.unlock_shared();
+Inventory inventory;
+
+void reader(int id) {
+    for (size_t i = 0; i < inventory.items.size(); ++i) {
+        // Shared lock - multiple readers allowed
+        std::shared_lock lock(inventory.mutex);
+
+        std::cout << "Reader-" << id << " sees " << inventory.items[i]
+                  << " stock: " << inventory.stock[i] << "\n";
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 }
 
-void inventory_writer(const int id) {
-    for (int i = 0; i < 5; i++) {
-        inventory_mutex.lock();
-        item_stock[i] = item_stock[i] + (id + 1); // Writers update stock
-        printf("Writer-%d updated %s stock to %d\n", id, ITEMS[i], item_stock[i]);
+void writer(int id) {
+    for (size_t i = 0; i < inventory.items.size(); ++i) {
+        // Exclusive lock - only one writer, no readers
+        std::unique_lock lock(inventory.mutex);
+
+        inventory.stock[i] += (id + 1);
+        std::cout << "Writer-" << id << " updated " << inventory.items[i]
+                  << " to: " << inventory.stock[i] << "\n";
+
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        inventory_mutex.unlock();
     }
 }
 
 int main() {
-    // create ten reader threads but only two writer threads
-    std::array<std::thread, 10> readers;
-    for (unsigned int i = 0; i < readers.size(); i++) {
-        readers[i] = std::thread(inventory_reader, i);
+    std::vector<std::thread> readers;
+    std::vector<std::thread> writers;
+
+    // Many readers, few writers (typical use case)
+    for (int i = 0; i < 5; ++i) {
+        readers.emplace_back(reader, i);
     }
-    std::array<std::thread, 2> writers;
-    for (unsigned int i = 0; i < writers.size(); i++) {
-        writers[i] = std::thread(inventory_writer, i);
+    for (int i = 0; i < 2; ++i) {
+        writers.emplace_back(writer, i);
     }
 
-    // wait for readers and writers to finish
-    for (unsigned int i = 0; i < readers.size(); i++) {
-        readers[i].join();
+    for (auto& r : readers) {
+        r.join();
     }
-    for (unsigned int i = 0; i < writers.size(); i++) {
-        writers[i].join();
+    for (auto& w : writers) {
+        w.join();
     }
 
+    std::cout << "All operations complete.\n";
     return 0;
 }

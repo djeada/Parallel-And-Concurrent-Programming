@@ -1,26 +1,50 @@
-#include <thread>
-#include <chrono>
+/**
+ * Thread Joinability
+ *
+ * This example demonstrates the joinable() method and thread lifecycle.
+ *
+ * Key concepts:
+ * - A thread is "joinable" if it represents an active thread of execution
+ * - joinable() returns true from construction until join() or detach() is called
+ * - You MUST either join() or detach() a thread before its destructor runs
+ * - Calling join() on a non-joinable thread throws std::system_error
+ *
+ * Thread lifecycle:
+ * 1. Construction: thread becomes joinable
+ * 2. Running: thread executes its function
+ * 3. Completion: thread finishes but is still joinable
+ * 4. join()/detach(): thread becomes non-joinable
+ */
 
-void assistant_james() {
-    printf("James started & waiting for documents to process...\n");
-    std::this_thread::sleep_for(std::chrono::seconds(3));
-    printf("James is done processing documents.\n");
+#include <chrono>
+#include <iostream>
+#include <thread>
+
+void background_work() {
+    std::cout << "  Worker: started processing...\n";
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::cout << "  Worker: finished processing.\n";
 }
 
 int main() {
-    printf("Manager requests James's help.\n");
-    std::thread james(assistant_james);
-    printf("  James is joinable? %s\n", james.joinable() ? "true" : "false");
+    std::cout << "Creating worker thread...\n";
+    std::thread worker(background_work);
 
-    printf("Manager continues preparing the report.\n");
+    // Thread is joinable immediately after construction
+    std::cout << "  Is joinable? " << std::boolalpha << worker.joinable() << "\n";
+
+    std::cout << "Main: doing other work...\n";
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    printf("  James is joinable? %s\n", james.joinable() ? "true" : "false");
 
-    printf("Manager patiently waits for James to finish and join...\n");
-    james.join();
-    printf("  James is joinable? %s\n", james.joinable() ? "true" : "false");
+    // Still joinable while running
+    std::cout << "  Is joinable? " << worker.joinable() << "\n";
 
-    printf("Manager and James are both done!\n");
-    
+    std::cout << "Main: waiting for worker to finish...\n";
+    worker.join();
+
+    // No longer joinable after join()
+    std::cout << "  Is joinable? " << worker.joinable() << "\n";
+
+    std::cout << "Both threads complete.\n";
     return 0;
 }

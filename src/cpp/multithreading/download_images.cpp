@@ -1,108 +1,118 @@
-#include <thread>
-#include <cstring>
-#include <curl/curl.h> 
-#include <future>
-#include <list>
+/**
+ * Parallel Image Download with std::async
+ *
+ * This example demonstrates parallel I/O operations using std::async,
+ * comparing sequential vs parallel download performance.
+ *
+ * Key concepts:
+ * - std::async launches tasks that may run in parallel
+ * - std::future allows retrieving results from async operations
+ * - I/O-bound tasks (like network requests) benefit greatly from parallelism
+ * - Speedup depends on network latency, not CPU cores
+ *
+ * Build: g++ -std=c++17 -o download_images download_images.cpp -lcurl
+ */
+
 #include <chrono>
+#include <curl/curl.h>
+#include <future>
 #include <iostream>
+#include <list>
+#include <string>
+#include <thread>
 
-// Function declarations
-size_t download_image(int image_num);
-size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp);
-size_t sequential_image_downloader(int num_images);
-size_t parallel_image_downloader(int num_images);
-void evaluate_performance(int num_images, int num_eval_runs);
+// Callback to discard downloaded data (we only measure transfer size)
+size_t write_callback(void* contents, size_t size, size_t nmemb, void* userp) {
+    return size * nmemb;
+}
 
-// Sequential implementation of image downloader
-size_t sequential_image_downloader(int num_images) {
+// Download a single image and return its size
+size_t download_image(int image_num) {
+    std::string url = "https://example.com/image_" +
+                      std::to_string((image_num % 50) + 1) + ".jpg";
+
+    curl_off_t num_bytes = 0;
+    CURL* curl = curl_easy_init();
+
+    if (curl) {
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+
+        CURLcode res = curl_easy_perform(curl);
+        if (res == CURLE_OK) {
+            curl_easy_getinfo(curl, CURLINFO_SIZE_DOWNLOAD_T, &num_bytes);
+        }
+        curl_easy_cleanup(curl);
+    }
+
+    return static_cast<size_t>(num_bytes);
+}
+
+// Sequential: download one at a time
+size_t sequential_download(int num_images) {
     size_t total_bytes = 0;
-    for (int i = 1; i <= num_images; i++) {
+    for (int i = 1; i <= num_images; ++i) {
         total_bytes += download_image(i);
     }
     return total_bytes;
 }
 
-// Parallel implementation of image downloader using std::async
-size_t parallel_image_downloader(int num_images) {
-    size_t total_bytes = 0;
-    std::list<std::future<size_t>> download_futures;
-    for (int i = 1; i <= num_images; i++) {
-        download_futures.push_back(std::async(std::launch::async, download_image, i));
+// Parallel: download all concurrently using std::async
+size_t parallel_download(int num_images) {
+    std::list<std::future<size_t>> futures;
+
+    // Launch all downloads in parallel
+    for (int i = 1; i <= num_images; ++i) {
+        futures.push_back(std::async(std::launch::async, download_image, i));
     }
-    for (auto& future : download_futures) {
-        total_bytes += future.get();
+
+    // Collect results
+    size_t total_bytes = 0;
+    for (auto& f : futures) {
+        total_bytes += f.get();
     }
     return total_bytes;
 }
 
-// Helper function to download a single image and return the size in bytes
-size_t download_image(int image_num) {
-    char url[256];
-    sprintf(url, "https://example.com/image_%d.jpg", ((image_num % 50) + 1));
+void benchmark(int num_images, int num_runs) {
+    using namespace std::chrono;
 
-    CURLcode res;
-    curl_off_t num_bytes = 0;
-    CURL *curl = curl_easy_init();
-    if (curl) {
-        curl_easy_setopt(curl, CURLOPT_URL, url);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
-        res = curl_easy_perform(curl);
-        if (res != CURLE_OK) {
-            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
-        }
-        res = curl_easy_getinfo(curl, CURLINFO_SIZE_DOWNLOAD_T, &num_bytes);
-        if (res != CURLE_OK) {
-            std::cerr << "curl_easy_getinfo() failed: " << curl_easy_strerror(res) << std::endl;
-        }
-        curl_easy_cleanup(curl);
+    // Benchmark sequential
+    std::cout << "Evaluating Sequential Download...\n";
+    duration<double> seq_time(0);
+    size_t seq_result = sequential_download(num_images);  // Warm up
+
+    for (int i = 0; i < num_runs; ++i) {
+        auto start = high_resolution_clock::now();
+        sequential_download(num_images);
+        seq_time += high_resolution_clock::now() - start;
     }
-    return num_bytes;
-}
+    seq_time /= num_runs;
 
-// Callback function for cURL to handle data received from the server
-size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
-    return size * nmemb;
-}
+    // Benchmark parallel
+    std::cout << "Evaluating Parallel Download...\n";
+    duration<double> par_time(0);
+    size_t par_result = parallel_download(num_images);  // Warm up
 
-// Function to evaluate and compare the performance of sequential and parallel implementations
-void evaluate_performance(int num_images, int num_eval_runs) {
-    std::cout << "Evaluating Sequential Implementation..." << std::endl;
-    std::chrono::duration<double> sequential_time(0);
-    size_t sequential_result = sequential_image_downloader(num_images); // "warm up"
-    for (int i = 0; i < num_eval_runs; i++) {
-        auto startTime = std::chrono::high_resolution_clock::now();
-        sequential_image_downloader(num_images);
-        sequential_time += std::chrono::high_resolution_clock::now() - startTime;
+    for (int i = 0; i < num_runs; ++i) {
+        auto start = high_resolution_clock::now();
+        parallel_download(num_images);
+        par_time += high_resolution_clock::now() - start;
     }
-    sequential_time /= num_eval_runs;
+    par_time /= num_runs;
 
-    std::cout << "Evaluating Parallel Implementation..." << std::endl;
-    std::chrono::duration<double> parallel_time(0);
-    size_t parallel_result = parallel_image_downloader(num_images); // "warm up"
-    for (int i = 0; i < num_eval_runs; i++) {
-        auto startTime = std::chrono::high_resolution_clock::now();
-        parallel_image_downloader(num_images);
-        parallel_time += std::chrono::high_resolution_clock::now() - startTime;
-    }
-    parallel_time /= num_eval_runs;
-
-    // Display sequential and parallel results for comparison
-    if (sequential_result != parallel_result) {
-        std::cerr << "ERROR: Result mismatch!" << std::endl
-                  << "  Sequential Result = " << sequential_result << std::endl
-                  << "  Parallel Result = " << parallel_result << std::endl;
-    }
-    std::cout << "Average Sequential Time: " << sequential_time.count() * 1000 << " ms" << std::endl;
-    std::cout << "  Average Parallel Time: " << parallel_time.count() * 1000 << " ms" << std::endl;
-    std::cout << "Speedup: " << sequential_time / parallel_time << std::endl;
-    std::cout << "Efficiency: " << 100 * (sequential_time / parallel_time) / std::thread::hardware_concurrency() << "%" << std::endl;
+    // Results
+    std::cout << "\nResults:\n";
+    std::cout << "  Sequential: " << seq_time.count() * 1000 << " ms\n";
+    std::cout << "  Parallel:   " << par_time.count() * 1000 << " ms\n";
+    std::cout << "  Speedup:    " << seq_time.count() / par_time.count() << "x\n";
 }
 
 int main() {
-    const int NUM_EVAL_RUNS = 3; // Number of evaluation runs for averaging the performance
-    const int NUM_IMAGES = 50;   // Number of images to download
+    curl_global_init(CURL_GLOBAL_DEFAULT);
 
-    evaluate_performance(NUM_IMAGES, NUM_EVAL_RUNS);
+    benchmark(50, 3);
 
+    curl_global_cleanup();
     return 0;
 }
