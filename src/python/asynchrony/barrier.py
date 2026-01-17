@@ -18,7 +18,7 @@ Use Cases:
 - Synchronizing distributed task execution
 
 Note: asyncio.Barrier was added in Python 3.11. For earlier versions,
-you can implement similar behavior with asyncio.Event or conditions.
+you can implement similar behavior using asyncio.Event or Condition.
 """
 
 import asyncio
