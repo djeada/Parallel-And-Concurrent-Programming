@@ -24,6 +24,8 @@ int task_count = 10;
 std::mutex task_mutex;
 std::condition_variable task_available;
 
+constexpr int kNumWorkers = 5;
+
 void worker(int id) {
     int tasks_completed = 0;
     int yielded_turns = 0;
@@ -34,7 +36,7 @@ void worker(int id) {
         // Wait until it's this worker's turn OR no tasks remain
         // The predicate handles spurious wakeups automatically
         task_available.wait(lock, [id] {
-            return (task_count % 5 == id) || (task_count <= 0);
+            return (task_count % kNumWorkers == id) || (task_count <= 0);
         });
 
         if (task_count <= 0) {
@@ -54,11 +56,10 @@ void worker(int id) {
 }
 
 int main() {
-    constexpr int num_workers = 5;
     std::vector<std::thread> workers;
-    workers.reserve(num_workers);
+    workers.reserve(kNumWorkers);
 
-    for (int i = 0; i < num_workers; ++i) {
+    for (int i = 0; i < kNumWorkers; ++i) {
         workers.emplace_back(worker, i);
     }
 

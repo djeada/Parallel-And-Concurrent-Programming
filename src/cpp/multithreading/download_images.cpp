@@ -105,7 +105,9 @@ void benchmark(int num_images, int num_runs) {
     std::cout << "\nResults:\n";
     std::cout << "  Sequential: " << seq_time.count() * 1000 << " ms\n";
     std::cout << "  Parallel:   " << par_time.count() * 1000 << " ms\n";
-    std::cout << "  Speedup:    " << seq_time.count() / par_time.count() << "x\n";
+    if (par_time.count() > 0) {
+        std::cout << "  Speedup:    " << seq_time.count() / par_time.count() << "x\n";
+    }
 }
 
 int main() {

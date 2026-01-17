@@ -57,7 +57,9 @@ void parallel_worker(const Matrix& A, const Matrix& B, Matrix& C,
 
 // Parallel matrix multiplication
 void parallel_multiply(const Matrix& A, const Matrix& B, Matrix& C) {
-    size_t num_threads = std::thread::hardware_concurrency();
+    unsigned int num_threads = std::thread::hardware_concurrency();
+    if (num_threads == 0) num_threads = 2;  // Default to 2 if unknown
+
     size_t rows = A.size();
     size_t chunk_size = static_cast<size_t>(std::ceil(
         static_cast<double>(rows) / num_threads));

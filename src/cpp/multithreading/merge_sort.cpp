@@ -53,8 +53,10 @@ void sequential_sort(std::vector<int>& arr, int left, int right) {
 // Parallel merge sort with depth limiting
 void parallel_sort(std::vector<int>& arr, int left, int right, int depth = 0) {
     // Stop spawning threads beyond log2(num_cores) depth
-    int max_depth = static_cast<int>(std::log2(
-        std::thread::hardware_concurrency()));
+    // Handle case where hardware_concurrency() returns 0
+    unsigned int cores = std::thread::hardware_concurrency();
+    if (cores == 0) cores = 2;  // Default to 2 if unknown
+    int max_depth = static_cast<int>(std::log2(cores));
 
     if (left >= right) return;
 
