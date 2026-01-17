@@ -38,6 +38,8 @@ int main(int argc, char* argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
+    // Each process handles 3 elements - small value for demonstration
+    // In real applications, this would typically be much larger
     constexpr int elements_per_process = 3;
     constexpr int root = 0;
 

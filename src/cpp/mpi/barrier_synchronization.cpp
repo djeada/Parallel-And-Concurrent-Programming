@@ -28,10 +28,14 @@
 #include <iostream>
 #include <thread>
 
+// Base time unit for simulating work (in milliseconds)
+constexpr int kWorkUnitMs = 200;
+
 // Simulate variable work with different durations
 void do_work(int rank) {
     // Each process works for a different amount of time
-    int sleep_ms = (rank + 1) * 200;  // 200ms, 400ms, 600ms, ...
+    // Process 0: 200ms, Process 1: 400ms, Process 2: 600ms, ...
+    int sleep_ms = (rank + 1) * kWorkUnitMs;
     std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
 }
 
