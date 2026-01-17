@@ -1,51 +1,45 @@
+"""
+Hello World MPI - Basic Initialization
+
+This example demonstrates the fundamental structure of an MPI program using mpi4py.
+Every MPI program needs to initialize the communication environment and can query
+basic information about the parallel execution context.
+
+Key concepts:
+- MPI.COMM_WORLD: Default communicator containing all processes
+- comm.Get_rank(): Gets the rank (unique ID) of the calling process
+- comm.Get_size(): Gets the total number of processes
+- Ranks are numbered from 0 to size-1
+
+Run: mpirun -np 4 python hello_world_mpi.py
+
+Expected output (order may vary):
+    Hello from rank 0 out of 4 processes
+    Hello from rank 1 out of 4 processes
+    Hello from rank 2 out of 4 processes
+    Hello from rank 3 out of 4 processes
+"""
+
 from mpi4py import MPI
 
-# Initialize the MPI communication world
-comm = MPI.COMM_WORLD
 
-# Get the total number of processes
-size = comm.Get_size()
+def main():
+    # Get the default communicator (contains all processes)
+    comm = MPI.COMM_WORLD
 
-# Get the rank (ID) of the current process
-rank = comm.Get_rank()
+    # Get the rank (unique identifier) of this process
+    rank = comm.Get_rank()
 
-# Print a greeting from each process
-print(f"Hello world from process {rank} out of {size} processes")
+    # Get the total number of processes in the communicator
+    size = comm.Get_size()
 
-# Simple demonstration of sending and receiving messages
-if rank == 0:
-    # If we are the master process (rank 0), send a message to all other processes
-    for i in range(1, size):
-        message = f"Hello from master process to process {i}"
-        comm.send(message, dest=i, tag=11)
-        print(f"Master process sent message to process {i}")
-else:
-    # If we are a worker process, receive the message from the master process
-    message = comm.recv(source=0, tag=11)
-    print(f"Process {rank} received message: '{message}'")
+    # Each process prints its greeting
+    print(f"Hello from rank {rank} out of {size} processes")
 
-# Barrier to synchronize processes
-comm.Barrier()
-print(f"Process {rank} has reached the barrier")
+    # Demonstrate that each process has its own memory space
+    local_value = rank * 10
+    print(f"Process {rank}: local_value = {local_value}")
 
-# More complex example: gathering data from all processes
-data = rank * 2  # Each process has some data
-print(f"Process {rank} has data: {data}")
 
-# Collect all data at the master process
-gathered_data = comm.gather(data, root=0)
-
-if rank == 0:
-    print(f"Master process has gathered data: {gathered_data}")
-
-# Broadcasting data from master to all processes
-if rank == 0:
-    broadcast_data = "Broadcasting from master"
-else:
-    broadcast_data = None
-
-broadcast_data = comm.bcast(broadcast_data, root=0)
-print(f"Process {rank} received broadcast data: {broadcast_data}")
-
-# Finalize the MPI environment (optional, done automatically at the end of the script)
-MPI.Finalize()
+if __name__ == "__main__":
+    main()
