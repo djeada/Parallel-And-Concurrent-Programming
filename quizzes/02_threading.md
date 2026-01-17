@@ -409,3 +409,75 @@ Test your understanding of threads, synchronization primitives, and thread manag
 - [x] A situation where threads keep changing state in response to each other without making progress
 - [ ] A thread that runs forever
 - [ ] A lock that keeps a thread alive
+
+#### Q. What is "thread-local storage" (TLS)?
+
+- [ ] Storage that is locked by a thread
+- [x] Memory that is unique to each thread and not shared with other threads
+- [ ] Temporary storage for thread data
+- [ ] Storage located near the CPU for threads
+- [ ] Encrypted storage for sensitive thread data
+
+#### Q. What is the purpose of a "read-write lock"?
+
+- [ ] To prevent threads from reading and writing
+- [x] To allow multiple readers or one writer at a time, but not both simultaneously
+- [ ] To log all read and write operations
+- [ ] To alternate between read and write modes
+- [ ] To compress data during read/write operations
+
+#### Q. In Java, what is the purpose of the volatile keyword?
+
+- [ ] To make a variable constant
+- [ ] To prevent garbage collection of the variable
+- [x] To ensure that changes to the variable are visible to all threads
+- [ ] To make the variable private to a thread
+- [ ] To make the variable faster to access
+
+#### Q. What is "thread starvation"?
+
+- [ ] A thread that uses too much memory
+- [ ] A thread that runs out of work
+- [x] A thread that cannot access resources because other threads monopolize them
+- [ ] A thread that has been terminated
+- [ ] A thread with no input data
+
+#### Q. What is a "monitor" in concurrent programming?
+
+- [ ] A debugging tool for threads
+- [x] A synchronization construct that combines mutex and condition variables
+- [ ] A thread that watches other threads
+- [ ] A process that monitors system resources
+- [ ] A logging mechanism for threads
+
+#### Q. What is "lock-free" programming?
+
+- [ ] Programming without any synchronization
+- [x] Designing algorithms that don't use traditional locks but still ensure thread safety
+- [ ] Programming that automatically handles locking
+- [ ] Single-threaded programming
+- [ ] Programming that ignores race conditions
+
+#### Q. What is a "compare-and-swap" (CAS) operation?
+
+- [ ] An operation that compares two values and swaps them
+- [x] An atomic operation that updates a value only if it matches an expected value
+- [ ] A sorting algorithm
+- [ ] A memory allocation technique
+- [ ] A debugging operation
+
+#### Q. What happens when a thread is "blocked"?
+
+- [ ] The thread is terminated
+- [ ] The thread runs at reduced speed
+- [x] The thread is waiting for a resource and cannot proceed
+- [ ] The thread is prevented from accessing memory
+- [ ] The thread is locked by another thread
+
+#### Q. What is the "thundering herd" problem in threading?
+
+- [ ] Too many threads accessing memory at once
+- [x] Many waiting threads all being woken up when only one can proceed, causing contention
+- [ ] Threads creating too many child threads
+- [ ] A memory leak caused by threads
+- [ ] Threads consuming too much CPU

@@ -211,3 +211,75 @@ Test your understanding of parallel algorithm design, decomposition strategies, 
 - [ ] Removing tasks from the queue
 - [ ] A type of race condition
 - [ ] A debugging technique
+
+#### Q. What is "static vs dynamic load balancing"?
+
+- [ ] Static is for static data; dynamic is for changing data
+- [x] Static assigns work upfront; dynamic adjusts work distribution during runtime
+- [ ] Static is faster; dynamic is slower
+- [ ] They are the same concept
+- [ ] Static uses more memory
+
+#### Q. What is "data partitioning"?
+
+- [ ] Dividing data for backup
+- [x] Dividing data among processors so each works on a subset
+- [ ] Creating data partitions on disk
+- [ ] Separating data from code
+- [ ] A security technique
+
+#### Q. What is "owner computes" rule?
+
+- [ ] The processor that owns code executes it
+- [x] The processor that owns a piece of data is responsible for computing its values
+- [ ] A licensing rule
+- [ ] A security policy
+- [ ] A debugging principle
+
+#### Q. What is a "dependency graph" in parallel computing?
+
+- [ ] A graph of software dependencies
+- [x] A graph showing which tasks depend on others, determining what can run in parallel
+- [ ] A debugging visualization
+- [ ] A network topology
+- [ ] A memory layout diagram
+
+#### Q. What is "communication to computation ratio"?
+
+- [ ] The ratio of network to CPU usage
+- [x] The ratio of time spent communicating to time spent computing, indicating parallel efficiency
+- [ ] The number of messages per computation
+- [ ] A hardware specification
+- [ ] A debugging metric
+
+#### Q. What is "block decomposition"?
+
+- [ ] Breaking code into blocks
+- [x] Dividing data into contiguous blocks assigned to different processors
+- [ ] A memory management technique
+- [ ] A compilation strategy
+- [ ] A debugging technique
+
+#### Q. What is "cyclic decomposition"?
+
+- [ ] Repeating decomposition
+- [x] Distributing data in a round-robin fashion among processors
+- [ ] A circular data structure
+- [ ] A scheduling algorithm
+- [ ] A memory recycling technique
+
+#### Q. What is the "bulk synchronous parallel" (BSP) model?
+
+- [ ] A model for bulk data processing
+- [x] A model where computation proceeds in supersteps with computation, communication, and synchronization phases
+- [ ] A synchronous communication protocol
+- [ ] A hardware architecture
+- [ ] A debugging framework
+
+#### Q. What is "coarsening" in parallel algorithm design?
+
+- [ ] Making algorithms simpler
+- [x] Combining fine-grained tasks into larger tasks to reduce overhead
+- [ ] Increasing granularity of data
+- [ ] A debugging technique
+- [ ] Reducing precision of calculations

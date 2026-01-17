@@ -202,3 +202,75 @@ Test your understanding of parallel computing hardware, CPU architecture, and me
 - [ ] A workload that cannot be parallelized
 - [ ] A workload that uses extensive computation
 - [ ] A workload limited by network speed
+
+#### Q. What is "instruction-level parallelism" (ILP)?
+
+- [ ] Parallel execution of programs
+- [x] CPU technique of executing multiple instructions simultaneously within a single core
+- [ ] Parallelism between different programming languages
+- [ ] A compiler optimization
+- [ ] Parallel instruction decoding
+
+#### Q. What is a "vector processor"?
+
+- [ ] A processor that handles graphics
+- [x] A processor designed to perform the same operation on multiple data elements simultaneously
+- [ ] A processor for mathematical calculations only
+- [ ] A processor with multiple cores
+- [ ] A processor for vector graphics
+
+#### Q. What is "out-of-order execution"?
+
+- [ ] Executing code in random order
+- [x] CPU technique of executing instructions in an order different from the program order to maximize efficiency
+- [ ] Executing code without compilation
+- [ ] A bug in program execution
+- [ ] Executing instructions backwards
+
+#### Q. What is the "memory wall" problem?
+
+- [ ] A physical limit on memory size
+- [x] The growing disparity between CPU speed and memory access speed
+- [ ] A security barrier for memory
+- [ ] A debugging challenge
+- [ ] A memory corruption issue
+
+#### Q. What is "cache associativity"?
+
+- [ ] Linking caches together
+- [x] The number of cache locations where a memory block can be placed
+- [ ] The speed of cache access
+- [ ] The association between cache levels
+- [ ] Cache sharing between cores
+
+#### Q. What is a "write-back" cache policy?
+
+- [ ] Writing data back to the program
+- [x] Writing modified data to main memory only when the cache line is evicted
+- [ ] Undoing write operations
+- [ ] A backup mechanism
+- [ ] Writing data immediately to disk
+
+#### Q. What is "write-through" cache policy?
+
+- [ ] Writing data through multiple caches
+- [x] Writing data to both cache and main memory simultaneously
+- [ ] A faster writing technique
+- [ ] Writing through a buffer
+- [ ] A debugging mode
+
+#### Q. What is the "von Neumann bottleneck"?
+
+- [ ] A bottleneck in the CPU
+- [x] The limitation of having a single path between CPU and memory for both instructions and data
+- [ ] A software design problem
+- [ ] A network bottleneck
+- [ ] A memory allocation issue
+
+#### Q. What is "GPGPU" computing?
+
+- [ ] Graphics processing for games
+- [x] Using graphics processing units for general-purpose computing tasks
+- [ ] A graphics programming language
+- [ ] A type of GPU architecture
+- [ ] Graphics debugging

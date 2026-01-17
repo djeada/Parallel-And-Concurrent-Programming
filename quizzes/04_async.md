@@ -227,3 +227,75 @@ Test your understanding of async/await, coroutines, event loops, and futures.
 - [ ] Shields memory from other tasks
 - [ ] Prevents timeout errors
 - [ ] Hides task exceptions
+
+#### Q. What is the purpose of asyncio.Lock()?
+
+- [ ] To lock files for async access
+- [x] To provide mutual exclusion for coroutines accessing shared resources
+- [ ] To lock the event loop
+- [ ] To prevent task cancellation
+- [ ] To lock memory regions
+
+#### Q. What happens if you forget to await a coroutine?
+
+- [ ] It runs in the background
+- [ ] An error is raised immediately
+- [x] The coroutine never executes and you get a warning
+- [ ] It runs synchronously
+- [ ] The program crashes
+
+#### Q. What is asyncio.Condition used for?
+
+- [ ] To check if the event loop is running
+- [x] To allow coroutines to wait for some condition to become true
+- [ ] To set conditions on task execution
+- [ ] To debug async code
+- [ ] To check network conditions
+
+#### Q. What is the difference between asyncio.run() and loop.run_until_complete()?
+
+- [ ] They are identical
+- [x] asyncio.run() creates a new event loop and closes it when done; run_until_complete() uses an existing loop
+- [ ] asyncio.run() is deprecated
+- [ ] run_until_complete() is faster
+- [ ] asyncio.run() is for threads
+
+#### Q. What is an "async generator" in Python?
+
+- [ ] A generator that runs faster
+- [x] A generator function defined with async def that yields values asynchronously
+- [ ] A tool for generating async code
+- [ ] A class for creating coroutines
+- [ ] A debugging tool
+
+#### Q. What is the purpose of asyncio.wait_for()?
+
+- [ ] To wait for the event loop to start
+- [x] To wait for a coroutine with a timeout
+- [ ] To wait for multiple coroutines
+- [ ] To wait for a specific time
+- [ ] To wait for user input
+
+#### Q. What is "backpressure" in async programming?
+
+- [ ] Memory pressure from async operations
+- [x] A mechanism to slow down producers when consumers can't keep up
+- [ ] CPU pressure from too many coroutines
+- [ ] Network congestion
+- [ ] A type of error handling
+
+#### Q. What is asyncio.StreamReader used for?
+
+- [ ] Reading files asynchronously
+- [x] Reading data from a stream (like a network connection) asynchronously
+- [ ] Reading from stdin
+- [ ] Reading configuration
+- [ ] Streaming video data
+
+#### Q. What is the purpose of asyncio.timeout() (Python 3.11+)?
+
+- [ ] To set a global timeout for all operations
+- [x] To set a timeout for a block of async code using async context manager
+- [ ] To cancel timeouts
+- [ ] To extend timeout values
+- [ ] To log timeout information

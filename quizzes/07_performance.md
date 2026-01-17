@@ -221,3 +221,75 @@ Test your understanding of performance metrics, speedup, efficiency, and scaling
 - [ ] Problem size doesn't affect speedup
 - [ ] Smaller problems always have better speedup
 - [ ] Only medium-sized problems benefit from parallelization
+
+#### Q. What is "profiling" in the context of parallel performance?
+
+- [ ] Creating user profiles
+- [x] Measuring and analyzing where a program spends its time to identify bottlenecks
+- [ ] Profiling hardware capabilities
+- [ ] Creating performance profiles for different users
+- [ ] A security analysis technique
+
+#### Q. What is the "roofline model"?
+
+- [ ] A model for ceiling height calculations
+- [x] A visual performance model that shows the upper bound on performance based on compute and memory bandwidth
+- [ ] A model for network topology
+- [ ] A hardware architecture model
+- [ ] A cost estimation model
+
+#### Q. What is "Karp-Flatt metric"?
+
+- [ ] A metric for memory usage
+- [x] A metric to measure the serial fraction of a parallel program empirically
+- [ ] A metric for network latency
+- [ ] A metric for cache efficiency
+- [ ] A metric for power consumption
+
+#### Q. What is "synchronization overhead"?
+
+- [ ] The cost of buying synchronization hardware
+- [x] Time spent waiting at synchronization points (barriers, locks) instead of computing
+- [ ] The complexity of synchronization code
+- [ ] Network synchronization delays
+- [ ] Clock synchronization time
+
+#### Q. What is "scalability analysis"?
+
+- [ ] Analyzing code size
+- [x] Studying how performance changes as the number of processors or problem size increases
+- [ ] Analyzing hardware capabilities
+- [ ] Measuring memory scalability
+- [ ] A type of security analysis
+
+#### Q. What is "performance portability"?
+
+- [ ] Running the same code on different systems
+- [x] Achieving good performance across different hardware architectures without major code changes
+- [ ] Porting code between languages
+- [ ] Moving performance data between systems
+- [ ] Portable performance monitoring
+
+#### Q. What is "idle time" in parallel computing?
+
+- [ ] Time when the computer is in sleep mode
+- [x] Time when a processor is not doing useful work while waiting for data or synchronization
+- [ ] Time between program runs
+- [ ] Time to initialize the system
+- [ ] Time to shut down the system
+
+#### Q. What is "memory latency"?
+
+- [ ] The size of memory
+- [x] The time delay between requesting data from memory and receiving it
+- [ ] The speed of memory
+- [ ] The age of memory hardware
+- [ ] Memory allocation time
+
+#### Q. What is "arithmetic intensity"?
+
+- [ ] How complex the math operations are
+- [x] The ratio of floating-point operations to bytes of data moved from memory
+- [ ] The speed of arithmetic operations
+- [ ] The number of arithmetic units
+- [ ] A measure of CPU capability

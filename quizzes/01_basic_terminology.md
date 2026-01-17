@@ -150,3 +150,75 @@ Test your understanding of fundamental concepts in parallel and concurrent progr
 - [x] A situation where a thread is perpetually denied access to resources it needs
 - [ ] A deadlock between multiple threads
 - [ ] A thread that has no work to do
+
+#### Q. What is a "context switch"?
+
+- [ ] Switching between different programming languages
+- [x] The process of saving and restoring the state of a thread/process so another can run
+- [ ] Switching between user mode and kernel mode
+- [ ] Changing the priority of a thread
+- [ ] Switching between different memory regions
+
+#### Q. What is the difference between preemptive and cooperative multitasking?
+
+- [x] In preemptive, the OS can interrupt tasks; in cooperative, tasks must voluntarily yield
+- [ ] Preemptive is faster than cooperative
+- [ ] Cooperative requires more memory
+- [ ] They are the same thing with different names
+- [ ] Preemptive is only for single-core systems
+
+#### Q. What is "atomic operation" in concurrent programming?
+
+- [ ] An operation that uses atomic energy
+- [ ] A very small operation
+- [x] An operation that completes in a single step without interruption
+- [ ] An operation that cannot fail
+- [ ] An operation that is very fast
+
+#### Q. What is "priority inversion"?
+
+- [ ] When low priority tasks run before high priority ones intentionally
+- [x] When a high-priority task waits for a low-priority task holding a needed resource
+- [ ] When all tasks have the same priority
+- [ ] When priority values are inverted in memory
+- [ ] A debugging technique
+
+#### Q. What is the difference between a "heavyweight" and "lightweight" process?
+
+- [ ] Heavyweight processes use more memory
+- [ ] Lightweight processes are faster
+- [x] Threads are lightweight (share address space); processes are heavyweight (separate address space)
+- [ ] Heavyweight processes have higher priority
+- [ ] There is no difference
+
+#### Q. What is "deterministic" execution in concurrent programming?
+
+- [ ] Execution that is predetermined by the OS
+- [x] Execution that produces the same result given the same inputs, regardless of scheduling
+- [ ] Execution that uses a fixed amount of memory
+- [ ] Execution that runs in constant time
+- [ ] Execution that cannot be interrupted
+
+#### Q. What is a "memory model" in concurrent programming?
+
+- [ ] A model of physical RAM
+- [x] Rules defining how memory operations appear to execute relative to each other across threads
+- [ ] A diagram of memory layout
+- [ ] A technique for memory allocation
+- [ ] A debugging tool for memory leaks
+
+#### Q. What causes "non-deterministic" behavior in concurrent programs?
+
+- [ ] Bugs in the code
+- [ ] Using too many threads
+- [x] Different possible interleavings of thread execution depending on scheduling
+- [ ] Using different compilers
+- [ ] Running on different hardware
+
+#### Q. What is the "happens-before" relationship?
+
+- [ ] A debugging concept
+- [x] A guarantee that one operation's effects are visible to another operation
+- [ ] The order in which code is written
+- [ ] The order in which functions are called
+- [ ] A compilation order constraint

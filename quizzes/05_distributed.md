@@ -211,3 +211,75 @@ Test your understanding of distributed systems, message passing, and MPI concept
 - [ ] Compressing message headers
 - [ ] Logging message traffic
 - [ ] Encrypting messages
+
+#### Q. What is MPI_Scan() used for?
+
+- [ ] To scan for errors in MPI code
+- [x] To perform a prefix reduction (each process receives partial result from preceding processes)
+- [ ] To scan network for available nodes
+- [ ] To check message integrity
+- [ ] To scan memory for leaks
+
+#### Q. What is the difference between synchronous and asynchronous communication in MPI?
+
+- [ ] Synchronous is faster
+- [x] Synchronous blocks until the receiver has started receiving; asynchronous returns immediately
+- [ ] Asynchronous is only for large messages
+- [ ] They use different protocols
+- [ ] There is no difference
+
+#### Q. What is a "Cartesian topology" in MPI?
+
+- [ ] A mathematical concept only
+- [x] A virtual process arrangement in a grid pattern (1D, 2D, 3D, etc.)
+- [ ] A type of network cable layout
+- [ ] A memory organization scheme
+- [ ] A debugging visualization
+
+#### Q. What is MPI_Comm_rank() used for?
+
+- [ ] To rank processes by speed
+- [x] To get the unique identifier (rank) of the calling process in a communicator
+- [ ] To assign priority to processes
+- [ ] To count the number of ranks
+- [ ] To reorder process rankings
+
+#### Q. What is "data serialization" in distributed computing?
+
+- [ ] Executing data operations in order
+- [x] Converting data structures to a format that can be transmitted between processes
+- [ ] Prioritizing data transfers
+- [ ] Compressing data
+- [ ] Encrypting data
+
+#### Q. What is the purpose of MPI_Probe()?
+
+- [ ] To probe network connectivity
+- [x] To check for incoming messages without actually receiving them
+- [ ] To test if a process is alive
+- [ ] To measure network latency
+- [ ] To debug communication issues
+
+#### Q. What is "collective I/O" in MPI?
+
+- [ ] I/O performed by all processes
+- [x] Coordinated I/O operations where multiple processes combine their I/O requests for efficiency
+- [ ] Writing to a shared file
+- [ ] Reading from the network
+- [ ] Debugging I/O operations
+
+#### Q. What is the CAP theorem in distributed systems?
+
+- [ ] A theorem about data compression
+- [x] States that a distributed system can only guarantee two of three properties: Consistency, Availability, Partition tolerance
+- [ ] A theorem about CPU allocation
+- [ ] A security theorem
+- [ ] A theorem about caching
+
+#### Q. What is "eventual consistency" in distributed systems?
+
+- [ ] Consistency that takes forever
+- [x] A model where replicas will eventually converge to the same value if no new updates occur
+- [ ] Inconsistent data
+- [ ] Real-time consistency
+- [ ] A debugging concept

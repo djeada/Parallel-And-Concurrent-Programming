@@ -203,3 +203,75 @@ Test your understanding of processes, inter-process communication, and process m
 - [ ] The memory sharing between processes
 - [ ] The priority level of a process
 - [ ] The relationship between parent and child processes
+
+#### Q. What is the difference between a "signal" and a "message" in IPC?
+
+- [ ] Signals are faster than messages
+- [x] Signals are asynchronous notifications; messages are data exchanges
+- [ ] Messages can only be sent between threads
+- [ ] There is no difference
+- [ ] Signals can carry more data
+
+#### Q. What is a "semaphore" in the context of multiprocessing?
+
+- [ ] A type of process
+- [x] A synchronization primitive that controls access to shared resources using a counter
+- [ ] A signal sent between processes
+- [ ] A memory region shared between processes
+- [ ] A process priority mechanism
+
+#### Q. What is "process priority" and how does it affect scheduling?
+
+- [ ] Priority determines which process starts first
+- [x] Higher priority processes get more CPU time and are scheduled more frequently
+- [ ] Priority determines how much memory a process gets
+- [ ] Priority only affects I/O operations
+- [ ] All processes have the same priority
+
+#### Q. What is a "named pipe" (FIFO)?
+
+- [ ] A pipe that has been given a string name
+- [x] A pipe that exists as a file in the filesystem and can be used between unrelated processes
+- [ ] A faster type of pipe
+- [ ] A pipe used only for text data
+- [ ] A pipe that only works on Windows
+
+#### Q. What is the purpose of os.fork() in Python?
+
+- [ ] To split a file in half
+- [ ] To create a new thread
+- [x] To create a new child process that is a copy of the parent
+- [ ] To fork the execution path
+- [ ] To handle exceptions
+
+#### Q. What is "memory-mapped file" and how is it used in IPC?
+
+- [ ] A file stored in memory instead of disk
+- [x] A technique where a file is mapped to memory allowing multiple processes to share data
+- [ ] A compressed file format
+- [ ] A backup of memory to disk
+- [ ] An encrypted file system
+
+#### Q. What is the difference between kill() and terminate() in Python's multiprocessing?
+
+- [ ] kill() is gentler than terminate()
+- [ ] terminate() is deprecated
+- [x] kill() sends SIGKILL (force stop); terminate() sends SIGTERM (request stop)
+- [ ] They are the same
+- [ ] kill() is for threads; terminate() is for processes
+
+#### Q. What is a "process lock" (multiprocessing.Lock)?
+
+- [ ] A lock that prevents process creation
+- [x] A synchronization primitive to ensure only one process accesses a resource at a time
+- [ ] A security feature for processes
+- [ ] A lock on process termination
+- [ ] A debugging tool
+
+#### Q. What are the limitations of shared memory in multiprocessing?
+
+- [ ] It's slower than message passing
+- [ ] It can only share strings
+- [x] It requires explicit synchronization and can lead to race conditions if not managed properly
+- [ ] It only works on Linux
+- [ ] It's deprecated in Python 3
