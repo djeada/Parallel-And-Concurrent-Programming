@@ -80,15 +80,18 @@ def main():
     print(f"Process {rank}: my_data = {my_data}")
 
     # Pass data around the ring, accumulating all values
+    # After each step, data has moved one position clockwise
     send_data = my_data
     for step in range(size - 1):
         recv_data = comm.sendrecv(send_data, dest=right, source=left, sendtag=TAG, recvtag=TAG)
 
-        # Store received data in the correct position
+        # Calculate which rank originally produced this data:
+        # After (step+1) hops clockwise, data from rank X arrives at rank (X + step + 1) % size
+        # So if we're at 'rank', the data came from (rank - step - 1 + size) % size
         source_rank = (rank - step - 1 + size) % size
         all_data[source_rank] = recv_data
 
-        # Pass along what we received
+        # Pass along what we received (relay to next process)
         send_data = recv_data
 
     # Each process now has all data
