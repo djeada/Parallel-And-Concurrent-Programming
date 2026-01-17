@@ -1,62 +1,69 @@
+"""
+Point-to-Point Communication
+
+This example demonstrates basic point-to-point communication using
+comm.send() and comm.recv(). These are blocking operations - the sender
+waits until the message is safely buffered, and the receiver waits
+until the message arrives.
+
+Key concepts:
+- comm.send(data, dest, tag): Blocking send operation
+- comm.recv(source, tag): Blocking receive operation
+- Message envelope: (source, destination, tag, communicator)
+- Python objects are automatically serialized (pickled)
+
+Note: mpi4py provides lowercase methods (send/recv) for Python objects
+and uppercase methods (Send/Recv) for numpy arrays with better performance.
+
+Run: mpirun -np 2 python point_to_point_communication.py
+"""
+
 from mpi4py import MPI
 
-# Initialize the MPI communication world
-comm = MPI.COMM_WORLD
 
-# Get the rank (ID) of the current process
-rank = comm.rank
+def main():
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    size = comm.Get_size()
 
-# Print a greeting from each process
-print(f"Hello from process {rank}")
+    if size < 2:
+        if rank == 0:
+            print("Error: This program requires at least 2 processes.")
+        return
 
-# Process with rank 0 sends an integer to process with rank 4
-if rank == 0:
-    data = 10000000  # Data to be sent
-    destination_process = 4  # Destination process rank
-    comm.send(data, dest=destination_process)
-    print(f"Process {rank} sent {data} to process {destination_process}")
+    TAG = 0
 
-# Process with rank 1 sends a string to process with rank 8
-if rank == 1:
-    data = "hello"  # Data to be sent
-    destination_process = 8  # Destination process rank
-    comm.send(data, dest=destination_process)
-    print(f"Process {rank} sent {data} to process {destination_process}")
+    if rank == 0:
+        # Process 0 sends data to process 1
+        data = {"value": 42, "message": "Hello from process 0"}
+        print(f"Process 0: Sending {data} to process 1")
 
-# Process with rank 4 receives data from process with rank 0
-if rank == 4:
-    source_process = 0  # Source process rank
-    data = comm.recv(source=source_process)
-    print(f"Process {rank} received {data} from process {source_process}")
+        comm.send(data, dest=1, tag=TAG)
+        print("Process 0: Message sent successfully")
 
-# Process with rank 8 receives data from process with rank 1
-if rank == 8:
-    source_process = 1  # Source process rank
-    data = comm.recv(source=source_process)
-    print(f"Process {rank} received {data} from process {source_process}")
+    elif rank == 1:
+        # Process 1 receives data from process 0
+        data = comm.recv(source=0, tag=TAG)
+        print(f"Process 1: Received {data} from process 0")
 
-# Barrier to synchronize processes
-comm.Barrier()
-print(f"Process {rank} has reached the barrier")
+    # Demonstrate sending different data types
+    if rank == 0:
+        # Send various Python objects
+        comm.send([1, 2, 3, 4, 5], dest=1, tag=1)  # List
+        comm.send("Hello MPI!", dest=1, tag=2)     # String
+        comm.send(3.14159, dest=1, tag=3)          # Float
+        print("Process 0: Sent list, string, and float to process 1")
 
-# Process with rank 0 broadcasts a message to all other processes
-if rank == 0:
-    broadcast_data = "Broadcasting from master"
-else:
-    broadcast_data = None  # Placeholder for other processes
+    elif rank == 1:
+        # Receive the data
+        list_data = comm.recv(source=0, tag=1)
+        string_data = comm.recv(source=0, tag=2)
+        float_data = comm.recv(source=0, tag=3)
 
-# Broadcasting the message from process 0 to all processes
-broadcast_data = comm.bcast(broadcast_data, root=0)
-print(f"Process {rank} received broadcast data: {broadcast_data}")
+        print(f"Process 1: Received list: {list_data}")
+        print(f"Process 1: Received string: {string_data}")
+        print(f"Process 1: Received float: {float_data}")
 
-# More complex example: gathering data from all processes at process with rank 0
-data = rank * 2  # Each process generates its own data
 
-# Collect all data at the master process (rank 0)
-gathered_data = comm.gather(data, root=0)
-
-if rank == 0:
-    print(f"Master process gathered data: {gathered_data}")
-
-# Finalize the MPI environment (optional, done automatically at the end of the script)
-MPI.Finalize()
+if __name__ == "__main__":
+    main()
