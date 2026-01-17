@@ -36,7 +36,8 @@ int main() {
         // Child process
         std::cout << "Child: PID=" << getpid() << "\n";
         std::cout << "Child: Exiting immediately\n";
-        // Child exits - becomes zombie until parent waits
+        // Use _exit() instead of exit() to avoid calling atexit handlers
+        // and flushing stdio buffers that were inherited from parent
         _exit(42);
     } else {
         // Parent process

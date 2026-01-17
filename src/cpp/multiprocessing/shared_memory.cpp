@@ -48,15 +48,27 @@ void decrementer(int* shared_value, sem_t* sem) {
 int main() {
     // Create shared memory
     int shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
+    if (shm_fd == -1) {
+        perror("shm_open");
+        return 1;
+    }
     ftruncate(shm_fd, sizeof(int));
 
     int* shared_value = static_cast<int*>(
         mmap(nullptr, sizeof(int), PROT_READ | PROT_WRITE,
              MAP_SHARED, shm_fd, 0));
+    if (shared_value == MAP_FAILED) {
+        perror("mmap");
+        return 1;
+    }
     *shared_value = 0;
 
     // Create semaphore for synchronization
     sem_t* sem = sem_open(SEM_NAME, O_CREAT, 0666, 1);
+    if (sem == SEM_FAILED) {
+        perror("sem_open");
+        return 1;
+    }
 
     pid_t pid = fork();
 
