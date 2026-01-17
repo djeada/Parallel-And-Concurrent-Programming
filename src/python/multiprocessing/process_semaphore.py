@@ -17,8 +17,9 @@ Use Cases:
 - Managing access to limited hardware resources
 - Implementing worker pools with bounded concurrency
 
-Note: This example uses Pool.starmap which may have issues passing
-Semaphore objects. Consider using initializer pattern for production code.
+Note: This example passes the Semaphore directly to child processes, which
+works on Unix (fork) but may have issues on Windows (spawn). For cross-platform
+production code, use an initializer function to set up global semaphores.
 """
 
 import multiprocessing

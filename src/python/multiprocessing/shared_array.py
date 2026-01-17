@@ -11,9 +11,9 @@ Key Concepts:
 - Access elements using index notation or iteration
 - Consider using Lock for thread-safe modification
 
-Warning:
-This example runs indefinitely with two processes modifying the same array.
-Use Ctrl+C to terminate. Without proper locking, race conditions may occur.
+Note:
+This example runs two processes that modify the same array for a fixed
+number of iterations. Without proper locking, race conditions may occur.
 
 For numpy arrays, consider multiprocessing.shared_memory (Python 3.8+)
 or numpy.memmap for more efficient shared array operations.

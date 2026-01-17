@@ -37,7 +37,7 @@ def main():
         print(f"Child process (PID: {os.getpid()}) started.")
         time.sleep(2)
         print(f"Child process (PID: {os.getpid()}) finished.")
-        sys.exit(0)  # Child terminates but parent doesn't reap it
+        sys.exit()  # Child terminates but parent doesn't reap it
     else:
         # Parent process
         print(f"Parent process (PID: {os.getpid()}) started.")
