@@ -1,18 +1,30 @@
 """
-This script demonstrates how to use multithreading to fetch web pages in parallel
-and compares it with non-concurrent fetching.
-Multiple threads are created, each responsible for fetching a specific URL.
+Parallel Web Fetching Example
 
-Each thread runs a function `fetch_url`, which fetches the content of the URL and
-calculates its length. The results are stored in a shared dictionary, which is
-protected by a Lock to avoid race conditions.
+This script demonstrates how multithreading can significantly speed up I/O-bound
+operations like fetching web pages. It compares sequential vs concurrent fetching
+to show the performance benefits.
+
+Key Concepts:
+- I/O-bound tasks (network, disk) benefit greatly from threading
+- Threads waiting for I/O don't block other threads
+- Use Lock to protect shared data structures
+- Threading is ideal for network operations despite Python's GIL
+
+Performance:
+- Sequential: Total time ≈ sum of all request times
+- Concurrent: Total time ≈ max(individual request times)
+
+Note: For CPU-bound tasks, consider multiprocessing instead due to the GIL.
+For async I/O, consider asyncio as an alternative approach.
 """
 
-import requests
-from threading import Thread, Lock
 import time
+from threading import Thread, Lock
 
-urls = [
+import requests
+
+URLS = [
     "https://www.example.com",
     "https://www.example.org",
     "https://www.example.net",
@@ -24,6 +36,7 @@ lock = Lock()
 
 
 def fetch_url(url):
+    """Fetch a URL and store the content length in results."""
     response = requests.get(url)
     content_length = len(response.content)
 
@@ -33,10 +46,11 @@ def fetch_url(url):
 
 
 def non_concurrent_fetch():
+    """Fetch all URLs sequentially for comparison."""
     non_concurrent_results = {}
     start_time = time.time()
 
-    for url in urls:
+    for url in URLS:
         response = requests.get(url)
         content_length = len(response.content)
         non_concurrent_results[url] = content_length
@@ -46,7 +60,7 @@ def non_concurrent_fetch():
     print(f"Non-concurrent time taken: {time.time() - start_time:.2f} seconds")
 
 
-if __name__ == "__main__":
+def main():
     # Non-concurrent fetching
     non_concurrent_fetch()
 
@@ -54,7 +68,7 @@ if __name__ == "__main__":
     start_time = time.time()
     threads = []
 
-    for url in urls:
+    for url in URLS:
         thread = Thread(target=fetch_url, args=(url,))
         thread.start()
         threads.append(thread)
@@ -64,3 +78,7 @@ if __name__ == "__main__":
 
     print(f"Concurrent results: {results}")
     print(f"Concurrent time taken: {time.time() - start_time:.2f} seconds")
+
+
+if __name__ == "__main__":
+    main()
