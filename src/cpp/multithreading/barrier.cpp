@@ -1,89 +1,116 @@
-#include <thread>
-#include <mutex>
-#include <iostream>
-#include <vector>
+/**
+ * Barrier Synchronization
+ *
+ * This example demonstrates a barrier - a synchronization primitive that
+ * blocks threads until a specified number of threads have reached it.
+ * All threads then proceed simultaneously.
+ *
+ * Key concepts:
+ * - Barriers synchronize a group of threads at a specific point
+ * - All threads must reach the barrier before any can proceed
+ * - Useful for phased computations where all threads must complete
+ *   one phase before starting the next
+ *
+ * Note: C++20 provides std::barrier, but this shows the underlying mechanism.
+ */
+
 #include <condition_variable>
-#include <atomic>
+#include <iostream>
+#include <mutex>
+#include <thread>
+#include <vector>
 
-// Global task counter
-unsigned int task_counter = 1; // start with one task completed
-std::mutex counter_mutex;
-
-// Barrier implementation using condition variable
+/**
+ * A reusable barrier that blocks threads until count threads arrive.
+ * Uses generation counting to support multiple wait cycles.
+ */
 class Barrier {
 public:
-    explicit Barrier(std::size_t count) : threshold(count), count(count), generation(0) {}
-    void wait();
+    explicit Barrier(std::size_t count)
+        : threshold_(count), count_(count), generation_(0) {}
+
+    void wait() {
+        std::unique_lock<std::mutex> lock(mutex_);
+        auto current_gen = generation_;
+
+        if (--count_ == 0) {
+            // Last thread to arrive - reset and release all
+            ++generation_;
+            count_ = threshold_;
+            cv_.notify_all();
+        } else {
+            // Wait until generation changes (all threads arrived)
+            cv_.wait(lock, [this, current_gen] {
+                return current_gen != generation_;
+            });
+        }
+    }
 
 private:
-    std::mutex mutex;
-    std::condition_variable cv;
-    const std::size_t threshold;
-    std::size_t count;
-    std::size_t generation;
+    std::mutex mutex_;
+    std::condition_variable cv_;
+    const std::size_t threshold_;
+    std::size_t count_;
+    std::size_t generation_;
 };
 
-void Barrier::wait() {
-    std::unique_lock<std::mutex> lock(mutex);
-    auto gen = generation;
-    if (--count == 0) {
-        generation++;
-        count = threshold;
-        cv.notify_all();
-    } else {
-        cv.wait(lock, [this, gen] { return gen != generation; });
+// Shared state protected by mutex
+unsigned int task_counter = 1;
+std::mutex counter_mutex;
+
+// Simulate some CPU work
+void simulate_work() {
+    volatile unsigned long x = 0;
+    for (unsigned long i = 0; i < 1'000'000; ++i) {
+        ++x;
     }
 }
 
-// Simulate CPU work
-void cpu_work(unsigned long workUnits) {
-    unsigned long x = 0;
-    for (unsigned long i = 0; i < workUnits * 1000000; i++) {
-        x++;
-    }
-}
+void worker_a(Barrier& barrier, int id) {
+    simulate_work();
 
-// Worker A function
-void worker_a(Barrier &barrier) {
-    cpu_work(1); // Perform some initial work
-    barrier.wait(); // Wait for other threads to reach this point
+    // Wait for ALL threads to reach this point
+    barrier.wait();
+
+    // After barrier: all threads proceed together
     {
         std::scoped_lock lock(counter_mutex);
-        task_counter *= 2; // Double the task counter
-        std::cout << "Worker A DOUBLED the task counter.\n";
+        task_counter *= 2;
+        std::cout << "Worker A-" << id << " DOUBLED the counter.\n";
     }
 }
 
-// Worker B function
-void worker_b(Barrier &barrier) {
-    cpu_work(1); // Perform some initial work
+void worker_b(Barrier& barrier, int id) {
+    simulate_work();
+
     {
         std::scoped_lock lock(counter_mutex);
-        task_counter += 3; // Add 3 to the task counter
-        std::cout << "Worker B ADDED 3 to the task counter.\n";
+        task_counter += 3;
+        std::cout << "Worker B-" << id << " ADDED 3 to the counter.\n";
     }
-    barrier.wait(); // Wait for other threads to reach this point
+
+    // Wait for ALL threads to reach this point
+    barrier.wait();
 }
 
 int main() {
-    Barrier sync_point(10); // Barrier for 10 threads
+    constexpr int num_threads = 10;
+    Barrier sync_point(num_threads);
 
-    // Create a vector to hold worker threads
     std::vector<std::thread> workers;
+    workers.reserve(num_threads);
 
-    // Launch worker threads
-    for (int i = 0; i < 10; i += 2) {
-        workers.emplace_back(worker_a, std::ref(sync_point));
-        workers.emplace_back(worker_b, std::ref(sync_point));
+    // Launch alternating worker types
+    for (int i = 0; i < num_threads; i += 2) {
+        workers.emplace_back(worker_a, std::ref(sync_point), i);
+        workers.emplace_back(worker_b, std::ref(sync_point), i + 1);
     }
 
-    // Join all threads
-    for (auto& worker : workers) {
-        worker.join();
+    for (auto& w : workers) {
+        w.join();
     }
 
-    // Output the final task counter value
-    std::cout << "Total task counter is " << task_counter << ".\n";
+    std::cout << "Final counter value: " << task_counter << "\n";
 
     return 0;
 }
