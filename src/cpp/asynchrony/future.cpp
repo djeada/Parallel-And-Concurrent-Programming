@@ -1,18 +1,40 @@
-#include <future>
-#include <cstdio>
-#include <thread>
+/**
+ * Simple Future Example
+ *
+ * This example demonstrates the basic usage of std::future
+ * to retrieve a result from an async task.
+ *
+ * Key concepts:
+ * - std::async launches work in a background thread
+ * - std::future holds the eventual result
+ * - Main thread can continue while work progresses
+ * - future.get() blocks until result is ready
+ *
+ * This is the simplest pattern for async result retrieval.
+ */
+
 #include <chrono>
+#include <future>
+#include <iostream>
+#include <thread>
 
 int process_task() {
-    printf("Worker is processing tasks...\n");
-    std::this_thread::sleep_for(std::chrono::seconds(3));
+    std::cout << "Worker processing...\n";
+    std::this_thread::sleep_for(std::chrono::seconds(2));
     return 42;
 }
 
 int main() {
-    printf("Manager asks Worker how many tasks have been processed.\n");
+    std::cout << "Starting async task\n";
+
     std::future<int> result = std::async(std::launch::async, process_task);
-    printf("Manager can do other things while waiting for the result...\n");
-    printf("Worker responded with %d tasks completed.\n", result.get());
+
+    std::cout << "Main thread can do other work...\n";
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::cout << "Waiting for result...\n";
+
+    int value = result.get();  // Blocks until ready
+    std::cout << "Result: " << value << "\n";
+
     return 0;
 }
