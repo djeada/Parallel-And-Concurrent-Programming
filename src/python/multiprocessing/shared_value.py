@@ -1,11 +1,22 @@
 """
-This script demonstrates the use of a shared value between multiple processes in Python
-using the `Value` class from the `multiprocessing` module. The `Value` class provides a simple
-and thread-safe way to share a single value between processes.
+Shared Value Example
 
-In this example, we create two processes: an incrementer and a decrementer. The incrementer increases
-the shared value by 1, while the decrementer decreases the shared value by 1. We use a lock to ensure
-that the operations on the shared value are synchronized and prevent race conditions.
+This script demonstrates sharing a single value between processes using
+multiprocessing.Value. This provides a fast, low-level way to share
+primitive data types across processes using shared memory.
+
+Key Concepts:
+- Value creates a ctypes object in shared memory
+- Type codes: 'i' (int), 'd' (double), 'c' (char), etc.
+- Access the value using .value attribute
+- Use Lock for thread-safe access when multiple processes modify the value
+
+When to Use:
+- Sharing simple values (counters, flags, status indicators)
+- When performance is critical (faster than Queue/Manager)
+- When you need atomic read-modify-write operations
+
+For complex data structures, consider using Manager instead.
 """
 
 import multiprocessing
@@ -13,6 +24,7 @@ import time
 
 
 def incrementer(shared_value, lock):
+    """Increment the shared value 5 times."""
     for _ in range(5):
         with lock:
             shared_value.value += 1
@@ -21,6 +33,7 @@ def incrementer(shared_value, lock):
 
 
 def decrementer(shared_value, lock):
+    """Decrement the shared value 5 times."""
     for _ in range(5):
         with lock:
             shared_value.value -= 1
@@ -29,9 +42,9 @@ def decrementer(shared_value, lock):
 
 
 def main():
-    shared_value = multiprocessing.Value(
-        "i", 0
-    )  # Initialize an integer shared value with the initial value of 0
+    # Initialize an integer shared value with value 0
+    # 'i' = signed integer, see ctypes for other type codes
+    shared_value = multiprocessing.Value("i", 0)
     lock = multiprocessing.Lock()
 
     incrementer_process = multiprocessing.Process(
