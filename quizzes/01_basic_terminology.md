@@ -231,10 +231,10 @@ Test your understanding of fundamental concepts in parallel and concurrent progr
 - [ ] Concurrency only applies to distributed systems
 - [ ] Parallelism is only possible with GPUs
 
-#### Q. What does mutual exclusion guarantee?
+#### Q. What does a deadlock require to occur?
 
-- [ ] No two processes exist at the same time
-- [x] Only one thread enters a critical section at a time
-- [ ] Memory is always shared between threads
-- [ ] Threads never block on I/O
-- [ ] Schedulers never preempt threads
+- [x] Mutual exclusion, hold-and-wait, no preemption, and circular wait
+- [ ] Mutual exclusion alone
+- [ ] Only circular wait and preemption
+- [ ] Only preemption and no waiting
+- [ ] Only resource abundance
