@@ -489,3 +489,11 @@ Test your understanding of threads, synchronization primitives, and thread manag
 - [ ] When thread priorities are randomly shuffled
 - [ ] When all threads run at the same priority
 - [ ] When a thread's priority increases without reason
+
+#### Q. What is a thread pool best suited for?
+
+- [ ] Single long-running task
+- [ ] Tasks requiring exclusive hardware access
+- [x] Many short-lived tasks to amortize creation overhead
+- [ ] Tasks that must run sequentially
+- [ ] Tasks that cannot be parallelized

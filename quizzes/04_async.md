@@ -307,3 +307,11 @@ Test your understanding of async/await, coroutines, event loops, and futures.
 - [ ] Blocking I/O is automatically converted to non-blocking by asyncio
 - [ ] Blocking I/O always raises an exception in async code
 - [ ] Blocking I/O cannot occur in async programs
+
+#### Q. What is the benefit of using gather() with return_exceptions=True?
+
+- [ ] It cancels all tasks on first success
+- [x] It lets other tasks continue and collects exceptions instead of failing immediately
+- [ ] It retries failed tasks automatically
+- [ ] It enforces execution order
+- [ ] It converts exceptions to log messages only

@@ -301,3 +301,11 @@ Test your understanding of performance metrics, speedup, efficiency, and scaling
 - [ ] Reducing workload size while reducing processor count
 - [ ] Measuring performance by decreasing processors gradually
 - [ ] Scaling only memory bandwidth
+
+#### Q. What is "weak scaling"?
+
+- [ ] Keeping workload fixed while reducing processors
+- [x] Increasing workload size proportionally with processor count to keep work per processor constant
+- [ ] Running fewer processors for the same workload
+- [ ] Decreasing workload as processors increase
+- [ ] Ignoring communication costs when scaling

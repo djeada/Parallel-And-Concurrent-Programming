@@ -291,3 +291,11 @@ Test your understanding of distributed systems, message passing, and MPI concept
 - [ ] Replication removes the need for fault tolerance
 - [ ] Replication eliminates the need for synchronization
 - [ ] Replication only benefits write-heavy workloads
+
+#### Q. What is sharding?
+
+- [ ] Replicating the same data to multiple nodes
+- [x] Partitioning data horizontally across nodes to scale writes and storage
+- [ ] Compressing data before storage
+- [ ] Encrypting data across nodes
+- [ ] Caching data at the edge only

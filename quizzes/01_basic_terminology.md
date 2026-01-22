@@ -230,3 +230,11 @@ Test your understanding of fundamental concepts in parallel and concurrent progr
 - [x] Concurrency is about dealing with multiple tasks at once, parallelism is about executing multiple tasks simultaneously
 - [ ] Concurrency only applies to distributed systems
 - [ ] Parallelism is only possible with GPUs
+
+#### Q. What does mutual exclusion guarantee?
+
+- [ ] No two processes exist at the same time
+- [x] Only one thread enters a critical section at a time
+- [ ] Memory is always shared between threads
+- [ ] Threads never block on I/O
+- [ ] Schedulers never preempt threads
