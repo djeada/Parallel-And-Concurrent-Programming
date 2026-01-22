@@ -299,3 +299,11 @@ Test your understanding of async/await, coroutines, event loops, and futures.
 - [ ] To cancel timeouts
 - [ ] To extend timeout values
 - [ ] To log timeout information
+
+#### Q. What is a potential pitfall when mixing blocking I/O with an async event loop?
+
+- [ ] Blocking I/O will make coroutines run faster
+- [x] Blocking calls can freeze the event loop, preventing other coroutines from running
+- [ ] Blocking I/O is automatically converted to non-blocking by asyncio
+- [ ] Blocking I/O always raises an exception in async code
+- [ ] Blocking I/O cannot occur in async programs

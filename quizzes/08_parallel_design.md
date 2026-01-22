@@ -44,6 +44,14 @@ Test your understanding of parallel algorithm design, decomposition strategies, 
 - [x] communication
 - [ ] synchronization
 
+#### Q. Which decomposition strategy divides work based on the data each task processes?
+
+- [ ] functional decomposition
+- [x] data decomposition
+- [ ] recursive decomposition
+- [ ] speculative decomposition
+- [ ] pipeline decomposition
+
 #### Q. Which stage of the parallel design process focuses on specifying where each task will execute?
 
 - [ ] communication

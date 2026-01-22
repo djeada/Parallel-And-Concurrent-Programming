@@ -222,3 +222,11 @@ Test your understanding of fundamental concepts in parallel and concurrent progr
 - [ ] The order in which code is written
 - [ ] The order in which functions are called
 - [ ] A compilation order constraint
+
+#### Q. Which statement best distinguishes concurrency from parallelism?
+
+- [ ] Concurrency always runs tasks at the same time
+- [ ] Parallelism means tasks never overlap
+- [x] Concurrency is about dealing with multiple tasks at once, parallelism is about executing multiple tasks simultaneously
+- [ ] Concurrency only applies to distributed systems
+- [ ] Parallelism is only possible with GPUs
