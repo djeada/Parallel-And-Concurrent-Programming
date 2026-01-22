@@ -283,3 +283,19 @@ Test your understanding of distributed systems, message passing, and MPI concept
 - [ ] Inconsistent data
 - [ ] Real-time consistency
 - [ ] A debugging concept
+
+#### Q. What is a primary trade-off when using replication in distributed systems?
+
+- [ ] Replication always reduces latency
+- [x] Replication improves availability and read performance but can increase consistency overhead
+- [ ] Replication removes the need for fault tolerance
+- [ ] Replication eliminates the need for synchronization
+- [ ] Replication only benefits write-heavy workloads
+
+#### Q. What is sharding?
+
+- [ ] Replicating the same data to multiple nodes
+- [x] Partitioning data horizontally across nodes to scale writes and storage
+- [ ] Compressing data before storage
+- [ ] Encrypting data across nodes
+- [ ] Caching data at the edge only

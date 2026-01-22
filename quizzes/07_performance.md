@@ -293,3 +293,19 @@ Test your understanding of performance metrics, speedup, efficiency, and scaling
 - [ ] The speed of arithmetic operations
 - [ ] The number of arithmetic units
 - [ ] A measure of CPU capability
+
+#### Q. What is "strong scaling"?
+
+- [ ] Increasing both workload size and processor count together
+- [x] Keeping workload size fixed while increasing the number of processors to see speedup
+- [ ] Reducing workload size while reducing processor count
+- [ ] Measuring performance by decreasing processors gradually
+- [ ] Scaling only memory bandwidth
+
+#### Q. What is "weak scaling"?
+
+- [ ] Keeping workload fixed while reducing processors
+- [x] Increasing workload size proportionally with processor count to keep work per processor constant
+- [ ] Running fewer processors for the same workload
+- [ ] Decreasing workload as processors increase
+- [ ] Ignoring communication costs when scaling

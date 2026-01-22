@@ -44,6 +44,22 @@ Test your understanding of processes, inter-process communication, and process m
 - [ ] begin()
 - [ ] launch()
 
+#### Q. What is a key characteristic of processes compared to threads?
+
+- [ ] Processes always share the same address space
+- [x] Processes have separate address spaces, providing stronger isolation
+- [ ] Processes cannot communicate with each other
+- [ ] Processes never incur context-switch overhead
+- [ ] Processes must run on different machines
+
+#### Q. When is shared memory preferable over message passing between processes?
+
+- [ ] When processes run on different physical machines
+- [x] When high-throughput, low-latency communication on the same host is needed
+- [ ] When avoiding synchronization primitives
+- [ ] When messages must be persisted
+- [ ] When communication must traverse a network
+
 #### Q. What is the purpose of a Queue in multiprocessing?
 
 - [ ] To organize processes by priority

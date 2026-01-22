@@ -481,3 +481,19 @@ Test your understanding of threads, synchronization primitives, and thread manag
 - [ ] Threads creating too many child threads
 - [ ] A memory leak caused by threads
 - [ ] Threads consuming too much CPU
+
+#### Q. What is priority inversion?
+
+- [ ] When a low-priority thread always preempts high-priority threads
+- [x] When a low-priority thread holds a resource needed by a higher-priority thread, blocking it
+- [ ] When thread priorities are randomly shuffled
+- [ ] When all threads run at the same priority
+- [ ] When a thread's priority increases without reason
+
+#### Q. What is a thread pool best suited for?
+
+- [ ] Single long-running task
+- [ ] Tasks requiring exclusive hardware access
+- [x] Many short-lived tasks to amortize creation overhead
+- [ ] Tasks that must run sequentially
+- [ ] Tasks that cannot be parallelized

@@ -274,3 +274,19 @@ Test your understanding of parallel computing hardware, CPU architecture, and me
 - [ ] A graphics programming language
 - [ ] A type of GPU architecture
 - [ ] Graphics debugging
+
+#### Q. What is NUMA (Non-Uniform Memory Access)?
+
+- [ ] A cache coherence protocol
+- [x] A memory architecture where access time depends on the memory's proximity to a processor
+- [ ] A type of GPU memory
+- [ ] A network topology
+- [ ] A data compression scheme
+
+#### Q. What is memory bandwidth?
+
+- [ ] The amount of memory available
+- [x] The rate at which data can be read from or written to memory
+- [ ] The delay in accessing memory
+- [ ] The size of the CPU cache
+- [ ] The number of memory channels
