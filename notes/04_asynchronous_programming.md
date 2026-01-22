@@ -415,20 +415,20 @@ Here, `initial_task` runs asynchronously, and once it completes, `next_task` is 
 
 | No. | Filename                                                                                         | Description                                              |
 |-----|--------------------------------------------------------------------------------------------------|----------------------------------------------------------|
-| 1   | [01_basic_async.cpp](../src/cpp/asynchrony/01_basic_async.cpp) | Create and start a basic asynchronous task              |
-| 2   | [02_future_create_task.cpp](../src/cpp/asynchrony/02_future_create_task.cpp) | Create a task using Future and run it asynchronously     |
-| 3   | [03_future_read_result.cpp](../src/cpp/asynchrony/03_future_read_result.cpp) | Read the result of a completed Future task               |
-| 4   | [04_pause_resume.cpp](../src/cpp/asynchrony/04_pause_resume.cpp) | Pause and resume asynchronous tasks                      |
-| 5   | [05_run_heavy_functions.cpp](../src/cpp/asynchrony/05_run_heavy_functions.cpp) | Execute heavy functions asynchronously                   |
-| 6   | [06_data_sharing_queue.cpp](../src/cpp/asynchrony/06_data_sharing_queue.cpp) | Share data between asynchronous tasks using a Queue      |
-| 7   | [07_semaphore.cpp](../src/cpp/asynchrony/07_semaphore.cpp) | Control access to shared resources with a Semaphore      |
-| 8   | [08_producer_consumer.cpp](../src/cpp/asynchrony/08_producer_consumer.cpp) | Implement a producer-consumer pattern asynchronously     |
-| 9   | [09_fetch_parallel.cpp](../src/cpp/asynchrony/09_fetch_parallel.cpp) | Fetch data in parallel using async tasks                 |
-| 10  | [10_mutex.cpp](../src/cpp/asynchrony/10_mutex.cpp) | Use a Mutex to synchronize access to shared resources    |
-| 11  | [11_barrier.cpp](../src/cpp/asynchrony/11_barrier.cpp) | Synchronize multiple asynchronous tasks using a Barrier |
-| 12  | [12_async_generator.cpp](../src/cpp/asynchrony/12_async_generator.cpp) | Create and use asynchronous generators                   |
-| 13  | [13_async_server.cpp](../src/cpp/asynchrony/13_async_server.cpp) | Implement an asynchronous server                         |
-| 14  | [14_distributed_computing.cpp](../src/cpp/asynchrony/14_distributed_computing.cpp) | Demonstrate distributed computing with async tasks       |
+| 1   | [basic_async.cpp](../src/cpp/asynchrony/basic_async.cpp) | Create and start a basic asynchronous task              |
+| 2   | [future_task.cpp](../src/cpp/asynchrony/future_task.cpp) | Create a task using `std::future` and run it asynchronously |
+| 3   | [future.cpp](../src/cpp/asynchrony/future.cpp) | Read the result of a completed `std::future`             |
+| 4   | [pause_resume.cpp](../src/cpp/asynchrony/pause_resume.cpp) | Pause and resume asynchronous tasks                      |
+| 5   | [heavy_functions.cpp](../src/cpp/asynchrony/heavy_functions.cpp) | Execute heavy functions asynchronously                   |
+| 6   | [async_producer_consumer.cpp](../src/cpp/asynchrony/async_producer_consumer.cpp) | Implement a producer-consumer pattern asynchronously     |
+| 7   | [async_semaphore.cpp](../src/cpp/asynchrony/async_semaphore.cpp) | Control access to shared resources with a semaphore      |
+| 8   | [async_barrier.cpp](../src/cpp/asynchrony/async_barrier.cpp) | Synchronize multiple asynchronous tasks using a barrier  |
+| 9   | [parallel_fetch.cpp](../src/cpp/asynchrony/parallel_fetch.cpp) | Fetch data in parallel using async tasks                 |
+| 10  | [async_mutex.cpp](../src/cpp/asynchrony/async_mutex.cpp) | Use a mutex to synchronize access to shared resources    |
+| 11  | [coroutine_generator.cpp](../src/cpp/asynchrony/coroutine_generator.cpp) | Create and use asynchronous generators                   |
+| 12  | [async_server.cpp](../src/cpp/asynchrony/async_server.cpp) | Implement an asynchronous server                         |
+| 13  | [distributed_computing.cpp](../src/cpp/asynchrony/distributed_computing.cpp) | Demonstrate distributed computing with async tasks       |
+| 14  | [promise_future.cpp](../src/cpp/asynchrony/promise_future.cpp) | Use promises and futures to pass values between tasks    |
 
 #### Examples in Python
 
@@ -806,7 +806,7 @@ Using Promises or `async`/`await` leads to cleaner and more maintainable code co
 |-----|--------------------------------------------------------------------------------------------------|----------------------------------------------------------|
 | 1   | [01_basic_async.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/01_basic_async.js) | Create and start a basic asynchronous task              |
 | 2   | [02_future_create_task.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/02_future_create_task.js) | Create a task using Future and run it asynchronously     |
-| 3   | [03_future_read_result.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/03_future_read_result.js) | Read the result of a completed Future task               |
+| 3   | [03_future_callback.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/03_future_callback.js) | Read the result of a completed Future task               |
 | 4   | [04_pause_resume.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/04_pause_resume.js) | Pause and resume asynchronous tasks                      |
 | 5   | [05_run_heavy_functions.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/05_run_heavy_functions.js) | Execute heavy functions asynchronously                   |
 | 6   | [06_data_sharing_queue.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/06_data_sharing_queue.js) | Share data between asynchronous tasks using a Queue      |
