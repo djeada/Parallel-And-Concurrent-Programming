@@ -332,15 +332,15 @@ npm install -g clinic autocannon
 
 | Resource | Focus | Level |
 |----------|-------|-------|
-| [Operating Systems Concepts](https://www.personal.kent.edu/~rmuhamma/OpSystems/os.html) | Foundational OS knowledge | 🟢 Beginner |
-| [The Art of Computer Programming](https://www.oreilly.com/library/view/the-art-of/9780596802424/) | Algorithmic foundations | 🔴 Advanced |
+| [Operating Systems: Three Easy Pieces](https://pages.cs.wisc.edu/~remzi/OSTEP/) | Foundational OS knowledge | 🟢 Beginner |
+| [The Art of Computer Programming](https://www-cs-faculty.stanford.edu/~knuth/taocp.html) | Algorithmic foundations | 🔴 Advanced |
 | [Asynchronous Programming with C++](https://www.packtpub.com/) | Modern C++ async patterns | 🟡 Intermediate |
 
 ### 🎓 Academic Resources
 
 | Resource | Institution | Topics |
 |----------|-------------|--------|
-| [Parallel Programming Bootcamp](https://princetonuniversity.github.io/PUbootcamp/sessions/parallel-programming/) | Princeton University | Comprehensive parallel programming |
+| [Parallel Programming Bootcamp](https://cosmo.nyu.edu/nyu-cbi/resources/parallel-programming/) | NYU/Princeton | Comprehensive parallel programming |
 | [CS152 Computer Architecture](https://inst.eecs.berkeley.edu/~cs152/fa16/lectures/) | UC Berkeley | Hardware architecture insights |
 | [Concurrent Systems](https://w3.cs.jmu.edu/kirkpams/OpenCSF/Books/csf/html/) | JMU | Systems programming perspective |
 
@@ -360,13 +360,13 @@ npm install -g clinic autocannon
 
 - [C++ Concurrency in Action](https://www.manning.com/books/c-plus-plus-concurrency-in-action) - Comprehensive guide
 - [OpenMP Tutorial](https://computing.llnl.gov/tutorials/openMP/) - Parallel programming API
-- [Intel TBB Documentation](https://www.threadingbuildingblocks.org/) - Threading library
+- [Intel TBB Documentation](https://www.intel.com/content/www/us/en/developer/tools/oneapi/onetbb-documentation.html) - Threading library
 </details>
 
 <details>
 <summary><b>🟨 JavaScript Resources</b></summary>
 
-- [Node.js Async Patterns](https://www.cs.unb.ca/~bremner/teaching/cs2613/books/nodejs-api/) - Async programming
+- [Node.js Async Patterns](https://www.cs.unb.ca/~bremner/teaching/cs2613/) - Async programming
 - [Web Workers API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) - Browser parallelism
 - [Node.js Cluster Module](https://nodejs.org/api/cluster.html) - Multi-process Node.js
 </details>

@@ -415,20 +415,20 @@ Here, `initial_task` runs asynchronously, and once it completes, `next_task` is 
 
 | No. | Filename                                                                                         | Description                                              |
 |-----|--------------------------------------------------------------------------------------------------|----------------------------------------------------------|
-| 1   | [01_basic_async.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/01_basic_async.cpp) | Create and start a basic asynchronous task              |
-| 2   | [02_future_create_task.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/02_future_create_task.cpp) | Create a task using Future and run it asynchronously     |
-| 3   | [03_future_read_result.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/03_future_read_result.cpp) | Read the result of a completed Future task               |
-| 4   | [04_pause_resume.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/04_pause_resume.cpp) | Pause and resume asynchronous tasks                      |
-| 5   | [05_run_heavy_functions.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/05_run_heavy_functions.cpp) | Execute heavy functions asynchronously                   |
-| 6   | [06_data_sharing_queue.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/06_data_sharing_queue.cpp) | Share data between asynchronous tasks using a Queue      |
-| 7   | [07_semaphore.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/07_semaphore.cpp) | Control access to shared resources with a Semaphore      |
-| 8   | [08_producer_consumer.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/08_producer_consumer.cpp) | Implement a producer-consumer pattern asynchronously     |
-| 9   | [09_fetch_parallel.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/09_fetch_parallel.cpp) | Fetch data in parallel using async tasks                 |
-| 10  | [10_mutex.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/10_mutex.cpp) | Use a Mutex to synchronize access to shared resources    |
-| 11  | [11_barrier.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/11_barrier.cpp) | Synchronize multiple asynchronous tasks using a Barrier |
-| 12  | [12_async_generator.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/12_async_generator.cpp) | Create and use asynchronous generators                   |
-| 13  | [13_async_server.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/13_async_server.cpp) | Implement an asynchronous server                         |
-| 14  | [14_distributed_computing.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/14_distributed_computing.cpp) | Demonstrate distributed computing with async tasks       |
+| 1   | [01_basic_async.cpp](../src/cpp/asynchrony/01_basic_async.cpp) | Create and start a basic asynchronous task              |
+| 2   | [02_future_create_task.cpp](../src/cpp/asynchrony/02_future_create_task.cpp) | Create a task using Future and run it asynchronously     |
+| 3   | [03_future_read_result.cpp](../src/cpp/asynchrony/03_future_read_result.cpp) | Read the result of a completed Future task               |
+| 4   | [04_pause_resume.cpp](../src/cpp/asynchrony/04_pause_resume.cpp) | Pause and resume asynchronous tasks                      |
+| 5   | [05_run_heavy_functions.cpp](../src/cpp/asynchrony/05_run_heavy_functions.cpp) | Execute heavy functions asynchronously                   |
+| 6   | [06_data_sharing_queue.cpp](../src/cpp/asynchrony/06_data_sharing_queue.cpp) | Share data between asynchronous tasks using a Queue      |
+| 7   | [07_semaphore.cpp](../src/cpp/asynchrony/07_semaphore.cpp) | Control access to shared resources with a Semaphore      |
+| 8   | [08_producer_consumer.cpp](../src/cpp/asynchrony/08_producer_consumer.cpp) | Implement a producer-consumer pattern asynchronously     |
+| 9   | [09_fetch_parallel.cpp](../src/cpp/asynchrony/09_fetch_parallel.cpp) | Fetch data in parallel using async tasks                 |
+| 10  | [10_mutex.cpp](../src/cpp/asynchrony/10_mutex.cpp) | Use a Mutex to synchronize access to shared resources    |
+| 11  | [11_barrier.cpp](../src/cpp/asynchrony/11_barrier.cpp) | Synchronize multiple asynchronous tasks using a Barrier |
+| 12  | [12_async_generator.cpp](../src/cpp/asynchrony/12_async_generator.cpp) | Create and use asynchronous generators                   |
+| 13  | [13_async_server.cpp](../src/cpp/asynchrony/13_async_server.cpp) | Implement an asynchronous server                         |
+| 14  | [14_distributed_computing.cpp](../src/cpp/asynchrony/14_distributed_computing.cpp) | Demonstrate distributed computing with async tasks       |
 
 #### Examples in Python
 
@@ -606,20 +606,20 @@ In this example, `AsyncCounter` is an asynchronous iterable that generates numbe
 
 | No. | Filename                                                                                         | Description                                              |
 |-----|--------------------------------------------------------------------------------------------------|----------------------------------------------------------|
-| 1   | [basic_async.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/basic_async.py) | Create and start a basic asynchronous task              |
-| 2   | [future_create_task.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/future_create_task.py) | Create a task using Future and run it asynchronously     |
-| 3   | [future_callback.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/future_callback.py) | Use callbacks with Future objects               |
-| 4   | [pause_resume.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/pause_resume.py) | Pause and resume asynchronous tasks                      |
-| 5   | [run_heavy_functions.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/run_heavy_functions.py) | Execute heavy functions asynchronously                   |
-| 6   | [data_sharing_queue.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/data_sharing_queue.py) | Share data between asynchronous tasks using a Queue      |
-| 7   | [semaphore.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/semaphore.py) | Control access to shared resources with a Semaphore      |
-| 8   | [producer_consumer.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/producer_consumer.py) | Implement a producer-consumer pattern asynchronously     |
-| 9   | [fetch_parallel.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/fetch_parallel.py) | Fetch data in parallel using async tasks                 |
-| 10  | [mutex.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/mutex.py) | Use a Mutex to synchronize access to shared resources    |
-| 11  | [barrier.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/barrier.py) | Synchronize multiple asynchronous tasks using a Barrier |
-| 12  | [async_generator.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/async_generator.py) | Create and use asynchronous generators                   |
-| 13  | [async_server.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/async_server.py) | Implement an asynchronous server                         |
-| 14  | [distributed_computing.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/distributed_computing.py) | Demonstrate distributed computing with async tasks       |
+| 1   | [basic_async.py](../src/python/asynchrony/basic_async.py) | Create and start a basic asynchronous task              |
+| 2   | [future_create_task.py](../src/python/asynchrony/future_create_task.py) | Create a task using Future and run it asynchronously     |
+| 3   | [future_callback.py](../src/python/asynchrony/future_callback.py) | Use callbacks with Future objects               |
+| 4   | [pause_resume.py](../src/python/asynchrony/pause_resume.py) | Pause and resume asynchronous tasks                      |
+| 5   | [run_heavy_functions.py](../src/python/asynchrony/run_heavy_functions.py) | Execute heavy functions asynchronously                   |
+| 6   | [data_sharing_queue.py](../src/python/asynchrony/data_sharing_queue.py) | Share data between asynchronous tasks using a Queue      |
+| 7   | [semaphore.py](../src/python/asynchrony/semaphore.py) | Control access to shared resources with a Semaphore      |
+| 8   | [producer_consumer.py](../src/python/asynchrony/producer_consumer.py) | Implement a producer-consumer pattern asynchronously     |
+| 9   | [fetch_parallel.py](../src/python/asynchrony/fetch_parallel.py) | Fetch data in parallel using async tasks                 |
+| 10  | [mutex.py](../src/python/asynchrony/mutex.py) | Use a Mutex to synchronize access to shared resources    |
+| 11  | [barrier.py](../src/python/asynchrony/barrier.py) | Synchronize multiple asynchronous tasks using a Barrier |
+| 12  | [async_generator.py](../src/python/asynchrony/async_generator.py) | Create and use asynchronous generators                   |
+| 13  | [async_server.py](../src/python/asynchrony/async_server.py) | Implement an asynchronous server                         |
+| 14  | [distributed_computing.py](../src/python/asynchrony/distributed_computing.py) | Demonstrate distributed computing with async tasks       |
 
 #### Examples in JavaScript
 
