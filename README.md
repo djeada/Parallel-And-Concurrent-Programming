@@ -83,15 +83,15 @@ Progress through these topics to build a comprehensive understanding of parallel
 
 | # | Topic | Focus Area | Difficulty | Resource |
 |---|-------|------------|------------|----------|
-| 1️⃣ | **Foundations** | Basic terminology, processes vs threads, synchronization primitives | 🟢 Beginner | [Basic Terminology](notes/01_basic_terminology.md) |
-| 2️⃣ | **Multithreading** | Thread creation, management, synchronization, and safety patterns | 🟢 Beginner | [Multithreading](notes/02_multithreading.md) |
-| 3️⃣ | **Multiprocessing** | Process management, inter-process communication, shared memory | 🟡 Intermediate | [Multiprocessing](notes/03_multiprocessing.md) |
-| 4️⃣ | **Async Programming** | Event loops, async/await patterns, non-blocking I/O operations | 🟡 Intermediate | [Asynchronous Programming](notes/04_asynchronous_programming.md) |
-| 5️⃣ | **Distributed Computing** | Message Passing Interface (MPI), cluster computing, communication patterns | 🔴 Advanced | [MPI Programming](notes/05_mpi.md) |
-| 6️⃣ | **Hardware Architecture** | Multi-core systems, memory hierarchies, GPU computing, performance considerations | 🟡 Intermediate | [Hardware Foundations](notes/06_hardware.md) |
-| 7️⃣ | **Performance Evaluation** | Benchmarking, profiling, Amdahl's Law, speedup analysis | 🔴 Advanced | [Evaluating Performance](notes/07_evaluating_performance.md) |
-| 8️⃣ | **Parallel Design** | Design patterns, algorithms, load balancing, scalability | 🔴 Advanced | [Designing Parallel Programs](notes/08_designing_parallel_programs.md) |
-| 9️⃣ | **GPU Programming** | CUDA, OpenCL, GPU architectures, kernel optimization | 🔴 Advanced | [GPU Programming](notes/09_gpu_programming.md) |
+| 1️⃣ | **Foundations** | Basic terminology, processes vs threads, synchronization primitives | 🟢 Beginner | [Basic Terminology](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/notes/01_basic_terminology.md) |
+| 2️⃣ | **Multithreading** | Thread creation, management, synchronization, and safety patterns | 🟢 Beginner | [Multithreading](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/notes/02_multithreading.md) |
+| 3️⃣ | **Multiprocessing** | Process management, inter-process communication, shared memory | 🟡 Intermediate | [Multiprocessing](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/notes/03_multiprocessing.md) |
+| 4️⃣ | **Async Programming** | Event loops, async/await patterns, non-blocking I/O operations | 🟡 Intermediate | [Asynchronous Programming](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/notes/04_asynchronous_programming.md) |
+| 5️⃣ | **Distributed Computing** | Message Passing Interface (MPI), cluster computing, communication patterns | 🔴 Advanced | [MPI Programming](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/notes/05_mpi.md) |
+| 6️⃣ | **Hardware Architecture** | Multi-core systems, memory hierarchies, GPU computing, performance considerations | 🟡 Intermediate | [Hardware Foundations](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/notes/06_hardware.md) |
+| 7️⃣ | **Performance Evaluation** | Benchmarking, profiling, Amdahl's Law, speedup analysis | 🔴 Advanced | [Evaluating Performance](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/notes/07_evaluating_performance.md) |
+| 8️⃣ | **Parallel Design** | Design patterns, algorithms, load balancing, scalability | 🔴 Advanced | [Designing Parallel Programs](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/notes/08_designing_parallel_programs.md) |
+| 9️⃣ | **GPU Programming** | CUDA, OpenCL, GPU architectures, kernel optimization | 🔴 Advanced | [GPU Programming](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/notes/09_gpu_programming.md) |
 
 ### 🎯 Recommended Learning Sequence
 
@@ -190,14 +190,14 @@ Test your understanding with interactive quizzes for each topic:
 
 | Quiz | Topic | Questions | Link |
 |------|-------|-----------|------|
-| 📝 | Basic Terminology | Processes, threads, synchronization | [Quiz 1](quizzes/01_basic_terminology.md) |
-| 📝 | Threading Concepts | Thread safety, deadlocks, race conditions | [Quiz 2](quizzes/02_threading.md) |
-| 📝 | Process Management | IPC, shared memory, process pools | [Quiz 3](quizzes/03_processes.md) |
-| 📝 | Async Patterns | Event loops, futures, coroutines | [Quiz 4](quizzes/04_async.md) |
-| 📝 | Distributed Systems | MPI, communication patterns, synchronization | [Quiz 5](quizzes/05_distributed.md) |
-| 📝 | Hardware & Architecture | CPU caches, memory models, NUMA | [Quiz 6](quizzes/06_hardware.md) |
-| 📝 | Performance Analysis | Benchmarking, profiling, optimization | [Quiz 7](quizzes/07_performance.md) |
-| 📝 | Parallel Design Patterns | Algorithms, load balancing, scalability | [Quiz 8](quizzes/08_parallel_design.md) |
+| 📝 | Basic Terminology | Processes, threads, synchronization | [Quiz 1](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/quizzes/01_basic_terminology.md) |
+| 📝 | Threading Concepts | Thread safety, deadlocks, race conditions | [Quiz 2](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/quizzes/02_threading.md) |
+| 📝 | Process Management | IPC, shared memory, process pools | [Quiz 3](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/quizzes/03_processes.md) |
+| 📝 | Async Patterns | Event loops, futures, coroutines | [Quiz 4](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/quizzes/04_async.md) |
+| 📝 | Distributed Systems | MPI, communication patterns, synchronization | [Quiz 5](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/quizzes/05_distributed.md) |
+| 📝 | Hardware & Architecture | CPU caches, memory models, NUMA | [Quiz 6](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/quizzes/06_hardware.md) |
+| 📝 | Performance Analysis | Benchmarking, profiling, optimization | [Quiz 7](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/quizzes/07_performance.md) |
+| 📝 | Parallel Design Patterns | Algorithms, load balancing, scalability | [Quiz 8](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/quizzes/08_parallel_design.md) |
 
 ## 📊 Performance Analysis
 
@@ -207,12 +207,12 @@ Explore performance evaluation tools and scripts:
 
 | Script | Description | Concepts |
 |--------|-------------|----------|
-| 🎯 [Amdahl's Law](scripts/amdahls_law/) | Calculate theoretical speedup limits | Maximum speedup with parallel portions |
-| 🎯 [Gustafson's Law](scripts/gustafsons_law/) | Scaled speedup analysis | Speedup with increasing problem size |
-| 📈 [Speedup Efficiency](scripts/speedup_efficiency/) | Measure parallel efficiency | Strong vs weak scaling |
-| 🔄 [Communication Overhead](scripts/communication_overhead/) | Analyze synchronization costs | Network latency, bandwidth impact |
-| 🧩 [Granularity Analysis](scripts/granularity_analysis/) | Task size optimization | Fine-grained vs coarse-grained parallelism |
-| 💾 [Memory Bandwidth](scripts/memory_bandwidth/) | Memory system performance | Cache effects, bandwidth limitations |
+| 🎯 [Amdahl's Law](https://github.com/djeada/Parallel-And-Concurrent-Programming/tree/master/scripts/amdahls_law/) | Calculate theoretical speedup limits | Maximum speedup with parallel portions |
+| 🎯 [Gustafson's Law](https://github.com/djeada/Parallel-And-Concurrent-Programming/tree/master/scripts/gustafsons_law/) | Scaled speedup analysis | Speedup with increasing problem size |
+| 📈 [Speedup Efficiency](https://github.com/djeada/Parallel-And-Concurrent-Programming/tree/master/scripts/speedup_efficiency/) | Measure parallel efficiency | Strong vs weak scaling |
+| 🔄 [Communication Overhead](https://github.com/djeada/Parallel-And-Concurrent-Programming/tree/master/scripts/communication_overhead/) | Analyze synchronization costs | Network latency, bandwidth impact |
+| 🧩 [Granularity Analysis](https://github.com/djeada/Parallel-And-Concurrent-Programming/tree/master/scripts/granularity_analysis/) | Task size optimization | Fine-grained vs coarse-grained parallelism |
+| 💾 [Memory Bandwidth](https://github.com/djeada/Parallel-And-Concurrent-Programming/tree/master/scripts/memory_bandwidth/) | Memory system performance | Cache effects, bandwidth limitations |
 
 ### Performance Metrics
 
@@ -524,7 +524,7 @@ General guidelines:
 
 ## 📄 License
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License** - see the [LICENSE](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/LICENSE) file for details.
 
 ```
 MIT License - Free to use, modify, and distribute
