@@ -13,6 +13,10 @@ def find_markdown_links(content: str, filename: str) -> List[Tuple[int, str, str
     """
     Find all markdown links in content.
     Returns list of (line_number, link_text, link_url) tuples.
+    
+    Args:
+        content: The markdown file content
+        filename: The filename (used for error reporting)
     """
     links = []
     lines = content.split('\n')
@@ -20,9 +24,17 @@ def find_markdown_links(content: str, filename: str) -> List[Tuple[int, str, str
     # Pattern to match [text](url) markdown links
     link_pattern = re.compile(r'\[([^\]]+)\]\(([^)]+)\)')
     
+    # Track if we're inside a code block
+    in_code_block = False
+    
     for line_num, line in enumerate(lines, 1):
-        # Skip code blocks (lines with ```python```, etc.)
-        if '```' in line:
+        # Toggle code block state when we encounter ```
+        if line.strip().startswith('```'):
+            in_code_block = not in_code_block
+            continue
+        
+        # Skip lines inside code blocks
+        if in_code_block:
             continue
             
         for match in link_pattern.finditer(line):
@@ -50,18 +62,30 @@ def is_relative_link(url: str) -> bool:
     if url.startswith(('http://', 'https://', 'mailto:', 'ftp://')):
         return False
     
-    # Check for relative paths that point to repository content
+    # If it doesn't start with a protocol and isn't an anchor, it's likely relative
+    # Check for specific patterns that indicate repository content
     relative_patterns = [
         '../',  # Parent directory references
+        './',   # Current directory references
         'src/',  # Source code references
         'scripts/',  # Script references  
         'notes/',  # Notes references
-        './src/',  # Current directory + src
-        './scripts/',  # Current directory + scripts
-        './notes/',  # Current directory + notes
+        'quizzes/',  # Quiz references
+        'assets/',  # Asset references
+        'docs/',  # Documentation references
     ]
     
-    return any(url.startswith(pattern) for pattern in relative_patterns)
+    # Check if URL starts with any relative pattern
+    if any(url.startswith(pattern) for pattern in relative_patterns):
+        return True
+    
+    # Check for single file references without path (e.g., "README.md", "file.txt")
+    # These are relative if they have a file extension but no protocol
+    if '.' in url and '/' not in url.split('.')[0]:
+        # Likely a file reference like "README.md"
+        return True
+    
+    return False
 
 
 def validate_markdown_file(filepath: Path) -> List[Tuple[int, str, str]]:
