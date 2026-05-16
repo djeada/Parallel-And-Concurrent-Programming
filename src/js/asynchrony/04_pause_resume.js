@@ -6,7 +6,6 @@
  * 
  * Key concepts:
  * - setInterval/clearInterval for periodic tasks
- * - AbortController for cancellation (modern approach)
  * - User input handling with readline
  * - Graceful shutdown handling
  */

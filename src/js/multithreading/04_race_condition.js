@@ -1,16 +1,22 @@
 /*
- * Race Condition Demonstration
+ * ⚠️  ANTIPATTERN — Race Condition on Shared Counter
  *
- * This script demonstrates a classic race condition problem in multithreading.
- * Multiple workers attempt to read, modify, and write a shared counter without
- * proper synchronization, resulting in unpredictable final values.
+ * Multiple workers read, multiply, and write a shared counter without
+ * any synchronization.  The result is unpredictable: each run can produce
+ * a different final value.
  *
- * Key concepts:
- * - SharedArrayBuffer for shared memory between threads
- * - Race condition: multiple threads accessing shared data without synchronization
- * - Why the final value is unpredictable
+ * Why it races:
+ *   The sequence  load → compute → store  is not atomic.  Between
+ *   Thread A's load and its store, Thread B can load the same stale value
+ *   and overwrite A's result (or vice-versa).
  *
- * Compare with 05_mutex.js to see how to fix this issue.
+ * Note on SharedArrayBuffer:
+ *   SharedArrayBuffer lets workers share raw memory.  Without Atomics,
+ *   plain reads/writes are non-atomic and subject to data races even for
+ *   a single 32-bit integer.
+ *
+ * Fix: see 05_mutex.js, which protects the critical section with an
+ * Atomics-based mutex so only one thread updates the counter at a time.
  */
 
 "use strict";

@@ -55,17 +55,15 @@ const producer = async (queue, producerId, numItems) => {
   console.log(`  Producer ${producerId}: finished producing`);
 };
 
-const consumer = async (queue, consumerId, numItems) => {
+const consumer = async (queue, consumerId) => {
   let consumed = 0;
   
-  while (consumed < numItems) {
+  while (true) {
     const item = await queue.get();
     
-    // Check for poison pill (graceful termination signal)
+    // Poison pill signals this consumer to stop
     if (item === POISON_PILL) {
       console.log(`  Consumer ${consumerId}: received termination signal, stopping`);
-      // Re-insert poison pill for other consumers
-      queue.put(POISON_PILL);
       break;
     }
     
@@ -88,29 +86,34 @@ const main = async () => {
   const NUM_PRODUCERS = 3;
   const NUM_CONSUMERS = 3;
   const ITEMS_PER_PRODUCER = 4;
-  const ITEMS_PER_CONSUMER = 4;
 
   const queue = new AsyncQueue();
   const startTime = Date.now();
 
-  // Start producers
+  // Start consumers first so they are ready to receive
+  const consumers = Array.from({ length: NUM_CONSUMERS }, (_, i) =>
+    consumer(queue, i)
+  );
+
+  // Start producers concurrently
   const producers = Array.from({ length: NUM_PRODUCERS }, (_, i) =>
     producer(queue, i, ITEMS_PER_PRODUCER)
   );
 
-  // Start consumers
-  const consumers = Array.from({ length: NUM_CONSUMERS }, (_, i) =>
-    consumer(queue, i, ITEMS_PER_CONSUMER)
-  );
+  // Wait for all producers to finish, then send one poison pill per consumer
+  await Promise.all(producers);
+  for (let i = 0; i < NUM_CONSUMERS; i++) {
+    queue.put(POISON_PILL);
+  }
 
-  // Wait for all tasks to complete
-  await Promise.all([...producers, ...consumers]);
+  // Wait for all consumers to drain and exit
+  await Promise.all(consumers);
 
   const elapsed = Date.now() - startTime;
   console.log(`\n=== Summary ===`);
   console.log(`Total time: ${elapsed}ms`);
   console.log(`Producers: ${NUM_PRODUCERS}, each produced ${ITEMS_PER_PRODUCER} items`);
-  console.log(`Consumers: ${NUM_CONSUMERS}, each consumed ${ITEMS_PER_CONSUMER} items`);
+  console.log(`Consumers: ${NUM_CONSUMERS} total items consumed`);
   console.log(`Queue size at end: ${queue.size}`);
 };
 

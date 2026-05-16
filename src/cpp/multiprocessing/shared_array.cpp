@@ -1,21 +1,28 @@
 /**
- * Shared Array Between Processes
+ * ⚠️  ANTIPATTERN — Shared Array Without Synchronisation
  *
- * This example demonstrates sharing an array between processes
- * using anonymous shared memory (mmap with MAP_ANONYMOUS).
+ * Demonstrates anonymous shared memory (mmap MAP_ANONYMOUS) and the
+ * data races that occur when multiple processes modify it concurrently
+ * without any locking.
  *
- * Key concepts:
- * - MAP_ANONYMOUS creates shared memory without a file
- * - MAP_SHARED makes memory visible to child processes after fork()
- * - Array elements can be modified by any process with access
- * - Without synchronization, race conditions can occur
+ * MAP_ANONYMOUS concepts (the good part):
+ *   - mmap with MAP_SHARED | MAP_ANONYMOUS creates a shared region
+ *     visible to all processes that fork from the creator.
+ *   - Simpler than shm_open when only parent/child access is needed.
+ *   - No filesystem name; region is automatically cleaned up on exit.
  *
- * Anonymous shared memory is useful when:
- * - Only related processes (parent/child) need access
- * - You don't need persistence across program runs
- * - Cleanup happens automatically when all processes exit
+ * The race condition (the bad part):
+ *   - ++arr[i] is not atomic: it compiles to load → increment → store.
+ *   - Two processes can each load the same value, both increment, and
+ *     one of the stores is lost — final value is unpredictable.
+ *   - The final array values may be wrong and vary between runs.
  *
- * WARNING: This example has intentional race conditions for demonstration.
+ * Fix: use a pthread_mutex_t or sem_t in shared memory to protect each
+ * array element, or use a PTHREAD_PROCESS_SHARED rwlock.
+ * See shared_memory.cpp for the synchronized version with a semaphore.
+ *
+ * Compile:
+ *   g++ -std=c++17 -o shared_array shared_array.cpp
  */
 
 #include <iostream>

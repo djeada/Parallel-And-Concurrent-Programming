@@ -1,18 +1,19 @@
 /*
- * Deadlock Demonstration
+ * ⚠️  ANTIPATTERN: Deadlock
  *
- * This script demonstrates a deadlock situation in multiprocessing.
- * A deadlock occurs when two or more processes are waiting for each other
- * to release resources, creating a circular dependency that never resolves.
+ * This script demonstrates a deadlock: two processes each hold one lock and
+ * wait for a lock held by the other, creating a circular dependency that
+ * can never resolve on its own.
  *
  * Key concepts:
- * - Circular wait condition
- * - Resource acquisition order
+ * - Circular wait condition (the root cause of deadlock)
+ * - Resource acquisition order (consistent ordering prevents deadlock)
+ * - Deadlock detection via timeout
  * - Deadlock prevention strategies
  * - Message-based lock simulation
  *
- * WARNING: This script intentionally creates a deadlock for educational purposes.
- * It will hang indefinitely - use Ctrl+C to terminate.
+ * NOTE: This script intentionally deadlocks for educational purposes.
+ * It auto-terminates after DEADLOCK_TIMEOUT_MS ms via a detection timeout.
  */
 
 "use strict";

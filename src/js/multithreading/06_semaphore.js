@@ -1,15 +1,24 @@
 /*
  * Semaphore with Worker Threads
  *
- * This script demonstrates a semaphore implementation using Atomics.
- * A semaphore allows a limited number of threads to access a resource
- * concurrently (in this case, limit is 1, making it behave like a mutex).
+ * A counting semaphore limits the number of workers that may be inside a
+ * critical section simultaneously.  This example initialises the semaphore
+ * to 1 (binary semaphore / mutex-like), but the same pattern works for
+ * permits > 1.
  *
  * Key concepts:
- * - Atomics.wait: block until semaphore value > 0
- * - Atomics.sub/add: decrement/increment semaphore atomically
- * - Atomics.notify: wake up waiting threads
- * - Controlled access to shared resources
+ * - Atomics.compareExchange: atomic compare-and-swap for correct acquisition
+ * - Atomics.wait: block this worker thread until the semaphore is released
+ * - Atomics.notify: wake one waiting thread on release
+ * - Why load + sub is wrong (TOCTOU) and CAS is right
+ *
+ * Previous TOCTOU bug (now fixed):
+ *   while (load > 0) {}    // two threads both see > 0
+ *   Atomics.sub(...)       // both decrement → value goes negative, critical
+ *                          // section is entered by both
+ *
+ * Correct acquire: use compareExchange to atomically claim the decrement;
+ * only wait (blocking) when the permit count is actually 0.
  */
 
 "use strict";
@@ -53,6 +62,7 @@ if (isMainThread) {
         if (Atomics.load(doneCounterView, 0) === NUM_WORKERS) {
           console.log(`\n=== Results ===`);
           console.log(`Final counter value: ${counterView[0]}`);
+          workers.forEach((w) => w.terminate());
         }
       }
     });
@@ -84,13 +94,20 @@ if (isMainThread) {
 
       const processIterations = async () => {
         for (let i = 0; i < iterations; i++) {
-          // Wait for semaphore (wait while value is 0)
-          while (Atomics.load(semaphoreView, 0) <= 0) {
+          // Acquire semaphore with CAS loop (avoids TOCTOU load + sub race).
+          // Only block (Atomics.wait) when permits == 0; retry immediately
+          // after a failed CAS so we don't sleep with permits available.
+          while (true) {
+            const cur = Atomics.load(semaphoreView, 0);
+            if (cur > 0) {
+              if (Atomics.compareExchange(semaphoreView, 0, cur, cur - 1) === cur) {
+                break; // permit acquired
+              }
+              continue; // CAS lost to another thread, retry immediately
+            }
+            // cur === 0: no permits; wait until the value changes
             Atomics.wait(semaphoreView, 0, 0);
           }
-          
-          // Acquire semaphore
-          Atomics.sub(semaphoreView, 0, 1);
 
           // Critical section
           const localCounter = counterView[0];

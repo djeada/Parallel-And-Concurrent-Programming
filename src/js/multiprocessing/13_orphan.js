@@ -1,18 +1,23 @@
 /*
- * Orphan Process Demonstration
+ * ⚠️  ANTIPATTERN: Orphan Process
  *
- * This script demonstrates orphan processes in Node.js. An orphan process is a
- * child process whose parent has terminated. In Unix-like systems, orphaned
- * processes are adopted by the init process (PID 1).
+ * An orphan process is a child process whose parent has terminated before
+ * the child. On Unix-like systems, orphans are "adopted" by init/systemd
+ * (typically PID 1), but this varies — containers and subreaper processes
+ * may use a different adopting PID.
  *
  * Key concepts:
- * - Parent process termination
- * - Process reparenting to init/systemd
+ * - Parent process termination before child
+ * - Process reparenting to init/systemd (subreaper)
  * - Child process lifecycle independence
- * - Detached child processes
+ * - Detached child processes (detached: true + unref())
  *
- * NOTE: This is an educational demonstration. In production, always properly
- * manage child process lifecycles.
+ * NOTE: Orphan processes are usually unintentional and indicate missing
+ * lifecycle management. In production, always track child PIDs and
+ * terminate or await them during shutdown.
+ *
+ * NOTE: process.ppid may not become 1 on all systems. Docker containers,
+ * systemd, and subreaper processes can adopt orphans with a different PID.
  */
 
 "use strict";

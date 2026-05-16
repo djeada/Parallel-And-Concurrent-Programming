@@ -28,8 +28,14 @@ void worker(std::mutex& first_tool, std::mutex& second_tool,
             const std::string& name) {
     int tasks_done = 0;
 
-    while (task_count > 0) {
+    while (true) {
         first_tool.lock();
+
+        // Check the shared counter while holding the first lock (no data race)
+        if (task_count <= 0) {
+            first_tool.unlock();
+            break;
+        }
 
         // Try to acquire second lock without blocking
         if (!second_tool.try_lock()) {

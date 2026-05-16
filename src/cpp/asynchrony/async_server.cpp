@@ -1,17 +1,25 @@
 /**
- * Async HTTP Server
+ * ⚠️  ANTIPATTERN — Detached-Thread-Per-Connection Server
  *
- * This example demonstrates a simple HTTP server that handles
- * each client connection asynchronously using std::async.
+ * This file shows a common but problematic HTTP server pattern where
+ * each incoming connection is dispatched to a detached std::thread.
  *
- * Key concepts:
- * - Main loop accepts connections synchronously
- * - Each connection spawns an async task for handling
- * - Enables concurrent client handling
- * - Non-blocking server architecture
+ * Problems with this approach:
+ *   1. Detached threads cannot be joined — no graceful shutdown.
+ *      When main() returns while handlers are still running, the process
+ *      terminates and threads are abandoned mid-request.
+ *   2. No resource limit — a burst of connections spawns an unbounded
+ *      number of threads, potentially exhausting the system.
+ *   3. Exceptions in detached threads call std::terminate() with no
+ *      way for the server to recover or log the failure.
+ *   4. The <future> header is included but std::async is never used;
+ *      the name "async server" is misleading.
  *
- * Note: This is a minimal example. Production servers need
- * proper error handling, timeouts, and resource limits.
+ * The correct approach is a thread pool (see thread_pool_futures.cpp)
+ * or an event-loop framework such as Boost.Asio.
+ *
+ * Note: Run with:  ./async_server
+ *       Test with: curl http://localhost:8080
  */
 
 #include <arpa/inet.h>

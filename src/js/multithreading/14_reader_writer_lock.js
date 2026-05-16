@@ -1,15 +1,31 @@
 /*
- * Reader-Writer Lock Pattern
+ * ⚠️  ANTIPATTERN — Reader-Writer Lock via Naive Polling
  *
- * This script demonstrates the reader-writer lock synchronization pattern.
- * Multiple readers can access data simultaneously, but writers require
- * exclusive access.
+ * This implementation looks like a reader-writer lock but has two
+ * time-of-check / time-of-use (TOCTOU) races that break both exclusivity
+ * and reader safety:
  *
- * Key concepts:
- * - Multiple concurrent readers allowed
- * - Writers get exclusive access
- * - Atomics for synchronization
- * - Fair scheduling to prevent writer starvation
+ *   Reader TOCTOU — each reader checks for active/waiting writers with
+ *     await sleep() in a loop, then increments the reader count.  But
+ *     `await` yields to the event loop; between resuming and the
+ *     Atomics.add a writer can acquire the lock, so a reader and writer
+ *     run concurrently.
+ *
+ *   Writer TOCTOU — two writers can both see `readers === 0 && writers === 0`,
+ *     both decrement waitingWriters and increment activeWriters, giving
+ *     writers[0] === 2 — two concurrent writers that corrupt shared data.
+ *
+ * The header originally claimed "fair scheduling to prevent writer
+ * starvation" — this is incorrect; neither fairness nor exclusivity is
+ * guaranteed.
+ *
+ * Fix: use a single Int32 state word and a CAS loop to atomically
+ * encode reader count + writer-present flag, or use a proper mutex
+ * (05_mutex.js) around each read/write section.
+ *
+ * The polling pattern with `await sleep()` is also CPU-wasteful (busy
+ * wait disguised as async); prefer Atomics.wait / Atomics.waitAsync for
+ * efficient blocking.
  */
 
 "use strict";

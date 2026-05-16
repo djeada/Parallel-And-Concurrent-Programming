@@ -1,13 +1,25 @@
 /*
- * Producer-Consumer Pattern with Worker Threads
+ * ⚠️  ANTIPATTERN — Naive Producer-Consumer with TOCTOU Races
  *
- * This script demonstrates the classic producer-consumer pattern using
- * shared memory and Atomics for synchronization.
+ * This implementation uses SharedArrayBuffer and Atomics for a circular
+ * queue, but the put() and get() functions each contain a time-of-check /
+ * time-of-use (TOCTOU) race when there are multiple producers OR multiple
+ * consumers:
  *
- * Key concepts:
- * - Circular buffer implementation in SharedArrayBuffer
- * - Producer/consumer synchronization without blocking the event loop
- * - Atomic operations for thread-safe queue management
+ *   put() race  — two producers both see count < QUEUE_SIZE, both load the
+ *                 same writeIdx, and both write to the same slot.  One item
+ *                 is lost.
+ *
+ *   get() race  — two consumers both see count > 0, both load the same
+ *                 readIdx, and both read the same item.  One item is
+ *                 consumed twice; one real item is never consumed.
+ *
+ * With exactly 1 producer and 1 consumer the races do not trigger, but
+ * this example intentionally uses 2 + 2 to expose the bug.
+ *
+ * Fix: wrap the full check + index update + count change in a mutex
+ * (see 05_mutex.js for the mutex pattern), or use separate Atomics-based
+ * semaphores for "notFull" / "notEmpty" + a mutex around the slot claim.
  */
 
 "use strict";

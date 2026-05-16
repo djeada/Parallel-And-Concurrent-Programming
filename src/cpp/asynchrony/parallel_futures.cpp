@@ -1,17 +1,21 @@
 /**
- * Futures with Return Values
+ * Parallel Futures — Multiple Concurrent std::async Tasks
  *
- * This example demonstrates using std::future to retrieve results
- * from asynchronous computations.
+ * Demonstrates launching several independent computations in parallel
+ * with std::async and collecting results through std::future.
  *
  * Key concepts:
  * - std::async returns a std::future<T> where T is the return type
+ * - Launch multiple futures before calling .get() to run them in parallel
  * - future.get() blocks until result is available and returns it
- * - get() can only be called once per future (moves the result)
- * - Async tasks can return any type, including complex objects
+ * - get() can only be called once per future (state is consumed)
+ * - Total wall-clock time ≈ max(individual task times), not their sum
  *
- * This pattern is useful when you need to compute multiple values
- * in parallel and collect results afterward.
+ * Compare with future.cpp (single task) and packaged_task.cpp (explicit thread).
+ * See also async_antipatterns.cpp for pitfalls to avoid.
+ *
+ * Compile:
+ *   g++ -std=c++17 -pthread -O1 parallel_futures.cpp
  */
 
 #include <chrono>

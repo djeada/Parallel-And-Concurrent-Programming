@@ -1,18 +1,23 @@
 /*
- * Zombie Process Demonstration
+ * Zombie Processes — and How Node.js Prevents Them
  *
- * This script demonstrates zombie processes in Node.js. A zombie process is a
- * child process that has terminated but whose parent has not yet collected
- * its exit status (via wait/waitpid). The process remains in the process table.
+ * A zombie process is a child that has exited but whose exit status has not
+ * yet been collected by the parent via waitpid(). It stays in the process
+ * table as a "defunct" entry until the parent reaps it.
+ *
+ * In C you must call waitpid() manually; forgetting is a classic bug.
+ * In Node.js, libuv registers a SIGCHLD handler and calls waitpid() for you
+ * automatically, so persistent zombies are generally NOT possible from
+ * pure Node.js code.
  *
  * Key concepts:
- * - Process termination without cleanup
- * - Parent not calling wait() on child
- * - Process table entry retention
- * - Resource leak from zombies
+ * - What zombies are and why they matter
+ * - How libuv prevents zombies automatically via the 'exit' event
+ * - The 'exit' event is the Node.js equivalent of waitpid()
+ * - When zombies CAN still appear (native addons, exec'd external programs)
  *
- * WARNING: This creates a zombie process intentionally for educational purposes.
- * The zombie is cleaned up when this script exits.
+ * NOTE: This demo shows the CORRECT pattern (Node.js auto-reaping) as well
+ * as where to look for zombie risk in hybrid C/Node environments.
  */
 
 "use strict";
@@ -22,48 +27,44 @@ const { spawn } = require("child_process");
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 if (process.argv[2] === "child") {
-  // Child process - will become zombie after termination
   console.log(`[Child] Started (PID: ${process.pid})`);
-  console.log(`[Child] Will exit in 1 second...`);
-  
+  console.log(`[Child] Exiting in 1 second...`);
   setTimeout(() => {
     console.log(`[Child] Exiting now`);
     process.exit(0);
   }, 1000);
-
 } else {
-  // Parent process - intentionally doesn't wait for child
   console.log("=== Zombie Process Demo ===\n");
-  console.log(`[Parent] Started (PID: ${process.pid})`);
-  
+  console.log("Explanation:");
+  console.log("  A zombie is a child that exited but was not wait()ed by its parent.");
+  console.log("  In Node.js, libuv handles SIGCHLD and calls waitpid() automatically.");
+  console.log("  The 'exit' event on a ChildProcess is the Node.js equivalent of wait().\n");
+
+  console.log(`[Parent] PID: ${process.pid}`);
+
   const child = spawn(process.execPath, [__filename, "child"], {
-    detached: true,
     stdio: "inherit",
   });
-  
-  console.log(`[Parent] Created child (PID: ${child.pid})`);
-  console.log(`[Parent] NOT waiting for child to exit (no wait() call)`);
-  console.log(`[Parent] Child will become zombie after termination\n`);
-  
-  // Don't wait for child - this creates a zombie when child exits
-  // child.unref() - we don't call this to keep parent running
-  
-  const checkZombie = async () => {
-    await sleep(3000);
-    
-    console.log("\n[Parent] After child termination:");
-    console.log(`[Parent] Child ${child.pid} is now a zombie (defunct)`);
-    console.log("[Parent] It exists in process table but consumes no resources");
-    console.log("[Parent] Run 'ps aux | grep defunct' to see zombies\n");
-    
-    await sleep(2000);
-    
-    console.log("[Parent] Now cleaning up by exiting...");
-    console.log("[Parent] When parent exits, init will reap the zombie");
-    console.log("\n=== Demo Complete ===");
-    
-    process.exit(0);
-  };
-  
-  checkZombie();
+
+  console.log(`[Parent] Spawned child PID: ${child.pid}`);
+  console.log("[Parent] Waiting for child to exit (libuv handles waitpid internally)...\n");
+
+  // Node.js fires 'exit' after libuv reaps the child — no zombie left behind.
+  child.on("exit", async (code) => {
+    console.log(`[Parent] 'exit' event fired — child ${child.pid} reaped (code: ${code})`);
+    console.log("[Parent] No zombie: libuv called waitpid() before firing this event.\n");
+
+    console.log("Where zombies CAN still appear in Node.js environments:");
+    console.log("  - Native C/C++ addons that spawn processes without waitpid()");
+    console.log("  - child_process.exec() shell commands that spawn grandchildren");
+    console.log("    whose grandparent (the shell) exits before they do");
+    console.log("  - Calling child.unref() keeps the child alive but delays reaping");
+    console.log("    until the parent's event loop cycle notices the child exited\n");
+
+    console.log("[Parent] Run 'ps aux | grep defunct' right now — no zombies.\n");
+
+    await sleep(1000);
+    console.log("=== Demo Complete ===");
+  });
 }
+

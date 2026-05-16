@@ -8,6 +8,7 @@
  * Key concepts:
  * - fork(): Creates a new Node.js process
  * - process.pid: Each process has a unique process ID
+ * - process.ppid: Parent process ID — shows the parent-child hierarchy
  * - IPC (Inter-Process Communication) is automatically set up with fork()
  * - Child processes are useful for CPU-intensive tasks
  */
@@ -15,20 +16,18 @@
 "use strict";
 
 const { fork } = require("child_process");
-const { threadId } = require("worker_threads");
 
 const workerFunction = () => {
   console.log("  Worker process started");
-  console.log(`  Worker process ID: ${process.pid}`);
-  console.log(`  Worker thread ID: ${threadId}`);
+  console.log(`  Worker PID  : ${process.pid}`);
+  console.log(`  Parent PID  : ${process.ppid}`);
   console.log("  Worker process finished");
 };
 
 const main = () => {
   console.log("=== Basic Process Creation Demo ===\n");
   console.log("Main process started");
-  console.log(`Main process ID: ${process.pid}`);
-  console.log(`Main thread ID: ${threadId}`);
+  console.log(`Main PID    : ${process.pid}`);
   console.log("\nForking child process...\n");
 
   const childProcess = fork(__filename, ["worker"]);
