@@ -62,36 +62,44 @@ This allows a program to handle multiple tasks efficiently, even when it is runn
 
 
 ```
-                   ┌─────────────┐
-                   │  Code Runs  │
-                   │  on Stack   │
-                   └─────────────┘
-                         │
-                         ▼
-   ┌───────────────────────────────┐
-   │  Async Functions / Web APIs   │
-   │  do background tasks, timers, │
-   │  network calls, etc.          │
-   └───────────────────────────────┘
-                         │
-                         ▼
-                   ┌─────────────┐   (Completion triggers callback)
-                   │  Callback   │   → placed into Task Queue
-                   └─────────────┘
-                         │
-                         ▼
-   ┌───────────────────────────────┐
-   │           Task Queue          │
-   │   (events, callbacks waiting) │
-   └───────────────────────────────┘
-                         │
-                (Event Loop Checks)
-                         ▼
-                   ┌─────────────┐
-                   │  Call Stack │ ←─ Pushed again
-                   └─────────────┘
-                         │
-                         └─────► [ Repeat Cycle... ]
+                        ┌──────────────────────────────┐
+                        │      JavaScript Code Runs    │
+                        │       on the Call Stack      │
+                        └──────────────┬───────────────┘
+                                       │
+                          starts async operation
+                                       ▼
+        ┌──────────────────────────────────────────────┐
+        │          Node.js Runtime / libuv             │
+        │                                              │
+        │ timers • sockets • file-system work          │
+        │ subprocesses • other async operations        │
+        └───────────────────┬──────────────────────────┘
+                            │
+                     work becomes ready
+                            ▼
+        ┌──────────────────────────────────────────────┐
+        │              Ready Queues                    │
+        │                                              │
+        │ `process.nextTick()` queue                   │
+        │ Promise / `queueMicrotask()` queue           │
+        │ Event-loop phase callbacks:                  │
+        │ timers • poll/I/O • check • close            │
+        └───────────────────┬──────────────────────────┘
+                            ▼
+        ┌──────────────────────────────────────────────┐
+        │             Node.js Event Loop               │
+        │                                              │
+        │ Runs ready JavaScript callbacks on the       │
+        │ call stack according to queue/phase rules    │
+        └───────────────────┬──────────────────────────┘
+                            ▼
+                  ┌────────────────────┐
+                  │     Call Stack     │
+                  │ Callback executes  │
+                  └─────────┬──────────┘
+                            │
+                            └──────────────► Repeat cycle
 ```
 
 #### Futures and Tasks
