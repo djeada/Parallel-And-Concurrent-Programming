@@ -55,14 +55,16 @@ def main():
 
     comm.Barrier()
 
-    left = (rank - 1 + size) % size   # Previous in ring
-    right = (rank + 1) % size         # Next in ring
+    left = (rank - 1 + size) % size  # Previous in ring
+    right = (rank + 1) % size  # Next in ring
 
     my_value = rank
     # Send my value to the right, receive from the left
     received = comm.sendrecv(my_value, dest=right, source=left)
 
-    print(f"Process {rank}: Sent {my_value} to {right}, received {received} from {left}")
+    print(
+        f"Process {rank}: Sent {my_value} to {right}, received {received} from {left}"
+    )
 
 
 if __name__ == "__main__":

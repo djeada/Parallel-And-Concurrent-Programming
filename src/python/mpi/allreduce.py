@@ -46,7 +46,7 @@ def main():
     print(f"Process {rank}: contributes {local_percentage:.1f}% of total")
 
     # Demonstrate with numpy arrays for computing statistics
-    local_data = np.array([rank * 10 + 1, rank * 10 + 2, rank * 10 + 3], dtype='d')
+    local_data = np.array([rank * 10 + 1, rank * 10 + 2, rank * 10 + 3], dtype="d")
     print(f"Process {rank}: local data = {local_data}")
 
     # Compute global sum of all data

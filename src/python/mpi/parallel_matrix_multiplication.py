@@ -49,8 +49,8 @@ def main():
         print()
 
         # Initialize A and B with simple values
-        A = np.arange(N * N, dtype='d').reshape(N, N)
-        B = np.arange(N * N, dtype='d').reshape(N, N) % N
+        A = np.arange(N * N, dtype="d").reshape(N, N)
+        B = np.arange(N * N, dtype="d").reshape(N, N) % N
 
         print("Matrix A:")
         print(A)
@@ -60,10 +60,10 @@ def main():
         print()
     else:
         A = None
-        B = np.empty((N, N), dtype='d')
+        B = np.empty((N, N), dtype="d")
 
     # Local portion of A
-    local_A = np.empty((rows_per_process, N), dtype='d')
+    local_A = np.empty((rows_per_process, N), dtype="d")
 
     # Scatter rows of A to all processes
     comm.Scatter(A, local_A, root=0)
@@ -78,7 +78,7 @@ def main():
 
     # Gather results back to root
     if rank == 0:
-        C = np.empty((N, N), dtype='d')
+        C = np.empty((N, N), dtype="d")
     else:
         C = None
 

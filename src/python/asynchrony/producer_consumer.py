@@ -38,11 +38,14 @@ async def consumer(queue, consumer_id):
     """Consume items from the queue until receiving None sentinel."""
     while True:
         item = await queue.get()
-        if item is None:
-            break
-        print(f"Consumer {consumer_id} consumed {item}")
-        await asyncio.sleep(random.uniform(0.5, 2))
-        queue.task_done()
+        try:
+            if item is None:
+                break
+            print(f"Consumer {consumer_id} consumed {item}")
+            await asyncio.sleep(random.uniform(0.5, 2))
+        finally:
+            # Every queue.get() must be paired with task_done() when join() is used.
+            queue.task_done()
 
 
 async def main():
@@ -62,6 +65,9 @@ async def main():
     # Signal consumers to stop
     for _ in consumers:
         await queue.put(None)
+
+    # Wait for the sentinel messages to be consumed too.
+    await queue.join()
 
     # Wait for consumers to finish
     await asyncio.gather(*consumers)

@@ -20,6 +20,11 @@ Behavior:
 Use 'ps -ef | grep python' to observe the orphaned child process
 and verify its parent PID has changed to 1.
 
+ANTI-PATTERN DEMO:
+This is intentionally not a normal application pattern. In production, prefer
+explicit process ownership: keep the parent alive, call join(), and provide a
+clear shutdown path for child processes.
+
 Note: This uses os.fork() which is only available on Unix-like systems.
 """
 
@@ -42,9 +47,10 @@ def main():
         print(f"Parent process (PID: {os.getpid()}) started.")
         print(
             f"Parent process (PID: {os.getpid()}) is exiting, "
-            "leaving the child process orphaned."
+            "leaving the child process orphaned.",
+            flush=True,
         )
-        # Parent exits immediately, orphaning the child
+        os._exit(0)  # Parent exits immediately, orphaning the child
 
 
 if __name__ == "__main__":

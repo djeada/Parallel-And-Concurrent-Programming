@@ -9,7 +9,8 @@ Key Concepts:
 - Value creates a ctypes object in shared memory
 - Type codes: 'i' (int), 'd' (double), 'c' (char), etc.
 - Access the value using .value attribute
-- Use Lock for thread-safe access when multiple processes modify the value
+- Use Lock for process-safe access when multiple processes modify the value
+- Protect the full read-modify-write sequence, not just assignment
 
 When to Use:
 - Sharing simple values (counters, flags, status indicators)
@@ -28,7 +29,10 @@ def incrementer(shared_value, lock):
     for _ in range(5):
         with lock:
             shared_value.value += 1
-            print(f"Incrementer: Increased shared value to {shared_value.value}")
+            print(
+                f"Incrementer: Increased shared value to {shared_value.value}",
+                flush=True,
+            )
         time.sleep(0.1)
 
 
@@ -37,14 +41,19 @@ def decrementer(shared_value, lock):
     for _ in range(5):
         with lock:
             shared_value.value -= 1
-            print(f"Decrementer: Decreased shared value to {shared_value.value}")
+            print(
+                f"Decrementer: Decreased shared value to {shared_value.value}",
+                flush=True,
+            )
         time.sleep(0.1)
 
 
 def main():
     # Initialize an integer shared value with value 0
     # 'i' = signed integer, see ctypes for other type codes
-    shared_value = multiprocessing.Value("i", 0)
+    # lock=False avoids a hidden per-object lock so the explicit lock is the
+    # only synchronization mechanism shown in this example.
+    shared_value = multiprocessing.Value("i", 0, lock=False)
     lock = multiprocessing.Lock()
 
     incrementer_process = multiprocessing.Process(

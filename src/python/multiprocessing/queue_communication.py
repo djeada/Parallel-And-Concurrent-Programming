@@ -10,6 +10,7 @@ Key Concepts:
 - put() adds items, get() retrieves and removes items
 - Use None as a sentinel value to signal termination
 - Queue can have a maximum size (backpressure mechanism)
+- Close and join the queue feeder thread in the producer after sending data
 
 Use Cases:
 - Producer-consumer patterns across processes
@@ -27,11 +28,15 @@ import random
 
 def producer(queue):
     """Produce items and add them to the queue."""
-    for i in range(5):
-        item = random.randint(1, 10)
-        print(f"Producer: Adding {item} to the queue")
-        queue.put(item)
-        time.sleep(random.uniform(0.5, 1))
+    try:
+        for i in range(5):
+            item = random.randint(1, 10)
+            print(f"Producer: Adding {item} to the queue")
+            queue.put(item)
+            time.sleep(random.uniform(0.5, 1))
+    finally:
+        queue.close()
+        queue.join_thread()
 
 
 def consumer(queue):
@@ -46,7 +51,7 @@ def consumer(queue):
 
 def main():
     # Create a Queue to share data between processes
-    queue = multiprocessing.Queue()
+    queue = multiprocessing.Queue(maxsize=3)
 
     # Create producer and consumer processes
     producer_process = multiprocessing.Process(target=producer, args=(queue,))
@@ -64,6 +69,9 @@ def main():
 
     # Wait for consumer to finish
     consumer_process.join()
+
+    queue.close()
+    queue.join_thread()
 
 
 if __name__ == "__main__":

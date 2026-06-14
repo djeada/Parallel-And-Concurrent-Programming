@@ -10,6 +10,7 @@ Key Concepts:
 - Use 'with lock:' for automatic acquire/release
 - Prevents race conditions when modifying shared data
 - Essential when multiple processes access the same resource
+- Keep the critical section small; do slow work before or after holding the lock
 
 Use Cases:
 - Protecting shared counters or variables
@@ -26,13 +27,18 @@ import time
 
 def worker(mutex, counter):
     """Worker that safely increments a shared counter."""
+    print(
+        f"Process {multiprocessing.current_process().name} is starting work...",
+        flush=True,
+    )
+    time.sleep(1)  # Simulate work outside the lock
+
     with mutex:
-        print(f"Process {multiprocessing.current_process().name} is starting...")
-        time.sleep(1)  # Simulate work while holding the lock
         counter.value += 1
         print(
             f"Process {multiprocessing.current_process().name} is finished. "
-            f"Counter: {counter.value}"
+            f"Counter: {counter.value}",
+            flush=True,
         )
 
 

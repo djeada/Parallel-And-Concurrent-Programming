@@ -10,6 +10,7 @@ Key Concepts:
 - barrier.wait(): Async method that blocks until all parties arrive
 - Once all arrive, all are released simultaneously
 - Useful for phased parallel algorithms
+- Use a timeout when a missing or failed task would otherwise block the group forever
 
 Use Cases:
 - Multi-phase algorithms where all workers must complete each phase
@@ -37,8 +38,12 @@ async def task_worker(task_id, barrier):
     await asyncio.sleep(random.randint(1, 5))  # Simulate work
     print(f"Task {task_id} finished phase 1")
 
-    # Wait for all tasks to complete phase 1
-    await barrier.wait()
+    # Wait for all tasks to complete phase 1.
+    try:
+        await asyncio.wait_for(barrier.wait(), timeout=6)
+    except (asyncio.BrokenBarrierError, asyncio.TimeoutError):
+        print(f"Task {task_id} did not pass the barrier.")
+        return
 
     print(f"Task {task_id} starting phase 2...")
     await asyncio.sleep(random.randint(1, 5))  # Simulate more work

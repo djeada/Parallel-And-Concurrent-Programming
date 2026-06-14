@@ -32,15 +32,17 @@ def main():
     if rank == root:
         # Create array with size * elements_per_process elements
         total_elements = size * elements_per_process
-        data = np.arange(total_elements, dtype='i')
+        data = np.arange(total_elements, dtype="i")
         print(f"Root process: Original data = {data}")
-        print(f"Root process: Scattering {elements_per_process} elements to each of {size} processes")
+        print(
+            f"Root process: Scattering {elements_per_process} elements to each of {size} processes"
+        )
         print()
     else:
         data = None
 
     # Prepare receive buffer for scattered data
-    recv_buffer = np.empty(elements_per_process, dtype='i')
+    recv_buffer = np.empty(elements_per_process, dtype="i")
 
     # Scatter: distribute chunks to all processes
     comm.Scatter(data, recv_buffer, root=root)
@@ -52,7 +54,7 @@ def main():
 
     # Prepare gather buffer on root
     if rank == root:
-        gathered_data = np.empty(size * elements_per_process, dtype='i')
+        gathered_data = np.empty(size * elements_per_process, dtype="i")
     else:
         gathered_data = None
 

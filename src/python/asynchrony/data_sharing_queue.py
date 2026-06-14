@@ -3,12 +3,13 @@ Async Queue for Data Sharing
 
 This script demonstrates using asyncio.Queue for safe data sharing and
 communication between async coroutines. Unlike threading queues, asyncio.Queue
-is designed specifically for async/await patterns.
+is designed specifically for coroutines running in one event loop.
 
 Key Concepts:
-- asyncio.Queue: Thread-safe, async-aware FIFO queue
+- asyncio.Queue: Async-safe FIFO queue for coroutines, not thread-safe
 - queue.put(): Add items (awaitable)
 - queue.get(): Remove and return items (awaitable)
+- queue.task_done() and queue.join(): Track when queued work is complete
 - Use None as sentinel value to signal termination
 
 Use Cases:
@@ -20,7 +21,7 @@ Use Cases:
 Difference from threading.Queue:
 - asyncio.Queue uses await instead of blocking
 - Designed for single-threaded async code
-- No need for locks within async context
+- Do not share it directly across OS threads
 """
 
 import asyncio
@@ -42,10 +43,13 @@ async def consumer(queue):
     """Consume items from the queue until receiving None."""
     while True:
         item = await queue.get()
-        if item is None:
-            break
-        print(f"Consumer: Consumed item {item}")
-        await asyncio.sleep(random.uniform(0.5, 1))
+        try:
+            if item is None:
+                break
+            print(f"Consumer: Consumed item {item}")
+            await asyncio.sleep(random.uniform(0.5, 1))
+        finally:
+            queue.task_done()
 
 
 async def main():
@@ -55,7 +59,9 @@ async def main():
     producer_task = asyncio.create_task(producer(queue))
     consumer_task = asyncio.create_task(consumer(queue))
 
-    await asyncio.gather(producer_task, consumer_task)
+    await producer_task
+    await queue.join()
+    await consumer_task
 
 
 if __name__ == "__main__":

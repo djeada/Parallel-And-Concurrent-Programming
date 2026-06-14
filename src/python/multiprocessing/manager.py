@@ -10,6 +10,7 @@ Key Concepts:
 - Supports list, dict, Namespace, Lock, Queue, and more
 - Changes to shared objects are automatically synchronized
 - Higher overhead than Value/Array but more flexible
+- Use Manager as a context manager so its server process is cleaned up
 
 Use Cases:
 - Sharing complex data structures (lists, dicts, nested objects)
@@ -30,27 +31,24 @@ def add_to_list(shared_list, value):
 
 
 def main():
-    # Create a Manager to host shared objects
-    manager = multiprocessing.Manager()
+    with multiprocessing.Manager() as manager:
+        shared_list = manager.list()
 
-    # Create a shared list managed by the Manager
-    shared_list = manager.list()
+        num_processes = 5
+        processes = []
 
-    num_processes = 5
-    processes = []
+        # Create and start processes
+        for i in range(num_processes):
+            process = multiprocessing.Process(target=add_to_list, args=(shared_list, i))
+            processes.append(process)
+            process.start()
 
-    # Create and start processes
-    for i in range(num_processes):
-        process = multiprocessing.Process(target=add_to_list, args=(shared_list, i))
-        processes.append(process)
-        process.start()
+        # Wait for all processes to complete
+        for process in processes:
+            process.join()
 
-    # Wait for all processes to complete
-    for process in processes:
-        process.join()
-
-    print("Shared list after all processes have finished:")
-    print(list(shared_list))
+        print("Shared list after all processes have finished:")
+        print(list(shared_list))
 
 
 if __name__ == "__main__":

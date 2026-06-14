@@ -17,9 +17,11 @@ Prevention:
 - Use signal handler for SIGCHLD
 - In Python, use process.join() or os.waitpid()
 
-WARNING: This example intentionally creates a zombie process for demonstration.
-The parent sleeps instead of reaping the child, allowing you to observe
-the zombie state using 'ps aux | grep Z'.
+ANTI-PATTERN DEMO:
+This example intentionally creates a zombie process for a few seconds. The
+parent sleeps instead of immediately reaping the child so you can observe the
+zombie state using 'ps -o pid,ppid,state,cmd -p <child_pid>'. It then calls
+os.waitpid() so the demo does not leave a zombie behind.
 
 Note: This uses os.fork() which is only available on Unix-like systems.
 """
@@ -34,21 +36,27 @@ def main():
 
     if pid == 0:
         # Child process
-        print(f"Child process (PID: {os.getpid()}) started.")
+        print(f"Child process (PID: {os.getpid()}) started.", flush=True)
         time.sleep(2)
-        print(f"Child process (PID: {os.getpid()}) finished.")
+        print(f"Child process (PID: {os.getpid()}) finished.", flush=True)
         sys.exit()  # Child terminates but parent doesn't reap it
     else:
         # Parent process
-        print(f"Parent process (PID: {os.getpid()}) started.")
+        print(f"Parent process (PID: {os.getpid()}) started.", flush=True)
         print(
             f"Parent process (PID: {os.getpid()}) is NOT waiting "
-            "for the child process to terminate."
+            "for the child process to terminate.",
+            flush=True,
         )
-        print(f"Child process (PID: {pid}) will become a zombie after termination.")
-        print("Check with: ps aux | grep Z")
-        time.sleep(10)  # Parent sleeps instead of reaping child
-        print(f"Parent process (PID: {os.getpid()}) finished.")
+        print(
+            f"Child process (PID: {pid}) will become a zombie after termination.",
+            flush=True,
+        )
+        print(f"Check with: ps -o pid,ppid,state,cmd -p {pid}", flush=True)
+        time.sleep(5)  # Anti-pattern window: parent delays reaping the child
+        os.waitpid(pid, 0)
+        print(f"Parent process reaped child process (PID: {pid}).", flush=True)
+        print(f"Parent process (PID: {os.getpid()}) finished.", flush=True)
 
 
 if __name__ == "__main__":

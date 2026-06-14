@@ -16,34 +16,30 @@ When to Use:
 - ThreadPoolExecutor: For blocking I/O (file, network with sync libraries)
 - asyncio.to_thread(): For simple blocking I/O cases (Python 3.9+)
 
-Note: This example requires numpy. Install with: pip install numpy
-The script runs indefinitely accepting user input. Press Ctrl+C to exit.
+Note: This example is intentionally finite so it can be run in tests or classrooms.
 """
 
 import asyncio
 import concurrent.futures
-import numpy as np
 
 
 def blocking_function(task_id):
     """
     CPU-bound function that would block the event loop if run directly.
 
-    Performs matrix multiplication to simulate heavy computation.
+    Performs integer arithmetic to simulate heavy computation.
     """
     print(f"Running blocking function {task_id}")
-    a = np.random.rand(3000, 3000)
-    b = np.random.rand(3000, 3000)
-    c = np.dot(a, b)
+    total = sum(i * i for i in range(10_000_000))
     print(f"Done running blocking function {task_id}")
-    return task_id
+    return task_id, total
 
 
-async def user_input():
-    """Handle user input without blocking the event loop."""
-    while True:
-        user_text = await asyncio.to_thread(input, "Enter some text: \n")
-        print(f"User just input: {user_text}")
+async def heartbeat():
+    """Show that the event loop stays responsive while processes do CPU work."""
+    for i in range(5):
+        print(f"Event loop heartbeat {i}")
+        await asyncio.sleep(0.5)
 
 
 async def run_blocking_functions(executor, callback):
@@ -51,23 +47,20 @@ async def run_blocking_functions(executor, callback):
     print("Start run_blocking_functions")
 
     loop = asyncio.get_running_loop()
-    blocking_tasks = [loop.run_in_executor(executor, callback, i) for i in range(10)]
-
     print("Waiting for executor tasks")
-    completed, _ = await asyncio.wait(blocking_tasks)
-    results = [task.result() for task in completed]
+    blocking_tasks = [loop.run_in_executor(executor, callback, i) for i in range(6)]
+    results = await asyncio.gather(*blocking_tasks)
     print(f"Results: {results}")
     print("End run_blocking_functions")
 
 
 async def main():
     """Run CPU-bound tasks and user input concurrently."""
-    executor = concurrent.futures.ProcessPoolExecutor(max_workers=3)
-
-    await asyncio.gather(
-        run_blocking_functions(executor, blocking_function),
-        user_input(),
-    )
+    with concurrent.futures.ProcessPoolExecutor(max_workers=3) as executor:
+        await asyncio.gather(
+            run_blocking_functions(executor, blocking_function),
+            heartbeat(),
+        )
 
 
 if __name__ == "__main__":

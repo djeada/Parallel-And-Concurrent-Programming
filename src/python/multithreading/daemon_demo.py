@@ -9,13 +9,17 @@ Key Concepts:
 - daemon=True makes a thread a daemon thread
 - Daemon threads are abruptly stopped when the main thread exits
 - Non-daemon threads prevent the program from exiting until they complete
-- Use daemon threads for background tasks that shouldn't block shutdown
+- Use daemon threads only for disposable background work
 
 Use Cases:
-- Background logging
+- Best-effort monitoring or cache refresh work
 - Periodic cleanup tasks
-- Monitoring threads
-- Any background task that should not prevent program exit
+- Tasks where losing in-progress work at shutdown is acceptable
+
+Pitfall:
+- Do not use daemon threads for work that must finish, such as writing logs,
+  flushing files, committing transactions, or releasing external resources.
+  Daemon threads do not get a graceful shutdown hook.
 
 Try This:
 Uncomment t.join() to see the difference - with join(), the main thread

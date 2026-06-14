@@ -16,6 +16,7 @@ Features:
 - Responds with a simple text message
 - Gracefully handles connection lifecycle
 - Demonstrates async request parsing
+- Uses Content-Length and Connection: close so clients know when the response ends
 
 Use Cases:
 - Lightweight HTTP servers
@@ -44,11 +45,16 @@ class AsyncHTTPRequestHandler:
 
     async def handle_request(self):
         """Parse and handle an incoming HTTP request."""
-        request_line = await self.reader.readline()
+        request_line = await asyncio.wait_for(self.reader.readline(), timeout=5)
         if not request_line:
             return
 
-        method, path, version = request_line.rstrip().decode("latin1").split(" ")
+        try:
+            method, path, version = request_line.rstrip().decode("latin1").split(" ")
+        except ValueError:
+            self.send_error(HTTPStatus.BAD_REQUEST)
+            await self.writer.drain()
+            return
 
         if method == "GET":
             await self.do_GET()
@@ -59,10 +65,13 @@ class AsyncHTTPRequestHandler:
 
     async def do_GET(self):
         """Handle GET requests."""
+        body = b"Hello, this is an async server!"
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", "text/plain")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Connection", "close")
         self.end_headers()
-        self.writer.write(b"Hello, this is an async server!")
+        self.writer.write(body)
         await self.writer.drain()
 
     def send_response(self, code, message=None):
@@ -81,16 +90,26 @@ class AsyncHTTPRequestHandler:
 
     def send_error(self, code):
         """Send an error response."""
+        body = f"{code} {HTTPStatus(code).phrase}\n".encode("latin1")
         self.send_response(code)
+        self.send_header("Content-Type", "text/plain")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Connection", "close")
         self.end_headers()
+        self.writer.write(body)
 
 
 async def serve(reader, writer):
     """Handle a single client connection."""
     handler = AsyncHTTPRequestHandler(reader, writer)
-    await handler.handle_request()
-    writer.close()
-    await writer.wait_closed()
+    try:
+        await handler.handle_request()
+    except asyncio.TimeoutError:
+        handler.send_error(HTTPStatus.REQUEST_TIMEOUT)
+        await writer.drain()
+    finally:
+        writer.close()
+        await writer.wait_closed()
 
 
 async def main():

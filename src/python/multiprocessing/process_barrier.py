@@ -10,6 +10,7 @@ Key Concepts:
 - Once all processes arrive, they are all released simultaneously
 - Useful for parallel algorithms with phases
 - Can include an optional action to run when barrier is reached
+- Use a timeout when a missing or failed process would otherwise block everyone
 
 Use Cases:
 - Parallel tasks with dependencies between phases
@@ -24,6 +25,7 @@ before any can start the next stage.
 import multiprocessing
 import time
 import random
+from threading import BrokenBarrierError
 
 
 def worker(barrier, worker_id):
@@ -40,8 +42,11 @@ def worker(barrier, worker_id):
     time.sleep(sleep_time)
     print(f"Worker {worker_id} finished initial work and is waiting at the barrier...")
 
-    # Wait for all workers to reach the barrier
-    barrier.wait()
+    try:
+        barrier.wait(timeout=5)
+    except BrokenBarrierError:
+        print(f"Worker {worker_id} did not pass the barrier; it was broken.")
+        return
 
     print(f"Worker {worker_id} passed the barrier and is continuing execution...")
 

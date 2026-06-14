@@ -12,9 +12,11 @@ Key Concepts:
 - Call super().__init__() in __init__ to properly initialize the Thread
 - Use join() to wait for threads to complete
 
-Note: Starting a thread in __init__ (as shown here) is a valid pattern
-but should be used carefully - the thread begins executing immediately
-upon instantiation.
+Good Practice:
+- Do not start a thread inside __init__. Construction should only initialize
+  the object; the caller should decide when execution begins by calling start().
+- Starting inside __init__ can expose a partially initialized object if the
+  thread runs before setup is complete.
 """
 
 import time
@@ -27,7 +29,6 @@ class MyThread(Thread):
     def __init__(self, function, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.function = function
-        self.start()  # Thread starts immediately upon creation
 
     def run(self):
         """Execute the wrapped function with logging."""
@@ -47,6 +48,10 @@ def main():
     # Start threads with different functions
     thread_a = MyThread(my_function)
     thread_b = MyThread(lambda: print("it's me, the lambda function"))
+
+    # Start explicitly after both thread objects are fully initialized.
+    thread_a.start()
+    thread_b.start()
 
     # Wait for both threads to finish
     for thread in (thread_a, thread_b):

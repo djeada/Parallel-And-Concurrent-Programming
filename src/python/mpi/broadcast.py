@@ -34,7 +34,7 @@ def main():
             "config": "production",
             "max_iterations": 1000,
             "tolerance": 1e-6,
-            "parameters": [1.0, 2.0, 3.0]
+            "parameters": [1.0, 2.0, 3.0],
         }
         print(f"Process {rank} (root): Broadcasting data: {data}")
     else:

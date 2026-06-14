@@ -10,6 +10,7 @@ Key Concepts:
 - Threads waiting for I/O don't block other threads
 - Use Lock to protect shared data structures
 - Threading is ideal for network operations despite Python's GIL
+- Always use timeouts for network requests so worker threads cannot hang forever
 
 Performance:
 - Sequential: Total time ≈ sum of all request times
@@ -33,16 +34,21 @@ URLS = [
 
 results = {}
 lock = Lock()
+REQUEST_TIMEOUT = 5
 
 
 def fetch_url(url):
     """Fetch a URL and store the content length in results."""
-    response = requests.get(url)
-    content_length = len(response.content)
+    try:
+        response = requests.get(url, timeout=REQUEST_TIMEOUT)
+        response.raise_for_status()
+        result = len(response.content)
+    except requests.RequestException as exc:
+        result = f"ERROR: {exc}"
 
     with lock:
-        results[url] = content_length
-        print(f"URL: {url}, Content Length: {content_length}")
+        results[url] = result
+        print(f"URL: {url}, Result: {result}")
 
 
 def non_concurrent_fetch():
@@ -51,10 +57,14 @@ def non_concurrent_fetch():
     start_time = time.time()
 
     for url in URLS:
-        response = requests.get(url)
-        content_length = len(response.content)
-        non_concurrent_results[url] = content_length
-        print(f"Non-concurrent - URL: {url}, Content Length: {content_length}")
+        try:
+            response = requests.get(url, timeout=REQUEST_TIMEOUT)
+            response.raise_for_status()
+            result = len(response.content)
+        except requests.RequestException as exc:
+            result = f"ERROR: {exc}"
+        non_concurrent_results[url] = result
+        print(f"Non-concurrent - URL: {url}, Result: {result}")
 
     print(f"Non-concurrent results: {non_concurrent_results}")
     print(f"Non-concurrent time taken: {time.time() - start_time:.2f} seconds")

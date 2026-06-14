@@ -2,21 +2,23 @@
 Async Parallel URL Fetching
 
 This script demonstrates fetching multiple URLs concurrently using asyncio.
-It compares synchronous (sequential) and asynchronous (parallel) approaches
-to show the performance benefits of async I/O.
+It compares synchronous fetching with an asyncio program that offloads a
+blocking standard-library HTTP client to worker threads.
 
 Key Concepts:
-- asyncio.gather(): Run multiple coroutines concurrently
-- asyncio.create_task(): Schedule coroutines for concurrent execution
-- Async I/O reduces total time from sum(times) to max(times)
+- asyncio.to_thread(): Run blocking I/O without blocking the event loop
+- asyncio.gather(): Collect multiple awaitable results
+- asyncio.timeout(): Bound each operation so tasks cannot hang forever
 
 Performance:
 - Synchronous: Each request waits for the previous one to complete
-- Asynchronous: All requests run concurrently, total time ≈ slowest request
+- Concurrent: Requests overlap, total time is closer to the slowest request
 
-Note: This example uses the standard library http.client for simplicity.
-For production async HTTP, consider aiohttp or httpx libraries which
-provide true async I/O without the need for locks.
+Good Practice:
+- http.client is blocking. Calling it directly inside async def would block the
+  event loop, which is an anti-pattern.
+- This example uses asyncio.to_thread() as a safe bridge for blocking I/O.
+- For production async HTTP, prefer aiohttp or httpx.AsyncClient.
 
 URLs used are public APIs that are generally available for testing.
 """
@@ -37,11 +39,14 @@ def fetch_sync(url):
     """Fetch URL synchronously (blocking)."""
     url_parsed = urlparse(url)
     conn = http.client.HTTPSConnection(url_parsed.netloc, timeout=10)
-    conn.request("GET", url_parsed.path or "/")
-    response = conn.getresponse()
-    content = response.read()
-    print(f"Synchronously fetched content from {url}")
-    return content.decode("utf-8")
+    try:
+        conn.request("GET", url_parsed.path or "/")
+        response = conn.getresponse()
+        content = response.read()
+        print(f"Fetched {len(content)} bytes from {url}")
+        return len(content)
+    finally:
+        conn.close()
 
 
 def fetch_all_sync(urls):
@@ -49,27 +54,19 @@ def fetch_all_sync(urls):
     return [fetch_sync(url) for url in urls]
 
 
-async def fetch_async(url):
-    """
-    Fetch URL asynchronously.
-
-    Note: http.client is blocking, so we use a Lock to prevent interleaving.
-    For true async HTTP, use aiohttp or httpx.
-    """
-    url_parsed = urlparse(url)
-    conn = http.client.HTTPSConnection(url_parsed.netloc, timeout=10)
-
-    async with asyncio.Lock():
-        conn.request("GET", url_parsed.path or "/")
-        response = conn.getresponse()
-        content = response.read()
-        print(f"Async fetched content from {url}")
-        return content.decode("utf-8")
+async def fetch_concurrently(url):
+    """Fetch a URL without blocking the event loop."""
+    try:
+        async with asyncio.timeout(15):
+            return await asyncio.to_thread(fetch_sync, url)
+    except Exception as exc:
+        print(f"Failed to fetch {url}: {exc}")
+        return None
 
 
 async def fetch_all_async(urls):
     """Fetch all URLs asynchronously (concurrent)."""
-    tasks = [asyncio.create_task(fetch_async(url)) for url in urls]
+    tasks = [asyncio.create_task(fetch_concurrently(url)) for url in urls]
     return await asyncio.gather(*tasks)
 
 

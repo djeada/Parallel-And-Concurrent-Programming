@@ -10,6 +10,7 @@ Key Concepts:
 - Each endpoint can send() and recv() data
 - Lower overhead than Queue for two-process communication
 - EOFError is raised when the other end closes
+- Close unused pipe endpoints in each process so EOF is delivered correctly
 
 Use Cases:
 - Direct communication between parent and child process
@@ -27,29 +28,30 @@ from multiprocessing import Process, Pipe
 
 def producer(conn):
     """Produce items and send them through the pipe."""
-    random.seed(time.time())
+    try:
+        random.seed(time.time())
 
-    for _ in range(5):
-        item = random.randint(1, 10)
-        print(f"Producer: Adding {item} to the pipe")
-        conn.send(item)
-        time.sleep(random.uniform(0.5, 1.5))
-
-    conn.close()  # Close connection to signal end of data
+        for _ in range(5):
+            item = random.randint(1, 10)
+            print(f"Producer: Adding {item} to the pipe")
+            conn.send(item)
+            time.sleep(random.uniform(0.5, 1.5))
+    finally:
+        conn.close()  # Close connection to signal end of data
 
 
 def consumer(conn):
     """Receive and process items from the pipe."""
-    while True:
-        try:
+    try:
+        while True:
             item = conn.recv()
             print(f"Consumer: Processing {item}")
             time.sleep(random.uniform(0.5, 1.5))
-        except EOFError:
-            # Other end of pipe was closed
-            break
-
-    conn.close()
+    except EOFError:
+        # Other end of pipe was closed
+        pass
+    finally:
+        conn.close()
 
 
 def main():
@@ -61,13 +63,16 @@ def main():
     consumer_process = Process(target=consumer, args=(child_conn,))
 
     producer_process.start()
+    # Parent no longer uses this endpoint; closing it here helps the consumer
+    # receive EOF once the producer closes its copy.
+    parent_conn.close()
+
     consumer_process.start()
+    child_conn.close()
 
     producer_process.join()
-    parent_conn.close()  # Close our reference to allow EOFError in consumer
 
     consumer_process.join()
-    child_conn.close()
 
 
 if __name__ == "__main__":

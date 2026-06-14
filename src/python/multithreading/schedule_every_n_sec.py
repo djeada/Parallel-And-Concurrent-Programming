@@ -9,8 +9,9 @@ at fixed intervals using threads. This pattern is useful for:
 - Status reporting
 
 Key Concepts:
-- Use a flag to control thread lifecycle
+- Use threading.Event to control thread lifecycle safely
 - Thread runs in a loop, sleeping between executions
+- Event.wait(timeout) lets stop() wake the scheduler promptly
 - join() ensures clean shutdown
 
 Note: For production use, consider the 'schedule' library or APScheduler
@@ -18,7 +19,7 @@ for more robust scheduling with error handling and missed execution recovery.
 """
 
 import time
-from threading import Thread
+from threading import Event, Thread
 
 
 class Scheduler:
@@ -39,15 +40,16 @@ class Scheduler:
             *args: Positional arguments for the function
             **kwargs: Keyword arguments for the function
         """
-        self._running = True
+        self._stop_event = Event()
         self._thread = Thread(target=self._run, args=(interval, function, args, kwargs))
         self._thread.start()
 
     def _run(self, interval, function, args, kwargs):
         """Internal method that runs the scheduling loop."""
-        while self._running:
+        while not self._stop_event.is_set():
             function(*args, **kwargs)
-            time.sleep(interval)
+            # wait() returns early when stop() is called, unlike time.sleep().
+            self._stop_event.wait(interval)
 
     def stop(self):
         """
@@ -56,7 +58,7 @@ class Scheduler:
         If a function call is in progress, it will complete before stopping.
         This method blocks until the scheduler thread terminates.
         """
-        self._running = False
+        self._stop_event.set()
         self._thread.join()
 
 

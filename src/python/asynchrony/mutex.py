@@ -10,6 +10,7 @@ Key Concepts:
 - 'async with lock:' acquires and releases automatically
 - Prevents race conditions in shared mutable state
 - Unlike threading.Lock, uses await instead of blocking
+- Keep locked sections small; avoid slow awaits while holding the lock
 
 Use Cases:
 - Protecting shared data structures
@@ -33,9 +34,11 @@ class BankAccount:
 
     async def transfer(self, amount: int):
         """Transfer money (positive = deposit, negative = withdrawal)."""
+        print(f"Preparing transfer {amount}...")
+        await asyncio.sleep(0.1)  # Simulate validation before touching shared state
+
         async with self.lock:
             print(f"Transferring {amount}...")
-            await asyncio.sleep(0.1)  # Simulate processing time
             self.balance += amount
             print(f"Transfer of {amount} complete. New balance: {self.balance}")
 

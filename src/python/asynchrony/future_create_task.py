@@ -1,23 +1,20 @@
 """
 Future and create_task Example
 
-This script demonstrates asyncio.Future and asyncio.create_task() for managing
-asynchronous operations. Futures represent the eventual result of an async
-operation, while create_task() schedules a coroutine for execution.
+This script demonstrates asyncio.create_task() for managing asynchronous
+operations. Tasks are Future-like objects that represent running coroutines.
 
 Key Concepts:
-- asyncio.Future: A low-level awaitable representing an eventual result
 - asyncio.create_task(): Schedules a coroutine to run concurrently
-- Future.set_result(): Manually sets the result of a Future
 - asyncio.gather(): Collects results from multiple awaitables
 
 When to Use:
-- Futures: When you need fine-grained control over async result handling
 - create_task(): When you want to run coroutines concurrently
-- For most cases, create_task() is preferred over manual Future management
+- Manual Future management is mainly for callback interop and low-level libraries
 
-Note: In modern asyncio, create_task() is usually sufficient. Explicit Future
-handling is mainly needed for advanced patterns or interop with callbacks.
+Pitfall:
+- Do not create a Future just to hold a task result. A Task already is awaitable
+  and stores its result or exception.
 """
 
 import asyncio
@@ -55,23 +52,13 @@ def synchronous_execution():
 
 
 async def asynchronous_execution():
-    """Run computations asynchronously using create_task and Futures."""
+    """Run computations asynchronously using create_task."""
     start_time = time.time()
 
-    # Create tasks to run concurrently
     task1 = asyncio.create_task(slow_square_async(3))
     task2 = asyncio.create_task(slow_square_async(4))
 
-    # Create Futures to store results
-    future1 = asyncio.Future()
-    future2 = asyncio.Future()
-
-    # Await tasks and set Future results
-    future1.set_result(await task1)
-    future2.set_result(await task2)
-
-    # Gather results from Futures
-    results = await asyncio.gather(future1, future2)
+    results = await asyncio.gather(task1, task2)
 
     elapsed_time = time.time() - start_time
     print(f"\nAsynchronous execution took {elapsed_time} seconds.")

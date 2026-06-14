@@ -9,6 +9,7 @@ Key Concepts:
 - queue.Queue provides a thread-safe FIFO queue
 - Producers put() items, consumers get() items
 - Queue handles all synchronization internally
+- Use task_done() and join() when the main thread needs to know all queued work is done
 - Use None as a sentinel value to signal consumers to stop
 
 This pattern is fundamental for:
@@ -40,10 +41,14 @@ def consumer(buffer, consumer_id):
     """Consume items from the buffer until receiving None sentinel."""
     while True:
         item = buffer.get()
-        if item is None:  # Sentinel value signals shutdown
-            break
-        print(f"Consumer {consumer_id} consumed item {item}")
-        time.sleep(random.uniform(0.1, 0.5))
+        try:
+            if item is None:  # Sentinel value signals shutdown
+                break
+            print(f"Consumer {consumer_id} consumed item {item}")
+            time.sleep(random.uniform(0.1, 0.5))
+        finally:
+            # Every get() must have a matching task_done() when Queue.join() is used.
+            buffer.task_done()
 
 
 def main():
@@ -71,6 +76,9 @@ def main():
     # Signal consumers to stop by sending sentinel values
     for _ in range(num_consumers):
         buffer.put(None)
+
+    # Wait until every produced item and every sentinel has been consumed
+    buffer.join()
 
     # Wait for consumers to finish
     for c in consumers:

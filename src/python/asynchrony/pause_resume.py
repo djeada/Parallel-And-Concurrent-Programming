@@ -9,7 +9,7 @@ Key Concepts:
 - asyncio.Event: A simple synchronization primitive for coroutines
 - Event.set()/clear(): Toggle the event state
 - Event.is_set(): Check the current state
-- run_in_executor(): Run blocking I/O (like input()) without blocking event loop
+- asyncio.to_thread(): Run blocking I/O like input() without blocking the event loop
 
 Use Cases:
 - Pause/resume functionality in async applications
@@ -22,25 +22,20 @@ Each ENTER press toggles between pause and resume states.
 """
 
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 
-executor = ThreadPoolExecutor()
-pause_event = asyncio.Event()
+resume_event = asyncio.Event()
 
 
 async def long_function():
     """
     Long-running function that can be paused and resumed.
 
-    When pause_event is set, the function waits until it's cleared.
+    When resume_event is cleared, the function pauses at the next checkpoint.
     """
     i = 0
+    resume_event.set()
     while True:
-        if pause_event.is_set():
-            print("Paused...")
-            while pause_event.is_set():
-                await asyncio.sleep(0.1)
-            print("Resumed!")
+        await resume_event.wait()
         print(f"Executing step {i}")
         i += 1
         await asyncio.sleep(1)
@@ -50,17 +45,16 @@ async def button_handler():
     """
     Handle user input to toggle pause/resume.
 
-    Uses run_in_executor to avoid blocking the event loop with input().
+    Uses asyncio.to_thread to avoid blocking the event loop with input().
     """
-    loop = asyncio.get_event_loop()
     while True:
-        await loop.run_in_executor(
-            executor, input, "Press ENTER to toggle pause/resume: "
-        )
-        if pause_event.is_set():
-            pause_event.clear()
+        await asyncio.to_thread(input, "Press ENTER to toggle pause/resume: ")
+        if resume_event.is_set():
+            print("Paused...")
+            resume_event.clear()
         else:
-            pause_event.set()
+            print("Resumed!")
+            resume_event.set()
 
 
 async def main():
@@ -68,7 +62,11 @@ async def main():
     task1 = asyncio.create_task(long_function())
     task2 = asyncio.create_task(button_handler())
 
-    await asyncio.gather(task1, task2)
+    try:
+        await asyncio.gather(task1, task2)
+    finally:
+        task1.cancel()
+        task2.cancel()
 
 
 if __name__ == "__main__":

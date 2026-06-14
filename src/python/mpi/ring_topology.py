@@ -83,7 +83,9 @@ def main():
     # After each step, data has moved one position clockwise
     send_data = my_data
     for step in range(size - 1):
-        recv_data = comm.sendrecv(send_data, dest=right, source=left, sendtag=TAG, recvtag=TAG)
+        recv_data = comm.sendrecv(
+            send_data, dest=right, source=left, sendtag=TAG, recvtag=TAG
+        )
 
         # Calculate which rank originally produced this data:
         # After (step+1) hops clockwise, data from rank X arrives at rank (X + step + 1) % size

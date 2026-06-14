@@ -41,8 +41,10 @@ def main():
     new_size = new_comm.Get_size()
 
     group_name = "EVEN" if color == 0 else "ODD"
-    print(f"World rank {world_rank} -> Group {group_name}, "
-          f"new rank {new_rank} of {new_size}")
+    print(
+        f"World rank {world_rank} -> Group {group_name}, "
+        f"new rank {new_rank} of {new_size}"
+    )
 
     # Demonstrate communication within the sub-communicator
     # Reduce within each group separately

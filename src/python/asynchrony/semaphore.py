@@ -8,8 +8,8 @@ pooling in async applications.
 Key Concepts:
 - asyncio.Semaphore(N): Allows up to N concurrent accesses
 - 'async with semaphore:' acquires and releases automatically
-- Semaphore(1) behaves like an async mutex (Lock)
 - Tasks wait if the semaphore count reaches 0
+- Use asyncio.Lock for ordinary mutual exclusion; use Semaphore(N) for capacity limits
 
 Use Cases:
 - Rate limiting API requests

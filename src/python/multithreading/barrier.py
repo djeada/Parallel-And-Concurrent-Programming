@@ -9,6 +9,7 @@ Key Concepts:
 - Barrier(n) blocks until n threads call wait()
 - Once all threads arrive, they are all released simultaneously
 - Useful for parallel algorithms with phases (all must complete phase N before phase N+1)
+- Use a timeout when a missing or failed thread would otherwise deadlock everyone
 
 Use Cases:
 - Parallel tasks with dependencies between phases
@@ -25,6 +26,7 @@ Alternative Approaches:
 import threading
 import time
 import random
+from threading import BrokenBarrierError
 
 
 def worker(barrier, thread_id):
@@ -40,7 +42,11 @@ def worker(barrier, thread_id):
     time.sleep(random.uniform(1, 3))  # Simulate variable work time
     print(f"Thread {thread_id} is waiting at the barrier...")
 
-    barrier.wait()  # Block until all threads reach this point
+    try:
+        barrier.wait(timeout=5)  # Block until all threads reach this point
+    except BrokenBarrierError:
+        print(f"Thread {thread_id} did not pass the barrier; it was broken.")
+        return
 
     print(f"Thread {thread_id} is resuming after the barrier...")
 

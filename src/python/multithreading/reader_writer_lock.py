@@ -20,9 +20,8 @@ Implementation Notes:
 - This implements a "readers-preference" lock
 - May cause writer starvation under heavy read load
 - For production, consider using a fair or writer-preference variant
-
-Alternative: Python 3.13+ includes threading.RWLock. For older versions,
-consider the 'readerwriterlock' package from PyPI.
+- Python's standard threading module does not provide an RWLock, so production
+  code should usually use a well-tested package instead of a teaching example.
 """
 
 import threading
@@ -39,7 +38,7 @@ class ReaderWriterLock:
 
     def __init__(self):
         self._data = 0
-        self._lock = threading.RLock()
+        self._lock = threading.Lock()
         self._readers = 0
         self._readers_lock = threading.Lock()
 
@@ -51,14 +50,16 @@ class ReaderWriterLock:
             if self._readers == 1:
                 self._lock.acquire()
 
-        print(f"Reader {reader_id} reads data: {self._data}")
-        time.sleep(random.uniform(0.5, 1))  # Simulate read time
-
-        # Last reader releases the write lock
-        with self._readers_lock:
-            self._readers -= 1
-            if self._readers == 0:
-                self._lock.release()
+        try:
+            print(f"Reader {reader_id} reads data: {self._data}")
+            time.sleep(random.uniform(0.5, 1))  # Simulate read time
+        finally:
+            # Last reader releases the writer lock. This must be a plain Lock,
+            # not an RLock, because a different reader thread may release it.
+            with self._readers_lock:
+                self._readers -= 1
+                if self._readers == 0:
+                    self._lock.release()
 
     def write(self, writer_id):
         """Acquire exclusive write access and modify the data."""

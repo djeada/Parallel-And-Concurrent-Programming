@@ -9,7 +9,7 @@ Key Concepts:
 - Future.add_done_callback(): Registers a function to be called when Future completes
 - Callbacks receive the Future object as their argument
 - Use Future.result() inside the callback to get the actual result
-- asyncio.ensure_future(): Alternative to create_task() for awaitable objects
+- asyncio.create_task(): Schedules a coroutine and returns a Task
 
 Use Cases:
 - Decoupling result handling from result computation
@@ -19,6 +19,7 @@ Use Cases:
 
 Note: While callbacks are powerful, async/await syntax is often cleaner.
 Use callbacks when you need to decouple concerns or integrate with callback-based APIs.
+Always handle exceptions inside callbacks because result() re-raises task failures.
 """
 
 import asyncio
@@ -35,27 +36,21 @@ async def slow_square(x):
 
 def square_callback(future):
     """Callback function invoked when Future completes."""
-    print(f"Square callback called with result: {future.result()}")
+    try:
+        print(f"Square callback called with result: {future.result()}")
+    except Exception as exc:
+        print(f"Square callback saw an error: {exc}")
 
 
 async def main():
     """Demonstrate Future callbacks with async tasks."""
     start = time.perf_counter()
 
-    # Create tasks (ensure_future is an alternative to create_task)
-    task1 = asyncio.ensure_future(slow_square(3))
-    task2 = asyncio.ensure_future(slow_square(4))
+    tasks = [asyncio.create_task(slow_square(x)) for x in (3, 4)]
+    for task in tasks:
+        task.add_done_callback(square_callback)
 
-    # Create Futures with callbacks
-    future1 = asyncio.Future()
-    future2 = asyncio.Future()
-
-    future1.add_done_callback(square_callback)
-    future2.add_done_callback(square_callback)
-
-    # Set Future results (triggers callbacks)
-    future1.set_result(await task1)
-    future2.set_result(await task2)
+    await asyncio.gather(*tasks)
 
     end = time.perf_counter()
     print(f"Asynchronous approach time: {end - start:.2f} seconds")

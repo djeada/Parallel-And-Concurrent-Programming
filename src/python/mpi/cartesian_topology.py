@@ -35,7 +35,9 @@ def main():
     dims = MPI.Compute_dims(world_size, [0, 0])
 
     if world_rank == 0:
-        print(f"Creating {dims[0]}x{dims[1]} Cartesian grid with {world_size} processes")
+        print(
+            f"Creating {dims[0]}x{dims[1]} Cartesian grid with {world_size} processes"
+        )
         print()
 
     # Periodic boundaries: True = periodic (wraps around), False = non-periodic
@@ -55,10 +57,12 @@ def main():
 
     # Find neighbors using Shift
     # Direction 0 = row (up/down), Direction 1 = column (left/right)
-    up, down = cart_comm.Shift(0, 1)      # Shift in row direction
-    left, right = cart_comm.Shift(1, 1)   # Shift in column direction
+    up, down = cart_comm.Shift(0, 1)  # Shift in row direction
+    left, right = cart_comm.Shift(1, 1)  # Shift in column direction
 
-    print(f"Cart rank {cart_rank} neighbors: up={up}, down={down}, left={left}, right={right}")
+    print(
+        f"Cart rank {cart_rank} neighbors: up={up}, down={down}, left={left}, right={right}"
+    )
 
     # Demonstrate communication with neighbors
     cart_comm.Barrier()
@@ -72,7 +76,9 @@ def main():
     # Send rank to right neighbor, receive from left neighbor
     my_value = cart_rank * 10
     received = cart_comm.sendrecv(my_value, dest=right, source=left)
-    print(f"Cart rank {cart_rank}: Sent {my_value} right, received {received} from left")
+    print(
+        f"Cart rank {cart_rank}: Sent {my_value} right, received {received} from left"
+    )
 
     # Clean up
     cart_comm.Free()

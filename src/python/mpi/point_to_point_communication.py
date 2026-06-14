@@ -50,8 +50,8 @@ def main():
     if rank == 0:
         # Send various Python objects
         comm.send([1, 2, 3, 4, 5], dest=1, tag=1)  # List
-        comm.send("Hello MPI!", dest=1, tag=2)     # String
-        comm.send(3.14159, dest=1, tag=3)          # Float
+        comm.send("Hello MPI!", dest=1, tag=2)  # String
+        comm.send(3.14159, dest=1, tag=3)  # Float
         print("Process 0: Sent list, string, and float to process 1")
 
     elif rank == 1:

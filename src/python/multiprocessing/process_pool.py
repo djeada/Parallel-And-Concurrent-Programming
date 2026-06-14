@@ -20,8 +20,6 @@ lower overhead and the GIL doesn't affect I/O operations.
 """
 
 import concurrent.futures
-import random
-import time
 
 
 def worker(task_id):
@@ -35,8 +33,7 @@ def worker(task_id):
         Tuple of (task_id, result)
     """
     print(f"Task {task_id} is starting...")
-    time.sleep(random.uniform(1, 3))  # Simulate CPU-bound work
-    result = task_id * 2
+    result = sum(i * i for i in range(1_000_000)) + task_id
     print(f"Task {task_id} is finished. Result: {result}")
     return task_id, result
 

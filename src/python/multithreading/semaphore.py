@@ -2,46 +2,41 @@
 Semaphore Example
 
 This script demonstrates synchronization using a semaphore. Unlike a mutex
-(which allows only one thread), a semaphore can limit access to a resource
-to N threads simultaneously.
+(which allows only one thread), a semaphore limits access to a resource to N
+threads simultaneously.
 
 Key Concepts:
-- Semaphore(1) behaves like a mutex (binary semaphore)
-- Semaphore(N) allows up to N threads in the critical section
-- Useful for limiting access to resources with fixed capacity (e.g., connection pools)
+- Lock is the usual tool for protecting one shared critical section
+- Semaphore(N) is the usual tool for representing N identical resource slots
+- Use a semaphore as a context manager so release() happens automatically
 
-Comparison with race_condition.py:
-- Without synchronization: final value is unpredictable
-- With semaphore: operations are properly serialized, final value is deterministic
-
-Note: The final value will always be the same across runs because the
-semaphore ensures atomic access to the COUNTER variable.
+Good Practice:
+- Prefer Lock over Semaphore(1) for ordinary mutual exclusion because it states
+  the intent more clearly.
+- Prefer Semaphore(N) when the resource really has capacity N, such as a small
+  connection pool, a download limit, or a fixed number of hardware devices.
 """
 
+import random
 import time
-from threading import Thread, Semaphore
+from threading import Semaphore, Thread
 
-COUNTER = 1
-semaphore = Semaphore(1)  # Binary semaphore (equivalent to a Lock)
+MAX_CONNECTIONS = 3
+connection_slots = Semaphore(MAX_CONNECTIONS)
 
 
-def multiply_counter(multiplier):
-    """Multiply the global COUNTER with semaphore protection."""
-    global COUNTER
-    for _ in range(10):
-        time.sleep(0.1)
-        with semaphore:
-            # This entire block is now atomic
-            local_counter = COUNTER
-            local_counter *= multiplier
-            print(f"The COUNTER gets multiplied by {multiplier}")
-            COUNTER = local_counter
+def use_connection(worker_id):
+    """Simulate work that needs one slot from a limited connection pool."""
+    print(f"Worker {worker_id} is waiting for a connection slot")
+
+    with connection_slots:
+        print(f"Worker {worker_id} acquired a connection slot")
+        time.sleep(random.uniform(0.5, 1.5))
+        print(f"Worker {worker_id} released a connection slot")
 
 
 def main():
-    threads = []
-    for i in range(3):
-        threads.append(Thread(target=multiply_counter, args=(i + 1,)))
+    threads = [Thread(target=use_connection, args=(i + 1,)) for i in range(10)]
 
     for thread in threads:
         thread.start()
@@ -49,7 +44,7 @@ def main():
     for thread in threads:
         thread.join()
 
-    print(f"The final value of COUNTER is: {COUNTER}")
+    print("All workers completed.")
 
 
 if __name__ == "__main__":
