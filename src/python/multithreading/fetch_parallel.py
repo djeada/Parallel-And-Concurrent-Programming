@@ -1,93 +1,74 @@
 """
 Parallel Web Fetching Example
 
-This script demonstrates how multithreading can significantly speed up I/O-bound
-operations like fetching web pages. It compares sequential vs concurrent fetching
-to show the performance benefits.
+Compares sequential and threaded fetching for I/O-bound web requests.
 
-Key Concepts:
-- I/O-bound tasks (network, disk) benefit greatly from threading
-- Threads waiting for I/O don't block other threads
-- Use Lock to protect shared data structures
-- Threading is ideal for network operations despite Python's GIL
-- Always use timeouts for network requests so worker threads cannot hang forever
-
-Performance:
-- Sequential: Total time ≈ sum of all request times
-- Concurrent: Total time ≈ max(individual request times)
-
-Note: For CPU-bound tasks, consider multiprocessing instead due to the GIL.
-For async I/O, consider asyncio as an alternative approach.
+Threading is useful here because network requests spend most of their time
+waiting for I/O. While one thread waits, another can run.
 """
 
-import time
-from threading import Thread, Lock
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from time import perf_counter
 
 import requests
 
 URLS = [
-    "https://www.example.com",
-    "https://www.example.org",
-    "https://www.example.net",
-    "https://www.example.edu",
+    "https://httpbin.org/delay/1",
+    "https://httpbin.org/delay/2",
+    "https://httpbin.org/delay/3",
+    "https://httpbin.org/delay/4",
 ]
 
-results = {}
-lock = Lock()
 REQUEST_TIMEOUT = 5
+MAX_WORKERS = 4
 
 
-def fetch_url(url):
-    """Fetch a URL and store the content length in results."""
+def fetch_url(url: str) -> int | str:
+    """Fetch a URL and return its response size in bytes."""
     try:
         response = requests.get(url, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
-        result = len(response.content)
+        return len(response.content)
     except requests.RequestException as exc:
-        result = f"ERROR: {exc}"
-
-    with lock:
-        results[url] = result
-        print(f"URL: {url}, Result: {result}")
+        return f"ERROR: {exc}"
 
 
-def non_concurrent_fetch():
-    """Fetch all URLs sequentially for comparison."""
-    non_concurrent_results = {}
-    start_time = time.time()
-
-    for url in URLS:
-        try:
-            response = requests.get(url, timeout=REQUEST_TIMEOUT)
-            response.raise_for_status()
-            result = len(response.content)
-        except requests.RequestException as exc:
-            result = f"ERROR: {exc}"
-        non_concurrent_results[url] = result
-        print(f"Non-concurrent - URL: {url}, Result: {result}")
-
-    print(f"Non-concurrent results: {non_concurrent_results}")
-    print(f"Non-concurrent time taken: {time.time() - start_time:.2f} seconds")
+def fetch_sequential(urls: list[str]) -> dict[str, int | str]:
+    """Fetch URLs one at a time."""
+    return {url: fetch_url(url) for url in urls}
 
 
-def main():
-    # Non-concurrent fetching
-    non_concurrent_fetch()
+def fetch_concurrent(urls: list[str]) -> dict[str, int | str]:
+    """Fetch URLs concurrently using threads."""
+    results = {}
 
-    # Concurrent fetching
-    start_time = time.time()
-    threads = []
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        future_to_url = {executor.submit(fetch_url, url): url for url in urls}
 
-    for url in URLS:
-        thread = Thread(target=fetch_url, args=(url,))
-        thread.start()
-        threads.append(thread)
+        for future in as_completed(future_to_url):
+            url = future_to_url[future]
+            results[url] = future.result()
 
-    for thread in threads:
-        thread.join()
+    return results
 
-    print(f"Concurrent results: {results}")
-    print(f"Concurrent time taken: {time.time() - start_time:.2f} seconds")
+
+def timed_run(label: str, fetcher, urls: list[str]) -> dict[str, int | str]:
+    """Run a fetcher function and print its elapsed time."""
+    start = perf_counter()
+    results = fetcher(urls)
+    elapsed = perf_counter() - start
+
+    print(f"\n{label} results:")
+    for url, result in results.items():
+        print(f"  {url}: {result}")
+
+    print(f"{label} time taken: {elapsed:.2f} seconds")
+    return results
+
+
+def main() -> None:
+    timed_run("Sequential", fetch_sequential, URLS)
+    timed_run("Concurrent", fetch_concurrent, URLS)
 
 
 if __name__ == "__main__":
