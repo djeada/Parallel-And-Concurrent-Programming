@@ -58,39 +58,24 @@ def merge_sort(arr):
     return merge(left, right)
 
 
-def threaded_merge_sort(arr, depth=0, max_depth=2):
-    """
-    Multi-threaded merge sort with configurable parallelism depth.
+def threaded_merge_sort(arr, max_depth=2):
+    def sort(items, depth):
+        if len(items) <= 1:
+            return items
 
-    Args:
-        arr: List to sort
-        depth: Current recursion depth (for limiting thread creation)
-        max_depth: Maximum depth to create new threads
-    """
-    if len(arr) <= 1:
-        return arr
+        mid = len(items) // 2
+        left, right = items[:mid], items[mid:]
 
-    mid = len(arr) // 2
-    left = arr[:mid]
-    right = arr[mid:]
+        if depth >= max_depth:
+            return merge(sort(left, depth + 1), sort(right, depth + 1))
 
-    if depth < max_depth:
-        # Parallelize at shallow depths
         with ThreadPoolExecutor(max_workers=2) as executor:
-            left_future = executor.submit(
-                threaded_merge_sort, left, depth + 1, max_depth
-            )
-            right_future = executor.submit(
-                threaded_merge_sort, right, depth + 1, max_depth
-            )
-            left = left_future.result()
-            right = right_future.result()
-    else:
-        # Fall back to sequential sorting at deeper levels
-        left = threaded_merge_sort(left, depth + 1, max_depth)
-        right = threaded_merge_sort(right, depth + 1, max_depth)
+            left_future = executor.submit(sort, left, depth + 1)
+            right_future = executor.submit(sort, right, depth + 1)
 
-    return merge(left, right)
+            return merge(left_future.result(), right_future.result())
+
+    return sort(arr, 0)
 
 
 def main():
