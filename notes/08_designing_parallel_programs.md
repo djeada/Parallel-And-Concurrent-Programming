@@ -169,14 +169,12 @@ This is common in matrix algorithms, stencil computations, and cache-aware numer
 Let
 
 $$
-A =
-\begin{pmatrix}
+A = \begin{pmatrix}
 1 & 2 & 9 & 8 \\
 0 & 3 & 7 & 6 \\
 4 & 5 & 0 & 0 \\
 4 & 5 & 0 & 0
-\end{pmatrix}
-=
+\end{pmatrix} =
 \begin{pmatrix}
 A_{11} & A_{12} \\
 A_{21} & A_{22}
