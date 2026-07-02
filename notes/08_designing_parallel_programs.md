@@ -10,29 +10,37 @@ A useful design framework is **PCAM**:
 4. **Mapping** — assign tasks to processors, cores, nodes, or accelerators.
 
 ```
-+---------------------+
-|     Big Problem     |
-+----------+----------+
-           |
-           v
-+----------+----------+----------+
-| Partitioning        | Split into many tasks
-+----------+----------+----------+
-           |
-           v
-+----------+----------+----------+
-| Communication       | Define required data exchange
-+----------+----------+----------+
-           |
-           v
-+----------+----------+----------+
-| Agglomeration       | Merge tasks to reduce overhead
-+----------+----------+----------+
-           |
-           v
-+----------+----------+----------+
-| Mapping             | Place tasks on hardware
-+---------------------+
++-----------------------------+
+|         Big Problem          |
++--------------+--------------+
+               |
+               v
++-----------------------------+
+| 1. Partitioning              |
+| Break the problem into       |
+| smaller parallel tasks       |
++--------------+--------------+
+               |
+               v
++-----------------------------+
+| 2. Communication             |
+| Identify what data must be   |
+| exchanged between tasks      |
++--------------+--------------+
+               |
+               v
++-----------------------------+
+| 3. Agglomeration             |
+| Combine tasks where useful   |
+| to reduce overhead           |
++--------------+--------------+
+               |
+               v
++-----------------------------+
+| 4. Mapping                   |
+| Assign tasks to processors   |
+| or hardware resources        |
++-----------------------------+
 ```
 
 ### Partitioning
