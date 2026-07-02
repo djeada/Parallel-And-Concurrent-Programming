@@ -9,7 +9,7 @@ GPUs (Graphics Processing Units) are throughput-oriented processors designed to 
 - Programming models such as CUDA, HIP, OpenCL, and SYCL let developers launch thousands or millions of lightweight threads.
 - High performance depends on memory access patterns, thread organization, occupancy, synchronization, and avoiding excessive branch divergence.
 
-> **Key idea:** A GPU is fast when many threads perform similar work on different data with predictable memory access.
+> A GPU is fast when many threads perform similar work on different data with predictable memory access.
 
 ### Time-Space Duality
 
