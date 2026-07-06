@@ -1,130 +1,163 @@
 """
-create_task Example: Fetching independent data concurrently
+Async Lock Example: Preventing a real race condition
 
 Problem:
-A dashboard needs data from several independent async sources:
+Two async tasks try to withdraw money from the same bank account.
 
-- user profile
-- recent orders
-- recommendations
+The account starts with $100.
+Two ATMs both try to withdraw $80 at the same time.
 
-Each request takes time. If we await them one by one, the total time is the
-sum of all waits.
+Correct behavior:
+- One withdrawal should succeed
+- The other should fail because only $20 remains
 
-With asyncio.create_task():
-- we start multiple operations immediately
-- they run concurrently while the event loop switches between them
-- we can do other work before awaiting the results
-- each Task stores its own result or exception
+Without a lock:
+- Both tasks may read the balance as $100
+- Both think the withdrawal is allowed
+- Both dispense cash
+- The stored balance becomes wrong compared to the money actually dispensed
 
-Important:
-A Task is Future-like. You normally do not create Future objects manually
-unless you are writing low-level code or adapting callback-based APIs.
+With asyncio.Lock:
+- Only one task can check and update the balance at a time
+- The second task sees the updated balance
+- The account rules stay correct
+
+Key lesson:
+A race condition can happen in async code whenever you:
+1. read shared state
+2. await something
+3. write shared state based on the old value
+
+The lock protects that read-modify-write sequence.
 """
 
 import asyncio
-import time
 
 
-async def fetch_user_profile(user_id: int) -> dict:
-    print("Fetching user profile...")
-    await asyncio.sleep(1)
-    return {"id": user_id, "name": "Alice"}
+class BankAccount:
+    def __init__(self, balance: int):
+        self.balance = balance
+        self.cash_dispensed = 0
+        self.lock = asyncio.Lock()
+
+    async def withdraw_without_lock(self, atm_name: str, amount: int) -> None:
+        """
+        Broken version.
+
+        This shows what can go wrong when two coroutines access shared state
+        without coordination.
+        """
+        print(f"{atm_name}: wants to withdraw ${amount}")
+
+        # Step 1: read shared state
+        balance_seen = self.balance
+        print(f"{atm_name}: sees balance = ${balance_seen}")
+
+        if balance_seen < amount:
+            print(f"{atm_name}: rejected, not enough money")
+            return
+
+        # Step 2: await while still depending on the old balance
+        #
+        # This simulates something slow:
+        # - calling a payment service
+        # - writing an audit record
+        # - waiting for a database operation
+        #
+        # While this coroutine is paused, another coroutine can run and read
+        # the same old balance.
+        await asyncio.sleep(0.5)
+
+        # Step 3: write shared state using a stale value
+        self.balance = balance_seen - amount
+        self.cash_dispensed += amount
+
+        print(
+            f"{atm_name}: approved ${amount}. "
+            f"New stored balance = ${self.balance}"
+        )
+
+    async def withdraw_with_lock(self, atm_name: str, amount: int) -> None:
+        """
+        Correct version.
+
+        The lock makes the check-and-update sequence atomic from the point of
+        view of other coroutines using the same lock.
+        """
+        print(f"{atm_name}: wants to withdraw ${amount}")
+
+        # Work that does not touch shared state can happen outside the lock.
+        await asyncio.sleep(0.1)
+
+        async with self.lock:
+            print(f"{atm_name}: acquired lock")
+            print(f"{atm_name}: current balance = ${self.balance}")
+
+            if self.balance < amount:
+                print(f"{atm_name}: rejected, not enough money")
+                return
+
+            # This await is here to make the race condition visible.
+            #
+            # In real code, keep locked sections small.
+            # If this represents a database update, a real database transaction
+            # would often be the better tool.
+            await asyncio.sleep(0.5)
+
+            self.balance -= amount
+            self.cash_dispensed += amount
+
+            print(
+                f"{atm_name}: approved ${amount}. "
+                f"New stored balance = ${self.balance}"
+            )
 
 
-async def fetch_recent_orders(user_id: int) -> list[str]:
-    print("Fetching recent orders...")
-    await asyncio.sleep(2)
-    return ["order-1001", "order-1002"]
+async def demonstrate_problem_without_lock():
+    print("\n--- WITHOUT LOCK: broken behavior ---")
 
+    account = BankAccount(balance=100)
 
-async def fetch_recommendations(user_id: int) -> list[str]:
-    print("Fetching recommendations...")
-    await asyncio.sleep(1.5)
-    return ["book", "laptop stand", "coffee mug"]
-
-
-async def render_static_header() -> str:
-    """
-    Simulate some other async work we can do while the requests are running.
-    """
-    print("Rendering static dashboard header...")
-    await asyncio.sleep(0.3)
-    return "<h1>Dashboard</h1>"
-
-
-async def build_dashboard_sequentially(user_id: int) -> dict:
-    """
-    Slow approach.
-
-    Each operation waits for the previous one to finish.
-    Total time is roughly:
-
-        1 + 2 + 1.5 + 0.3 = 4.8 seconds
-    """
-    start = time.perf_counter()
-
-    user = await fetch_user_profile(user_id)
-    orders = await fetch_recent_orders(user_id)
-    recommendations = await fetch_recommendations(user_id)
-    header = await render_static_header()
-
-    elapsed = time.perf_counter() - start
-
-    return {
-        "user": user,
-        "orders": orders,
-        "recommendations": recommendations,
-        "header": header,
-        "elapsed": elapsed,
-    }
-
-
-async def build_dashboard_concurrently(user_id: int) -> dict:
-    """
-    Faster approach.
-
-    We start the independent operations immediately.
-
-    While those tasks are waiting on I/O, we can do other work.
-    Then we await their results later.
-
-    Total time is roughly the duration of the slowest operation,
-    not the sum of all operations.
-    """
-    start = time.perf_counter()
-
-    user_task = asyncio.create_task(fetch_user_profile(user_id))
-    orders_task = asyncio.create_task(fetch_recent_orders(user_id))
-    recommendations_task = asyncio.create_task(fetch_recommendations(user_id))
-
-    header = await render_static_header()
-
-    user, orders, recommendations = await asyncio.gather(
-        user_task,
-        orders_task,
-        recommendations_task,
+    await asyncio.gather(
+        account.withdraw_without_lock("ATM-1", 80),
+        account.withdraw_without_lock("ATM-2", 80),
     )
 
-    elapsed = time.perf_counter() - start
+    print("\nFinal result without lock:")
+    print(f"Stored balance: ${account.balance}")
+    print(f"Cash dispensed: ${account.cash_dispensed}")
 
-    return {
-        "user": user,
-        "orders": orders,
-        "recommendations": recommendations,
-        "header": header,
-        "elapsed": elapsed,
-    }
+    expected_balance = 100 - account.cash_dispensed
+    print(f"Expected balance based on cash dispensed: ${expected_balance}")
+
+    if account.balance != expected_balance:
+        print("BUG: the stored balance does not match the money dispensed!")
+
+
+async def demonstrate_solution_with_lock():
+    print("\n--- WITH LOCK: correct behavior ---")
+
+    account = BankAccount(balance=100)
+
+    await asyncio.gather(
+        account.withdraw_with_lock("ATM-1", 80),
+        account.withdraw_with_lock("ATM-2", 80),
+    )
+
+    print("\nFinal result with lock:")
+    print(f"Stored balance: ${account.balance}")
+    print(f"Cash dispensed: ${account.cash_dispensed}")
+
+    expected_balance = 100 - account.cash_dispensed
+    print(f"Expected balance based on cash dispensed: ${expected_balance}")
+
+    if account.balance == expected_balance:
+        print("OK: the account state is consistent.")
 
 
 async def main():
-    print("\n--- Sequential version ---")
-    sequential_dashboard = await build_dashboard_sequentially(user_id=1)
-    print(f"Sequential version took {sequential_dashboard['elapsed']:.2f} seconds")
-
-    print("\n--- Concurrent version with create_task ---")
-    concurrent_dashboard = await build_dashboard_concurrently(user_id=1)
-    print(f"Concurrent version took {concurrent_dashboard['elapsed']:.2f} seconds")
+    await demonstrate_problem_without_lock()
+    await demonstrate_solution_with_lock()
 
 
 if __name__ == "__main__":
