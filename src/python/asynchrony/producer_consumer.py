@@ -1,75 +1,153 @@
 """
-Async Producer-Consumer Pattern
+Async Producer-Consumer Example: Crawling URLs with limited workers
 
-This script demonstrates the producer-consumer pattern using asyncio. Multiple
-producers create items that are consumed by multiple consumers through a shared
-queue, all running concurrently within a single thread.
+Problem:
+Imagine we have many URLs to download.
 
-Key Concepts:
-- asyncio.Queue: Async-safe queue for inter-coroutine communication
-- queue.task_done(): Marks a consumed item as processed
-- queue.join(): Waits until all items are processed
-- None sentinel: Signals consumers to terminate
+Bad approach:
+- Start one task per URL immediately
+- If there are thousands of URLs, we may overload the server
+- We may also overload our own program with too many active tasks
 
-Pattern Benefits:
-- Decouples production from consumption
-- Handles different production/consumption rates
-- Enables concurrent processing without threads
-- Natural backpressure when queue is bounded
+Better approach:
+- Producers discover or create work
+- They place work into an asyncio.Queue
+- Consumers take work from the queue and process it
+- The queue decouples "finding work" from "doing work"
+- A bounded queue adds backpressure
 
-This example uses 3 producers and 2 consumers to show how async
-handles many-to-many producer-consumer relationships efficiently.
+Real-world use cases:
+- Web crawlers
+- Background job workers
+- Image/video processing pipelines
+- Log processing
+- Message queues
+- Database import/export jobs
+
+Key idea:
+The queue is the buffer between fast producers and slower consumers.
 """
 
 import asyncio
 import random
 
 
-async def producer(queue, producer_id):
-    """Produce items and add them to the queue."""
-    for i in range(5):
-        item = f"Item {i} from producer {producer_id}"
-        await queue.put(item)
-        print(f"Producer {producer_id} produced {item}")
-        await asyncio.sleep(random.uniform(0.5, 2))
+async def fake_download(url: str) -> str:
+    """
+    Simulate a slow network request.
+    """
+    print(f"Downloading {url}...")
+    await asyncio.sleep(random.uniform(0.5, 1.5))
+    return f"<html>{url}</html>"
 
 
-async def consumer(queue, consumer_id):
-    """Consume items from the queue until receiving None sentinel."""
+async def save_page(url: str, html: str) -> None:
+    """
+    Simulate saving downloaded data.
+    """
+    await asyncio.sleep(random.uniform(0.2, 0.6))
+    print(f"Saved {url} ({len(html)} bytes)")
+
+
+async def producer(queue: asyncio.Queue[str], producer_id: int, urls: list[str]) -> None:
+    """
+    Producer adds URLs to the queue.
+
+    It does not download them directly.
+    It only creates work for consumers.
+    """
+    for url in urls:
+        print(f"Producer {producer_id}: discovered {url}")
+
+        # If the queue is full, this await pauses the producer.
+        # That is backpressure: producers slow down when consumers cannot keep up.
+        await queue.put(url)
+
+        print(f"Producer {producer_id}: queued {url}")
+
+    print(f"Producer {producer_id}: finished")
+
+
+async def consumer(queue: asyncio.Queue[str], consumer_id: int) -> None:
+    """
+    Consumer processes URLs from the queue.
+
+    It keeps working until it receives a None sentinel.
+    """
     while True:
-        item = await queue.get()
+        url = await queue.get()
+
         try:
-            if item is None:
-                break
-            print(f"Consumer {consumer_id} consumed {item}")
-            await asyncio.sleep(random.uniform(0.5, 2))
+            if url is None:
+                print(f"Consumer {consumer_id}: shutting down")
+                return
+
+            print(f"Consumer {consumer_id}: processing {url}")
+
+            html = await fake_download(url)
+            await save_page(url, html)
+
+            print(f"Consumer {consumer_id}: finished {url}")
+
         finally:
-            # Every queue.get() must be paired with task_done() when join() is used.
+            # Required when queue.join() is used.
+            # This tells the queue that one queued item has been fully handled.
             queue.task_done()
 
 
 async def main():
-    """Coordinate multiple producers and consumers."""
-    queue = asyncio.Queue()
+    """
+    Coordinate producers and consumers.
+    """
 
-    # Create producers and consumers
-    producers = [asyncio.create_task(producer(queue, i)) for i in range(3)]
-    consumers = [asyncio.create_task(consumer(queue, i)) for i in range(2)]
+    # Bounded queue.
+    #
+    # This allows only 3 waiting URLs at a time.
+    # If producers discover URLs faster than consumers process them,
+    # producers will pause at queue.put().
+    queue: asyncio.Queue[str | None] = asyncio.Queue(maxsize=3)
 
-    # Wait for all producers to finish
+    urls_from_source_1 = [
+        "https://example.com/page-1",
+        "https://example.com/page-2",
+        "https://example.com/page-3",
+        "https://example.com/page-4",
+    ]
+
+    urls_from_source_2 = [
+        "https://example.com/product-1",
+        "https://example.com/product-2",
+        "https://example.com/product-3",
+        "https://example.com/product-4",
+    ]
+
+    producers = [
+        asyncio.create_task(producer(queue, 1, urls_from_source_1)),
+        asyncio.create_task(producer(queue, 2, urls_from_source_2)),
+    ]
+
+    consumers = [
+        asyncio.create_task(consumer(queue, 1)),
+        asyncio.create_task(consumer(queue, 2)),
+        asyncio.create_task(consumer(queue, 3)),
+    ]
+
+    # Wait until producers have discovered all work.
     await asyncio.gather(*producers)
 
-    # Wait for queue to be fully processed
+    # Wait until all real URLs have been processed.
     await queue.join()
 
-    # Signal consumers to stop
+    # Stop consumers.
+    #
+    # Each consumer needs one sentinel because each sentinel stops one consumer.
     for _ in consumers:
         await queue.put(None)
 
-    # Wait for the sentinel messages to be consumed too.
+    # Wait until the sentinel values have also been received.
     await queue.join()
 
-    # Wait for consumers to finish
+    # Wait for the consumer tasks to actually exit.
     await asyncio.gather(*consumers)
 
 
