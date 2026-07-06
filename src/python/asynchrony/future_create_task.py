@@ -1,70 +1,131 @@
 """
-Future and create_task Example
+create_task Example: Fetching independent data concurrently
 
-This script demonstrates asyncio.create_task() for managing asynchronous
-operations. Tasks are Future-like objects that represent running coroutines.
+Problem:
+A dashboard needs data from several independent async sources:
 
-Key Concepts:
-- asyncio.create_task(): Schedules a coroutine to run concurrently
-- asyncio.gather(): Collects results from multiple awaitables
+- user profile
+- recent orders
+- recommendations
 
-When to Use:
-- create_task(): When you want to run coroutines concurrently
-- Manual Future management is mainly for callback interop and low-level libraries
+Each request takes time. If we await them one by one, the total time is the
+sum of all waits.
 
-Pitfall:
-- Do not create a Future just to hold a task result. A Task already is awaitable
-  and stores its result or exception.
+With asyncio.create_task():
+- we start multiple operations immediately
+- they run concurrently while the event loop switches between them
+- we can do other work before awaiting the results
+- each Task stores its own result or exception
+
+Important:
+A Task is Future-like. You normally do not create Future objects manually
+unless you are writing low-level code or adapting callback-based APIs.
 """
 
 import asyncio
 import time
 
 
-def slow_square_sync(x):
-    """Synchronous version - blocks during computation."""
-    print(f"Starting slow square computation for {x}")
-    time.sleep(2)
-    result = x * x
-    print(f"Finished slow square computation for {x}")
-    return result
+async def fetch_user_profile(user_id: int) -> dict:
+    print("Fetching user profile...")
+    await asyncio.sleep(1)
+    return {"id": user_id, "name": "Alice"}
 
 
-async def slow_square_async(x):
-    """Asynchronous version - yields during simulated computation."""
-    print(f"Starting slow square computation for {x}")
+async def fetch_recent_orders(user_id: int) -> list[str]:
+    print("Fetching recent orders...")
     await asyncio.sleep(2)
-    result = x * x
-    print(f"Finished slow square computation for {x}")
-    return result
+    return ["order-1001", "order-1002"]
 
 
-def synchronous_execution():
-    """Run computations synchronously (sequentially)."""
-    start_time = time.time()
-
-    result1 = slow_square_sync(3)
-    result2 = slow_square_sync(4)
-
-    elapsed_time = time.time() - start_time
-    print(f"\nSynchronous execution took {elapsed_time} seconds.")
-    print(f"Results: {result1}, {result2}")
+async def fetch_recommendations(user_id: int) -> list[str]:
+    print("Fetching recommendations...")
+    await asyncio.sleep(1.5)
+    return ["book", "laptop stand", "coffee mug"]
 
 
-async def asynchronous_execution():
-    """Run computations asynchronously using create_task."""
-    start_time = time.time()
+async def render_static_header() -> str:
+    """
+    Simulate some other async work we can do while the requests are running.
+    """
+    print("Rendering static dashboard header...")
+    await asyncio.sleep(0.3)
+    return "<h1>Dashboard</h1>"
 
-    task1 = asyncio.create_task(slow_square_async(3))
-    task2 = asyncio.create_task(slow_square_async(4))
 
-    results = await asyncio.gather(task1, task2)
+async def build_dashboard_sequentially(user_id: int) -> dict:
+    """
+    Slow approach.
 
-    elapsed_time = time.time() - start_time
-    print(f"\nAsynchronous execution took {elapsed_time} seconds.")
-    print(f"Results: {results}")
+    Each operation waits for the previous one to finish.
+    Total time is roughly:
+
+        1 + 2 + 1.5 + 0.3 = 4.8 seconds
+    """
+    start = time.perf_counter()
+
+    user = await fetch_user_profile(user_id)
+    orders = await fetch_recent_orders(user_id)
+    recommendations = await fetch_recommendations(user_id)
+    header = await render_static_header()
+
+    elapsed = time.perf_counter() - start
+
+    return {
+        "user": user,
+        "orders": orders,
+        "recommendations": recommendations,
+        "header": header,
+        "elapsed": elapsed,
+    }
+
+
+async def build_dashboard_concurrently(user_id: int) -> dict:
+    """
+    Faster approach.
+
+    We start the independent operations immediately.
+
+    While those tasks are waiting on I/O, we can do other work.
+    Then we await their results later.
+
+    Total time is roughly the duration of the slowest operation,
+    not the sum of all operations.
+    """
+    start = time.perf_counter()
+
+    user_task = asyncio.create_task(fetch_user_profile(user_id))
+    orders_task = asyncio.create_task(fetch_recent_orders(user_id))
+    recommendations_task = asyncio.create_task(fetch_recommendations(user_id))
+
+    header = await render_static_header()
+
+    user, orders, recommendations = await asyncio.gather(
+        user_task,
+        orders_task,
+        recommendations_task,
+    )
+
+    elapsed = time.perf_counter() - start
+
+    return {
+        "user": user,
+        "orders": orders,
+        "recommendations": recommendations,
+        "header": header,
+        "elapsed": elapsed,
+    }
+
+
+async def main():
+    print("\n--- Sequential version ---")
+    sequential_dashboard = await build_dashboard_sequentially(user_id=1)
+    print(f"Sequential version took {sequential_dashboard['elapsed']:.2f} seconds")
+
+    print("\n--- Concurrent version with create_task ---")
+    concurrent_dashboard = await build_dashboard_concurrently(user_id=1)
+    print(f"Concurrent version took {concurrent_dashboard['elapsed']:.2f} seconds")
 
 
 if __name__ == "__main__":
-    synchronous_execution()
-    asyncio.run(asynchronous_execution())
+    asyncio.run(main())
