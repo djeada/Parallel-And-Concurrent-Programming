@@ -1,73 +1,234 @@
 """
-Pause and Resume Example
+Pause and Resume Example with asyncio.Event
 
-This script demonstrates how to implement pause/resume functionality for
-async operations using asyncio.Event. This pattern is useful for building
-responsive applications that can be controlled by user input.
+Problem:
+Imagine an async application is processing many files.
 
-Key Concepts:
-- asyncio.Event: A simple synchronization primitive for coroutines
-- Event.set()/clear(): Toggle the event state
-- Event.is_set(): Check the current state
-- asyncio.to_thread(): Run blocking I/O like input() without blocking the event loop
+We want to control the background job while it is running:
 
-Use Cases:
-- Pause/resume functionality in async applications
-- User-controlled interruption of background tasks
-- Implementing stop/start buttons in async GUIs
-- Graceful pause for maintenance in servers
+- press "p" to pause processing
+- press "r" to resume processing
+- press "q" to quit
 
-Note: This script runs indefinitely. Press Ctrl+C to exit.
-Each ENTER press toggles between pause and resume states.
+The processing task should not be destroyed when paused.
+It should simply wait at a safe checkpoint until it is allowed to continue.
+
+Why asyncio.Event is useful:
+- Event.set() means "you may continue"
+- Event.clear() means "pause at the next checkpoint"
+- await Event.wait() pauses the coroutine efficiently
+- no busy-looping
+- no repeated sleep polling
+- no blocking the whole event loop
+
+Important:
+input() is blocking, so we run it with asyncio.to_thread().
+That allows the event loop to keep running while waiting for user input.
 """
 
 import asyncio
+import threading
+import time
 
-resume_event = asyncio.Event()
 
-
-async def long_function():
+def log(message: str) -> None:
     """
-    Long-running function that can be paused and resumed.
+    Print a message with the current thread ID.
 
-    When resume_event is cleared, the function pauses at the next checkpoint.
+    The async worker runs on the main event-loop thread.
+    The blocking input() call runs in a helper thread through asyncio.to_thread().
     """
-    i = 0
-    resume_event.set()
-    while True:
+    thread_id = threading.get_ident()
+    thread_name = threading.current_thread().name
+    print(f"[thread={thread_name}:{thread_id}] {message}")
+
+
+async def process_file(filename: str) -> None:
+    """
+    Simulate async file processing.
+
+    In a real app this might be:
+    - uploading a file
+    - downloading a file
+    - processing a message
+    - writing to a database
+    - sending data to an API
+    """
+    log(f"Started processing {filename}")
+
+    # Simulate several async steps inside one file.
+    for step in range(1, 4):
+        log(f"{filename}: processing chunk {step}/3")
+        await asyncio.sleep(0.7)
+
+    log(f"Finished processing {filename}")
+
+
+async def pausable_file_processor(
+    filenames: list[str],
+    resume_event: asyncio.Event,
+    stop_event: asyncio.Event,
+) -> None:
+    """
+    Process files one by one.
+
+    The important line is:
+
         await resume_event.wait()
-        print(f"Executing step {i}")
-        i += 1
-        await asyncio.sleep(1)
 
-
-async def button_handler():
+    If the event is set, the worker continues.
+    If the event is cleared, the worker pauses here without wasting CPU.
     """
-    Handle user input to toggle pause/resume.
+    for filename in filenames:
+        if stop_event.is_set():
+            log("Stop requested. Exiting processor.")
+            return
 
-    Uses asyncio.to_thread to avoid blocking the event loop with input().
+        # Pause checkpoint.
+        #
+        # If the user pressed "p", resume_event is cleared and this line waits.
+        # If the user pressed "r", resume_event is set and this line continues.
+        await resume_event.wait()
+
+        await process_file(filename)
+
+    log("All files processed.")
+
+
+async def command_listener(
+    resume_event: asyncio.Event,
+    stop_event: asyncio.Event,
+) -> None:
     """
-    while True:
-        await asyncio.to_thread(input, "Press ENTER to toggle pause/resume: ")
-        if resume_event.is_set():
-            print("Paused...")
+    Listen for user commands without blocking the event loop.
+
+    input() is blocking, so we run it in a helper thread with asyncio.to_thread().
+    """
+    while not stop_event.is_set():
+        command = await asyncio.to_thread(
+            input,
+            "\nCommand: [p]ause, [r]esume, [q]uit: ",
+        )
+
+        command = command.strip().lower()
+
+        if command == "p":
             resume_event.clear()
-        else:
-            print("Resumed!")
+            log("Paused. Processing will stop at the next checkpoint.")
+
+        elif command == "r":
             resume_event.set()
+            log("Resumed.")
+
+        elif command == "q":
+            stop_event.set()
+            resume_event.set()
+            log("Quit requested.")
+            return
+
+        else:
+            log("Unknown command. Use p, r, or q.")
 
 
-async def main():
-    """Run the pausable function and button handler concurrently."""
-    task1 = asyncio.create_task(long_function())
-    task2 = asyncio.create_task(button_handler())
+async def main() -> None:
+    filenames = [
+        "users.csv",
+        "orders.csv",
+        "payments.csv",
+        "products.csv",
+        "events.csv",
+    ]
 
-    try:
-        await asyncio.gather(task1, task2)
-    finally:
-        task1.cancel()
-        task2.cancel()
+    resume_event = asyncio.Event()
+    stop_event = asyncio.Event()
+
+    # Start in the resumed state.
+    resume_event.set()
+
+    processor_task = asyncio.create_task(
+        pausable_file_processor(
+            filenames,
+            resume_event,
+            stop_event,
+        )
+    )
+
+    command_task = asyncio.create_task(
+        command_listener(
+            resume_event,
+            stop_event,
+        )
+    )
+
+    done, pending = await asyncio.wait(
+        {processor_task, command_task},
+        return_when=asyncio.FIRST_COMPLETED,
+    )
+
+    # If the processor finishes first, stop the command listener.
+    stop_event.set()
+    resume_event.set()
+
+    for task in pending:
+        task.cancel()
+
+    await asyncio.gather(*pending, return_exceptions=True)
+
+    log("Program finished.")
+
+
+# ---------------------------------------------------------------------
+# What goes wrong without asyncio.Event?
+# ---------------------------------------------------------------------
+
+async def bad_pause_with_boolean_flag() -> None:
+    """
+    BAD APPROACH:
+
+    A simple boolean flag is easy to get wrong.
+
+    Problems:
+    - the task may poll repeatedly
+    - it may waste CPU
+    - it needs artificial sleep calls
+    - many tasks may check the flag inconsistently
+    - there is no clean "wait until resumed" primitive
+
+    This is commented out because it demonstrates what NOT to do.
+    """
+
+    # paused = False
+    #
+    # while True:
+    #     if paused:
+    #         # This is manual polling.
+    #         # The task wakes up again and again just to ask:
+    #         # "Am I still paused?"
+    #         await asyncio.sleep(0.1)
+    #         continue
+    #
+    #     await do_some_work()
+
+
+async def bad_blocking_input_inside_async() -> None:
+    """
+    BAD APPROACH:
+
+    Calling input() directly inside async code blocks the event loop.
+
+    While input() is waiting for the user, no other coroutine can run.
+    That means your background job would freeze completely.
+    """
+
+    # command = input("Enter command: ")
+    #
+    # Problem:
+    # This blocks the whole event-loop thread.
+    # Other async tasks cannot continue while input() waits.
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nStopped")
