@@ -11,35 +11,35 @@ A useful design framework is **PCAM**:
 
 ```
 +-----------------------------+
-|         Big Problem          |
+|         Big Problem         |
 +--------------+--------------+
                |
                v
 +-----------------------------+
-| 1. Partitioning              |
-| Break the problem into       |
-| smaller parallel tasks       |
+| 1. Partitioning             |
+| Break the problem into      |
+| smaller parallel tasks      |
 +--------------+--------------+
                |
                v
 +-----------------------------+
-| 2. Communication             |
-| Identify what data must be   |
-| exchanged between tasks      |
+| 2. Communication            |
+| Identify what data must be  |
+| exchanged between tasks     |
 +--------------+--------------+
                |
                v
 +-----------------------------+
-| 3. Agglomeration             |
-| Combine tasks where useful   |
-| to reduce overhead           |
+| 3. Agglomeration            |
+| Combine tasks where useful  |
+| to reduce overhead          |
 +--------------+--------------+
                |
                v
 +-----------------------------+
-| 4. Mapping                   |
-| Assign tasks to processors   |
-| or hardware resources        |
+| 4. Mapping                  |
+| Assign tasks to processors  |
+| or hardware resources       |
 +-----------------------------+
 ```
 
@@ -48,15 +48,15 @@ A useful design framework is **PCAM**:
 Partitioning divides the problem into smaller pieces that can run concurrently. The goal is to expose enough parallel work while avoiding unnecessary dependencies between tasks.
 
 ```
-      +-----------------------+
-      |      Big Problem      |
-      +-----------+-----------+
-                  |
-        +---------+---------+
-        |         |         |
-   +----+----+ +--+--+ +----+----+
-   | Part 1  | |Part2| | Part 3  |
-   +---------+ +-----+ +---------+
++-----------------------+
+|      Big Problem      |
++-----------+-----------+
+            |
+     +--- --+------------+
+     |         |         |
++----+----+ +--+--+ +----+----+
+| Part 1  | |Part2| | Part 3  |
++---------+ +-----+ +---------+
 ```
 
 #### Goals
@@ -281,6 +281,7 @@ Collective communication involves a group of tasks. Common collective operations
 **Scatter:** one task sends different pieces of data to different tasks.
 
 ```
+Scatter:
        +-----------------------+
        |          ABC          |
        +-----------+-----------+
@@ -295,6 +296,7 @@ Collective communication involves a group of tasks. Common collective operations
 **Broadcast:** one task sends the same data to all tasks.
 
 ```
+Broadcast:
        +-----------------------+
        |          ABC          |
        +-----------+-----------+
