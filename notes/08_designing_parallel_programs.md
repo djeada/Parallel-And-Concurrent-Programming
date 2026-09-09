@@ -318,8 +318,6 @@ Result:         22
 
 **All-reduce:** every task receives the reduced result. This is common in simulations and machine learning training.
 
----
-
 ### Communication Modes
 
 #### I. Blocking Communication
