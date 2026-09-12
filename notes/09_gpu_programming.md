@@ -1,24 +1,24 @@
 ## GPU Programming
 
-GPUs (Graphics Processing Units) are throughput-oriented processors designed to run the same kind of operation across many data elements at once. They were originally built for graphics workloads, where millions of pixels or vertices must be processed in parallel, but the same architecture is also effective for scientific simulation, image processing, machine learning, numerical computing, and other data-parallel workloads.
+GPUs (Graphics Processing Units) are throughput-oriented processors designed to apply similar operations across large numbers of data elements in parallel. They were originally built for graphics workloads, where millions of pixels or vertices must be processed, but the same architecture is also effective for scientific simulation, image processing, machine learning, numerical computing, and other data-parallel workloads.
 
 **What makes GPU programming different?**
 
 - GPUs contain many execution lanes organized for massive parallelism.
-- They rely on specialized memory systems, such as global memory, shared memory, registers, caches, constant memory, texture memory, and memory banks.
-- Programming models such as CUDA, HIP, OpenCL, and SYCL let developers launch thousands or millions of lightweight threads.
-- High performance depends on memory access patterns, thread organization, occupancy, synchronization, and avoiding excessive branch divergence.
+- They use a specialized memory hierarchy that includes global memory, shared memory, registers, caches, constant memory, texture memory, and banked memory structures.
+- Programming models such as CUDA, HIP, OpenCL, and SYCL let developers launch large numbers of lightweight threads or work-items.
+- High performance depends on memory access patterns, thread organization, occupancy, synchronization, and limiting unnecessary branch divergence.
 
 > A GPU is fast when many threads perform similar work on different data with predictable memory access.
 
 ### Time-Space Duality
 
-In parallel architecture, **time-space duality** compares two ways to achieve high throughput:
+In parallel architecture, **time-space duality** describes two complementary ways to achieve high throughput:
 
 1. Use many replicated processing elements at the same time (**spatial parallelism**).
 2. Reuse fewer processing elements over time through a pipeline (**temporal parallelism**).
 
-Modern GPUs combine both ideas: they have many replicated execution units, and each unit is deeply pipelined.
+Modern GPUs combine both ideas: they contain many replicated execution resources, and those resources are also pipelined.
 
 ```
 ====================================================
@@ -46,11 +46,11 @@ Time -->    T0     T1     T2     T3     T4     T5     T6
 Each element moves through pipeline stages over time.
 ```
 
-**Analogy:** Imagine a bakery trying to make thousands of identical cookies before sunrise. One strategy is to hire many bakers and give each baker their own station: at the same moment, one loads dough, another adds sugar, another mixes, and another places cookies in the oven. This is like an **array processor**, where many processing elements work side by side in space. Another strategy is to use one very efficient cookie-making machine with stations arranged in a line: dough enters the first station, then moves to mixing, then shaping, then baking, while the next cookie enters right behind it. This is like a **vector pipeline**, where fewer processing elements are reused over time. A modern GPU is like a huge bakery that uses both strategies at once: it has many stations working in parallel, and each station is also pipelined so new work keeps flowing through without waiting for the previous item to finish.
+**Analogy:** Imagine a bakery that must make thousands of identical cookies before sunrise. One strategy is to give many bakers identical workstations so they can perform the same step on different batches at the same time. This resembles an **array processor**, where many processing elements work side by side. Another strategy is to use a pipelined cookie-making machine: while one batch is being shaped, the next can already be mixed and another can be loaded. This resembles a **vector pipeline**, where hardware stages are reused over time. A modern GPU combines both ideas by providing many parallel execution resources, each backed by deeply pipelined hardware.
 
 #### I. Array Processors: Spatial Parallelism
 
-An array processor has multiple processing elements. Each one works on a different data element, often under a common instruction stream.
+An array processor contains multiple processing elements that work on different data elements, often under a common instruction stream.
 
 - Many elements are processed at the same time.
 - Throughput is high when all processing elements have useful work.
@@ -77,7 +77,7 @@ A modern GPU is not just an array processor or just a vector processor. It combi
 
 ### Vector Processor
 
-A **vector processor** executes operations on vectors, which are one-dimensional arrays of elements. Instead of writing a loop that performs one scalar operation at a time, a vector instruction can express the same operation across many elements.
+A **vector processor** executes operations on vectors, which are ordered collections of elements. Instead of issuing one scalar instruction per element, a vector instruction expresses the same operation across many elements.
 
 For example, a vector add instruction can represent:
 
@@ -114,7 +114,7 @@ A **stride** is the distance in memory between consecutive elements of a logical
 - **Stride 1:** consecutive elements are adjacent in memory.
 - **Stride k:** consecutive elements are separated by `k` elements in memory.
 
-Stride matters because contiguous memory access is usually much faster than scattered memory access. On GPUs, adjacent threads should ideally access adjacent memory addresses so the hardware can combine memory requests into fewer transactions.
+Stride matters because regular, contiguous memory access is usually more efficient than scattered access. On GPUs, adjacent threads should ideally access nearby addresses so the hardware can combine their requests into a small number of memory transactions.
 
 #### Row-Major Layout Example
 
@@ -180,11 +180,11 @@ In row-major order, this is not contiguous. Since $B$ has $p$ columns, the strid
 
 III. Multiply corresponding elements and accumulate the sum.
 
-**GPU performance note:** A direct column access in row-major memory can be inefficient because consecutive threads may read nonconsecutive addresses. Optimized matrix multiplication usually uses tiling: each block loads a tile of $A$ and $B$ into shared memory, then reuses those values many times.
+**GPU performance note:** A single thread walking down a column of a row-major matrix performs strided accesses. Whether those accesses are coalesced at the GPU level also depends on how neighboring threads map to matrix rows and columns. Optimized matrix multiplication usually uses tiling so that blocks load contiguous tiles of $A$ and $B$ into shared memory and reuse those values many times.
 
 ### Loading and Storing Vectors from Memory
 
-Vector loads and stores move multiple elements between memory and registers. On GPUs, the closest practical idea is **coalesced memory access**, where threads in the same warp access consecutive memory addresses so the hardware can combine the requests.
+Vector loads and stores move multiple elements between memory and registers. A closely related GPU concern is **coalesced memory access**, where threads in the same warp access nearby addresses that the hardware can serve with a small number of memory transactions.
 
 | Pattern | Effect |
 |---|---|
@@ -205,7 +205,7 @@ Thread:   T0   T1   T2   T3   T4   T5   T6   T7
 Address:  A0   A8   A16  A24  A32  A40  A48  A56
 ```
 
-Efficient GPU programs usually organize data so that adjacent threads access adjacent elements. This is why arrays of structures are sometimes converted into structures of arrays.
+Efficient GPU programs often organize data so adjacent threads access adjacent elements. This is one reason an array of structures is sometimes converted into a structure of arrays.
 
 ```cpp
 // Array of Structures: convenient, but fields may be interleaved
@@ -222,7 +222,7 @@ float z[N];
 
 ### Memory Banking
 
-**Memory banking** divides memory into multiple independent banks so several accesses can proceed in parallel. This idea appears in vector machines, GPU shared memory, register files, caches, and memory controllers.
+**Memory banking** divides storage into multiple banks so several accesses can be serviced in parallel. The idea appears in vector machines, GPU shared memory, register files, caches, and memory controllers.
 
 A simplified banked-memory system looks like this:
 
@@ -247,7 +247,7 @@ Address:  0   1   2   3   4   5   6   7
 Bank:     0   1   2   3   0   1   2   3
 ```
 
-If many threads access different addresses in the same bank, a **bank conflict** may occur. Bank conflicts can serialize memory access and reduce throughput.
+If many threads access different addresses that map to the same bank, a **bank conflict** may occur. The hardware may need to serialize some of those accesses, reducing throughput.
 
 #### Example: Shared Memory Bank Conflict
 
@@ -269,7 +269,7 @@ Banked memory increases bandwidth only when access patterns spread requests acro
 
 ### Vectorizable Loops
 
-A loop is **vectorizable** when iterations are independent and can safely run in parallel.
+A loop is **vectorizable** when its iterations are sufficiently independent to execute in parallel without changing the program's result.
 
 #### Vectorizable Loop
 
@@ -299,24 +299,24 @@ for (int i = 0; i < 50; ++i) {
 }
 ```
 
-This is vectorizable because each output element is independent. For integer arrays, a shift such as `(A[i] + B[i]) >> 1` can be faster than division by 2, but it is not always equivalent:
+This is vectorizable because each output element is independent. For integer arrays, a shift such as `(A[i] + B[i]) >> 1` may look like an alternative to division by 2, but modern compilers often optimize division by powers of two automatically, and the two expressions are not always equivalent:
 
-- It may behave differently for negative integers.
-- It can overflow before the shift if `A[i] + B[i]` exceeds the integer range.
-- It is not appropriate for floating-point averages.
+- Signed right shifts and integer division can differ for negative values.
+- `A[i] + B[i]` can overflow before either the shift or division.
+- The shift form is not appropriate for floating-point averages.
 
-A safer integer average may require a wider type or a formula that avoids overflow.
+A safer integer average may require a wider intermediate type or a formula that avoids overflow.
 
 ### GPUs Are SIMT Engines
 
-GPUs are often described as SIMD-like, but the more accurate programming model is **SIMT: Single Instruction, Multiple Threads**.
+GPUs are often described as SIMD-like, but many GPU programming models are better described as **SIMT: Single Instruction, Multiple Threads**.
 
 In SIMT:
 
 - The programmer writes code as if each thread is scalar and independent.
 - The hardware groups threads into fixed execution groups: **warps** on NVIDIA GPUs and **wavefronts/waves** on AMD GPUs.
-- Threads in the same group usually execute the same instruction together.
-- If threads diverge into different branches, the hardware uses masks and may serialize the branch paths.
+- Threads in the same group normally issue instructions together across active lanes.
+- If threads diverge into different branches, the hardware tracks active lanes and executes the required paths separately, reducing efficiency.
 
 #### Good GPU Workload
 
@@ -384,15 +384,15 @@ SIMT: Single Instruction, Multiple Threads
     +-----------+-----------+-----------+-----------+
 ```
 
-Each thread appears to have its own scalar execution path, but the hardware executes groups of threads together when possible.
+Each thread has its own logical execution state, while the hardware schedules and issues work in groups of threads.
 
-> **Correction:** Warps are generally fixed groups of neighboring threads, not arbitrary groups dynamically re-formed every cycle. Divergence is handled with active-lane masks and reconvergence mechanisms, not by freely regrouping all matching threads across the GPU.
+> **Note:** Warps are fixed groups of neighboring threads, not arbitrary groups that are dynamically re-formed each cycle. Divergence is handled through per-lane execution state and reconvergence mechanisms rather than by regrouping matching threads across the GPU.
 
 ### Fine-Grained Multithreading
 
-**Fine-grained multithreading** switches among many hardware thread contexts to hide latency. GPUs use this idea heavily.
+**Fine-grained multithreading** interleaves instructions from many resident hardware thread groups to hide latency. GPUs use this idea heavily.
 
-When one warp stalls on a long-latency memory access, the scheduler can issue instructions from another ready warp.
+When one warp stalls on a long-latency operation, the scheduler can issue instructions from another ready warp without performing a heavyweight software context switch.
 
 ```text
 Cycle:       0      1      2      3      4      5
@@ -417,7 +417,7 @@ This improves throughput because execution units spend less time idle.
 
 ### High-Level GPU Architecture
 
-A modern GPU is organized around many compute units, often called **Streaming Multiprocessors (SMs)** on NVIDIA GPUs or **Compute Units (CUs)** on AMD GPUs.
+A modern GPU is organized around many compute units, commonly called **Streaming Multiprocessors (SMs)** on NVIDIA GPUs and **Compute Units (CUs)** on AMD GPUs.
 
 ```text
 +------------------------------------------------------------------+
@@ -459,7 +459,7 @@ A modern GPU is organized around many compute units, often called **Streaming Mu
 
 ### General-Purpose Programming on GPUs
 
-**General-purpose GPU programming (GPGPU)** uses GPUs for non-graphics computation. It works best when the workload has large amounts of data parallelism.
+**General-purpose GPU programming (GPGPU)** uses GPUs for non-graphics computation. It works best when a workload exposes substantial data parallelism.
 
 Good GPU workloads usually have:
 
@@ -467,15 +467,15 @@ Good GPU workloads usually have:
 - High arithmetic intensity or coalesced memory access.
 - Limited synchronization.
 - Regular control flow.
-- Enough work to amortize host-device transfer overhead.
+- Enough work to amortize launch overhead and, on discrete GPUs, host-device transfer costs.
 
 Poor GPU workloads often have:
 
-- Heavy branching.
+- Heavy or highly irregular branching.
 - Small input sizes.
 - Irregular pointer chasing.
 - Strong sequential dependencies.
-- Frequent CPU-GPU transfers.
+- Frequent CPU-GPU transfers on systems with separate host and device memory.
 
 #### Typical GPU Execution Flow
 
@@ -494,7 +494,7 @@ Poor GPU workloads often have:
 I. **Copy input data to the GPU**
 
 - Allocate device memory.
-- Transfer input arrays from host memory to device memory.
+- On a discrete-memory system, transfer input arrays from host memory to device memory.
 
 II. **Launch a GPU kernel**
 
@@ -506,7 +506,7 @@ III. **Copy results back to the CPU**
 - Transfer output data from device memory back to host memory.
 - Free device memory when finished.
 
-> **Performance note:** Transfers across PCIe or other host-device links are expensive. Reusing data on the GPU across multiple kernels is often faster than copying it back and forth repeatedly.
+> **Performance note:** On discrete GPUs, transfers across PCIe or other host-device links can be expensive. Reusing data on the GPU across multiple kernels is often faster than repeatedly moving it between host and device memory.
 
 ### Warps and Blocks
 
@@ -540,7 +540,7 @@ A block is a group of threads that can cooperate.
 
 - Threads in the same block can share `__shared__` memory.
 - Threads in the same block can synchronize with `__syncthreads()`.
-- Blocks are scheduled independently, so they should not depend on one another during a kernel.
+- Blocks are normally scheduled independently, so a conventional kernel should not rely on execution order or direct synchronization between blocks.
 
 #### Thread
 
@@ -552,7 +552,7 @@ A thread is the basic programming unit. Each thread has:
 
 #### Warp / Wavefront
 
-A warp is the hardware execution group. On NVIDIA GPUs, a warp is typically 32 threads. On AMD GPUs, the corresponding group is often called a wavefront or wave, and the width depends on the architecture.
+A warp is a hardware execution group. On NVIDIA GPUs, a warp contains 32 threads. On AMD GPUs, the corresponding group is usually called a wavefront or wave, and its width depends on the architecture and execution mode.
 
 ```text
 +-------------------------------------------------------------+
@@ -639,7 +639,7 @@ if (err != cudaSuccess) {
 }
 ```
 
-The CPU variable `d_data` is a handle to memory allocated on the GPU.
+The CPU variable `d_data` is a device pointer that refers to memory allocated in the GPU's address space.
 
 #### Copy Data to the GPU
 
@@ -705,10 +705,12 @@ size_t sharedBytes = block * sizeof(float);
 blockSum<<<grid, block, sharedBytes>>>(d_in, d_partial, n);
 ```
 
-This version fixes two common issues:
+This version addresses two common issues:
 
 - It checks `i < n` before reading input.
 - It uses dynamically sized shared memory so the buffer matches the block size.
+
+The halving reduction shown here assumes a power-of-two block size, such as the `256` threads used in the launch example.
 
 ### Common CUDA Concepts
 
@@ -720,7 +722,7 @@ This version fixes two common issues:
 | **Grid** | All blocks launched for one kernel. | `gridDim.x` | Can be 1D, 2D, or 3D. |
 | **Warp / Wavefront** | Hardware execution group. | 32 threads on many NVIDIA GPUs | Important for divergence and coalescing. |
 | **Shared Memory** | Fast per-block memory. | `__shared__ float tile[256];` | Useful for tiling and reductions. |
-| **Global Memory** | Main GPU memory. | `cudaMalloc`, pointer access | Large but high latency. Coalescing matters. |
+| **Global Memory** | Main device memory visible to kernels. | `cudaMalloc`, pointer access | Large but relatively high latency. Coalescing matters. |
 | **Register** | Fast per-thread storage. | Local scalar variables | Excessive register use can reduce occupancy. |
 | **Barrier** | Synchronizes threads in one block. | `__syncthreads()` | Does not synchronize across blocks. |
 | **Device Function** | GPU function called from GPU code. | `__device__ float f(float x)` | Cannot be called directly from host. |
@@ -738,7 +740,7 @@ Use this checklist when improving a GPU kernel:
 | Are memory accesses coalesced? | Coalescing reduces global-memory transactions. |
 | Is branch divergence low? | Divergent branches serialize work within a warp. |
 | Is shared memory used safely? | Bank conflicts and missing barriers cause slowdowns or bugs. |
-| Are host-device transfers minimized? | Transfers can dominate runtime for small workloads. |
+| Are host-device transfers minimized? | On discrete GPUs, transfers can dominate runtime for small workloads. |
 | Is occupancy reasonable? | Too many registers or too much shared memory can limit resident warps. |
 | Is arithmetic intensity high? | More computation per byte of memory helps performance. |
 | Are errors checked? | CUDA errors can otherwise go unnoticed. |
@@ -748,7 +750,7 @@ Use this checklist when improving a GPU kernel:
 | Mistake | Why It Is a Problem | Fix |
 |---|---|---|
 | No bounds check in the kernel | Extra threads may access invalid memory. | Use `if (i < n)`. |
-| Copying data back after every kernel | Host-device transfers are expensive. | Keep data on the GPU across multiple kernels. |
+| Copying data back after every kernel | On discrete GPUs, host-device transfers can be expensive. | Keep data on the GPU across multiple kernels when possible. |
 | Assuming all GPU threads run independently | Warps execute together. | Consider divergence and memory coalescing. |
 | Using too many registers per thread | Reduces occupancy. | Inspect compiler reports and tune kernel resource use. |
 | Synchronizing across blocks inside one kernel | Standard CUDA has no simple global barrier inside a normal kernel. | Split work into multiple kernel launches or use cooperative groups where supported. |
