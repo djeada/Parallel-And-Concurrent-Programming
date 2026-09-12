@@ -1,24 +1,24 @@
 ## Message Passing Interface (MPI)
 
-The **Message Passing Interface (MPI)** is a standardized and portable message-passing system designed to function on a wide variety of parallel computing architectures. It provides a set of library routines that can be called from programming languages like C, C++, and Fortran to write parallel applications. MPI allows multiple processes to communicate with one another by sending and receiving messages, enabling the development of scalable and efficient parallel programs.
+The **Message Passing Interface (MPI)** is a standardized, portable interface for message passing across a wide range of parallel-computing systems. It provides library routines for building parallel applications whose processes communicate by explicitly sending and receiving data. The MPI standard defines C and Fortran language bindings; C++ programs commonly use the C interface from C++ code.
 
-MPI is central to high-performance computing (HPC) and is widely used in scientific computing, engineering simulations, and data-intensive tasks. It provides a rich set of functionalities that support both point-to-point and collective communication, making it suitable for a broad range of parallel algorithms.
+MPI is central to high-performance computing (HPC) and is widely used in scientific computing, engineering simulations, and other data-intensive workloads. It supports point-to-point, collective, and other communication patterns, making it suitable for many scalable parallel algorithms.
 
 Main idea:
 
 - In MPI, multiple processes execute their own code independently and communicate by explicitly sending and receiving messages. This model differs from shared-memory models where processes communicate by accessing shared variables.
 - MPI is defined by a standard that specifies the syntax and semantics of library routines. This ensures that MPI programs can be ported across different parallel computing platforms with minimal changes.
 - MPI implementations are optimized for the underlying hardware, providing high performance while maintaining portability. This allows applications to scale from small clusters to supercomputers.
-- While MPI consists of over 100 functions, a small subset is sufficient for most applications. This subset includes functions for initialization, communication, synchronization, and finalization.
+- Although MPI defines a large API, many applications rely on a relatively small core of routines for initialization, communication, coordination, and finalization.
 - MPI can be used with various programming languages and supports both single-program multiple-data (SPMD) and multiple-program multiple-data (MPMD) models.
 
 ### MPI Programming Model
 
-MPI follows the **message-passing programming model**, where processes communicate by explicitly sending and receiving messages. Here are the key aspects of the MPI programming model:
+MPI follows a **message-passing programming model** in which independent processes exchange data explicitly. The main parts of this model are:
 
 #### Process Model
 
-- In an MPI program, the number of processes is typically fixed at the start of the program. Each process runs independently and can be mapped to a separate processor or core.
+- In a typical MPI program, the number of processes is chosen when the job starts. Each process runs independently and may be placed on a separate core, share a node with other processes, or run on another node. MPI also supports dynamic process management, though it is less common.
 - Each process has a unique identifier called a **rank**, which ranges from `0` to `N-1`, where `N` is the total number of processes.
 - A communicator defines a group of processes that can communicate with each other. The default communicator, `MPI_COMM_WORLD`, includes all processes.
 
@@ -30,11 +30,11 @@ MPI follows the **message-passing programming model**, where processes communica
 
 #### Synchronization
 
-- MPI provides the `MPI_Barrier` function, which acts as a synchronization point. All processes in a communicator must reach this barrier before any can proceed. This ensures that no process moves forward until all others have caught up, making it useful for coordinating stages of parallel computation.
-- In addition to `MPI_Barrier`, other collective operations like `MPI_Bcast`, `MPI_Reduce`, and `MPI_Gather` implicitly involve synchronization. While these functions perform data movement, they also ensure synchronization by requiring participation from all processes within a communicator.
-- When performing parallel I/O (e.g., using MPI-IO), synchronization is essential to ensure data consistency and ordering. MPI provides various mechanisms for synchronized I/O operations, such as `MPI_File_sync` to ensure all changes are flushed to disk.
-- MPI allows for finer synchronization via point-to-point communication calls like `MPI_Sendrecv` and non-blocking functions (`MPI_Isend`, `MPI_Irecv`). These allow more precise control over synchronization by managing communication dependencies without forcing all processes to wait.
-- While synchronization ensures correctness in parallel programs, excessive use of barriers or collective synchronization functions can hurt performance by forcing idle times for processes. Minimizing unnecessary synchronization is important for optimizing parallel efficiency.
+- `MPI_Barrier` is an explicit synchronization point: every process in the communicator must enter the barrier before any of them can return from it.
+- Other collective operations such as `MPI_Bcast`, `MPI_Reduce`, and `MPI_Gather` require matching participation from the relevant processes, but they are **not** portable substitutes for a barrier. A collective call may return before other processes have completed, or even entered, the same operation.
+- For parallel I/O, MPI-IO provides operations for coordinating access and making file updates visible. `MPI_File_sync`, for example, synchronizes a process's MPI file handle with the storage system, but it is not itself a communicator-wide barrier.
+- Point-to-point operations such as `MPI_Sendrecv`, `MPI_Isend`, and `MPI_Irecv` let programs express more precise communication dependencies without forcing every process to synchronize at the same point.
+- Synchronization is necessary for correctness, but unnecessary barriers or tightly coupled communication can leave faster processes idle and reduce parallel efficiency.
 
 #### Process Topologies
 
@@ -46,32 +46,32 @@ MPI follows the **message-passing programming model**, where processes communica
 
 ### Implementing Parallel Algorithms with MPI
 
-MPI provides the tools necessary to implement a wide range of parallel algorithms. Here are some considerations:
+MPI can support many parallel algorithms, but good designs usually depend on two choices: how work is divided and how processes communicate.
 
 #### Data Decomposition
 
 - In **domain decomposition**, the data is split into smaller, manageable chunks, where each process works on a specific portion of the dataset, which is particularly useful in large-scale **simulations** or numerical computations.
 - **Task decomposition** involves dividing the overall computational tasks so that each process can work on a distinct function or subtask, often used to enhance the **parallel efficiency** of complex systems.
-- The primary benefit of domain decomposition is that it allows for **load balancing**, ensuring that each process is equally utilized, minimizing idle time and maximizing computational resources.
+- Domain decomposition can support effective **load balancing** when the domain is partitioned so that processes receive comparable amounts of work. Poor partitioning can still leave some processes overloaded while others sit idle.
 - In contrast, task decomposition can introduce a certain level of **heterogeneity** in workload since different tasks might have different computational demands.
 
 #### Communication Patterns
 
 - **Nearest neighbor communication** is a pattern where each process exchanges data only with its adjacent processes, which is particularly relevant in **grid-based computations** such as finite difference methods in scientific computing.
-- **Global communication** involves scenarios where processes need to exchange data with every other process, such as in collective operations like **global sums**, reductions, or broadcasts.
-- Nearest neighbor communication is more **localized**, reducing the communication overhead since data only needs to travel to nearby processes, making it efficient in systems with a structured spatial domain.
-- On the other hand, global communication often involves **all-to-all communication**, requiring synchronization across all processes, which can introduce **latency** and bottlenecks in large-scale systems.
+- **Global communication** involves operations whose result or data distribution spans an entire communicator, such as global reductions or broadcasts.
+- Nearest-neighbor communication is more **localized**, so each process exchanges data with only a small set of peers. This often scales well for structured spatial domains.
+- Global collectives generally require broader coordination and data movement than neighbor exchanges. Their cost can therefore become significant at large process counts, although they do not necessarily use all-to-all communication or act as barriers.
 
 ### MPI Basics
 
-While MPI provides a comprehensive set of functions, many parallel applications can be developed using a core subset of functions. These functions cover initialization, communication, and finalization.
+MPI has a large API, but many applications can be built from a small core of routines for initialization, process discovery, communication, and finalization.
 
 #### Core MPI Functions
 
 | **Function**          | **Description**                                                                    | **Parameters**                                                     |
 |-----------------------|------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| **MPI_Init**          | Initializes the MPI execution environment. Must be called before any other MPI function. | `int *argc, char ***argv` - Arguments passed to the program        |
-| **MPI_Finalize**      | Terminates the MPI execution environment. No MPI functions can be called after this. | None                                                               |
+| **MPI_Init**          | Initializes the classic MPI execution environment. It must be called before most MPI routines in this model. | `int *argc, char ***argv` - Arguments passed to the program        |
+| **MPI_Finalize**      | Finalizes the classic MPI execution environment after MPI work is complete. | None                                                               |
 | **MPI_Comm_size**     | Determines the size of the group associated with a communicator.                    | `MPI_Comm comm, int *size` - Communicator and pointer to store size|
 | **MPI_Comm_rank**     | Determines the rank of the calling process in the communicator.                     | `MPI_Comm comm, int *rank` - Communicator and pointer to store rank|
 | **MPI_Send**          | Performs a standard-mode, blocking send.                                            | `void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm` |
@@ -194,10 +194,10 @@ MPI provides various communication functions to send and receive messages betwee
 
 #### MPI_Send and MPI_Recv
 
-- **MPI_Send** is a function used to transmit messages from one process to another in an MPI program, allowing for explicit data exchange between processes.
-- The operation of MPI_Send is **blocking**, meaning that the function only completes and returns when the data in the send buffer has been safely sent, allowing the buffer to be reused for other tasks.
-- **MPI_Recv** is designed to receive messages sent by other processes, facilitating communication by transferring data into the designated receive buffer.
-- Like MPI_Send, MPI_Recv is also a **blocking** operation, meaning the function completes only when the receive buffer is fully populated with the incoming message, ensuring that the data is ready for processing.
+- `MPI_Send` performs a standard-mode, blocking send from one process to another.
+- When `MPI_Send` returns, the sender may safely reuse the send buffer. This does **not** necessarily mean that the destination process has already received the message; MPI may use internal buffering.
+- `MPI_Recv` blocks until a matching message is available and has been copied into the receive buffer.
+- The receive buffer specifies a maximum count. The actual number of received elements may be smaller and can be determined from the returned `MPI_Status`.
 
 #### Example: Sending Messages Between Processes
 
@@ -285,7 +285,7 @@ Process 1 received number 42 from process 0
 
 ### Non-Blocking Communication
 
-Non-blocking communication allows processes to initiate communication operations and then proceed without waiting for them to complete. This can be useful for overlapping computation with communication.
+Non-blocking communication lets a process initiate an operation and continue before that operation is complete. This can make it possible to overlap communication with useful computation, provided the MPI implementation and workload allow communication progress while the process continues working.
 
 | **Function**          | **Description**                                                                | **Parameters**                                                                                      |
 |-----------------------|--------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
@@ -401,29 +401,29 @@ Global sum is 10
 
 ### MPI Language Bindings
 
-MPI provides language bindings for C, C++, and Fortran, allowing MPI functions to be used naturally in these languages.
+Modern MPI standards define language bindings for C and Fortran. C++ applications can call the C MPI interface directly from C++ code; the older standardized C++ bindings were deprecated in MPI-2.2 and removed in MPI-3.0.
 
 #### C Language Binding
 
-- The **header file** required for MPI programming in C is `mpi.h`, which must be included in all MPI-related programs.
-- MPI **function naming** follows a convention where function names are prefixed with `MPI_` and are written in CamelCase, maintaining consistency across the library.
-- For **error handling**, MPI functions return an integer error code, where `MPI_SUCCESS` signifies that the operation completed successfully without any errors.
-- **Constants and handles** used in MPI, such as communicators and data types, are predefined in `mpi.h`, ensuring standardized communication.
-- MPI provides **data types** that correspond to C data types, such as `MPI_INT` for integers and `MPI_FLOAT` for floating-point numbers, allowing easy mapping between MPI and C.
+- C programs include `mpi.h` to access MPI routines, types, constants, and handles.
+- MPI routine names use the `MPI_` prefix, for example `MPI_Send` and `MPI_Comm_rank`.
+- MPI routines return an integer error code; `MPI_SUCCESS` indicates successful completion when the configured MPI error handler returns errors to the caller.
+- Communicators, datatypes, requests, and other MPI objects are represented through MPI-defined handle types.
+- MPI datatypes such as `MPI_INT` and `MPI_FLOAT` describe the types of elements transferred in messages.
 
 #### Fortran Language Binding
 
-- In Fortran, either `use mpi` (for Fortran 90 and later) or `include 'mpif.h'` (for Fortran 77) must be used to access MPI functions and definitions.
-- MPI **function naming** in Fortran uses uppercase letters, following a different convention compared to C.
-- **Error handling** in Fortran includes an additional `ierr` parameter at the end of each function call, where the error code is stored, similar to the return value in C.
-- **Constants and handles** in Fortran are defined in `mpif.h` or the `mpi` module, providing a consistent set of identifiers across MPI programs.
-- MPI provides **data types** in Fortran, such as `MPI_INTEGER` for integers and `MPI_REAL` for real numbers, mapping directly to Fortran's native types.
+- Modern Fortran MPI code should generally prefer `use mpi_f08` when the implementation supports it. The older `use mpi` module and legacy `include 'mpif.h'` interface are also widely encountered.
+- Fortran source is case-insensitive, so MPI procedure names may be written in uppercase, lowercase, or mixed case.
+- Traditional Fortran MPI procedures include an `ierror`/`ierr` argument for the returned error code.
+- MPI modules provide constants and handle types for communicators, datatypes, requests, and other MPI objects.
+- MPI datatypes such as `MPI_INTEGER` and `MPI_REAL` correspond to Fortran data representations used in communication.
 
 ### Determinism in MPI Programs
 
 In parallel computing, **determinism** refers to the property where a program produces the same output every time it is run with the same input, regardless of the timing of events during execution. In message-passing programming models like MPI, achieving determinism can be challenging due to the inherent nondeterminism in the arrival order of messages.
 
-Consider a scenario where two processes, **Process A** and **Process B**, send messages to a third process, **Process C**. The arrival order of these messages at Process C is not guaranteed because it depends on various factors such as network latency, scheduling, and system load. Although MPI guarantees that messages sent from one process to another are received in the order they were sent, this guarantee does not extend across multiple sender processes.
+Consider a scenario where two processes, **Process A** and **Process B**, send messages to a third process, **Process C**. The relative arrival order of messages from different senders is not guaranteed; it can vary with network latency, scheduling, and system load. MPI does provide a non-overtaking guarantee for matching point-to-point messages from the same sender to the same receiver, but that ordering guarantee does not impose an order across different senders.
 
 Ensuring that an MPI program behaves deterministically is crucial for debugging, testing, and verifying parallel applications. It is the programmer's responsibility to design the communication patterns and use MPI features appropriately to achieve determinism.
 
@@ -431,7 +431,7 @@ To make MPI programs deterministic, programmers can employ the following techniq
 
 #### 1. Specifying Message Sources
 
-By default, when a process calls `MPI_Recv`, it can specify the source of the message or accept messages from any source by using `MPI_ANY_SOURCE`. To ensure determinism, it is advisable to specify the exact source process from which to receive messages. This eliminates ambiguity about which message is received and in what order.
+`MPI_Recv` can name a specific source or use `MPI_ANY_SOURCE` to accept a matching message from any process. When the program expects a particular sender, naming that rank directly removes ambiguity and makes the communication pattern easier to reason about.
 
 ```c
 
@@ -447,7 +447,7 @@ MPI_Recv(buffer, count, datatype, source_rank, tag, comm, &status);
 
 #### 2. Using Message Tags
 
-MPI allows messages to be labeled with a **tag**, an integer value specified during send and receive operations. By carefully assigning and matching tags, processes can distinguish between different types of messages and ensure that they receive the correct message at the correct time.
+MPI messages carry an integer **tag** that is matched by receive operations. Using distinct tags for different message types helps processes distinguish traffic and match the intended message explicitly.
 
 ```c
 
@@ -463,17 +463,17 @@ MPI_Recv(data, count, datatype, source_rank, TAG_DATA, comm, &status);
 
 #### 3. Ordering Communication Operations
 
-Designing the communication sequence so that all processes follow a predetermined order can help in achieving determinism. This often involves structuring the program such that all sends and receives occur in a fixed sequence, possibly by using barriers or other synchronization mechanisms.
+A fixed communication sequence can also improve determinism. When processes issue sends and receives in a well-defined order, message matching is easier to predict. Barriers may be useful between distinct phases, but they should not be added merely to compensate for an unclear communication design.
 
 #### 4. Avoiding Wildcards
 
-Minimize the use of wildcards like `MPI_ANY_SOURCE` and `MPI_ANY_TAG` in receive operations. While they provide flexibility, they can lead to nondeterministic behavior because the order in which messages are received can vary between executions.
+Use `MPI_ANY_SOURCE` and `MPI_ANY_TAG` only when the program genuinely accepts more than one possible sender or message type. If several messages can match, the selected message may vary between executions.
 
 #### Example: Nondeterministic Program
 
-Let's examine a program that demonstrates nondeterministic behavior due to the use of `MPI_ANY_SOURCE` and `MPI_ANY_TAG`.
+The following ring example uses `MPI_ANY_SOURCE` and `MPI_ANY_TAG`, two wildcard forms that can introduce nondeterministic matching when more than one message is eligible. In this simplified ring, each receive is intended to correspond to a specific neighbor, so the main lesson is to encode that expected source and tag explicitly.
 
-The program implements a symmetric pairwise interaction algorithm in which processes are arranged in a ring topology. Each process sends data halfway around the ring and then receives data from any source. Finally, it returns accumulated data to the originating process.
+The processes are arranged in a ring. Each process sends data to a neighbor, receives data using wildcard matching, and later exchanges an additional message across the ring.
 
 ```c
 #include <mpi.h>
@@ -518,9 +518,9 @@ int main(int argc, char *argv[]) {
 
 In this program:
 
-- **Non-determinism arises** in MPI when processes use `MPI_ANY_SOURCE` and `MPI_ANY_TAG` in their `MPI_Recv` calls, allowing them to receive messages from any source or with any tag, which can lead to variability in the order messages are processed if multiple are pending.
-- **Race conditions** occur when multiple messages are sent to a process, and the order in which they are received may vary between different executions, potentially causing unpredictable behavior.
-- **Deadlocks** can emerge when incorrect assumptions are made about the **message ordering**, leading processes to wait indefinitely for messages that may have been received in a different sequence than expected.
+- Wildcard receives make the receive pattern less explicit. They become nondeterministic when several pending messages could satisfy the same receive.
+- A **message race** occurs when the program's behavior depends on which eligible message a wildcard receive matches first.
+- The send-then-receive ring pattern also deserves care: because `MPI_Send` is a standard blocking send, a program must not assume that every send will be buffered. `MPI_Sendrecv` or correctly completed non-blocking operations are safer choices for symmetric exchanges that might otherwise form a cyclic wait.
 
 #### Ensuring Determinism in the Example
 
@@ -528,15 +528,16 @@ To make the program deterministic, modify the `MPI_Recv` calls to specify the ex
 
 ```c
 
-MPI_Recv(buff, 600, MPI_FLOAT, rnbr, 1, MPI_COMM_WORLD, &status);
+int lnbr = (myid - 1 + np) % np;
+MPI_Recv(buff, 600, MPI_FLOAT, lnbr, 1, MPI_COMM_WORLD, &status);
 
 ```
 
-By specifying `rnbr` as the source and `1` as the tag, the process ensures that it receives the expected message from its right neighbor with the correct tag.
+By specifying the expected sender and tag, the process removes the ambiguity introduced by the wildcards. In this ring, each process sends to its right neighbor, so the corresponding receive should name the **left** neighbor as its source.
 
 ### MPI Collective Communication
 
-Parallel algorithms often require coordinated communication among multiple processes. MPI provides a set of **collective communication functions** that are optimized for such operations. These functions simplify the code and can offer performance benefits due to underlying optimizations.
+Parallel algorithms often need coordinated communication across a group of processes. MPI provides **collective communication functions** for common patterns such as broadcast, reduction, scatter, and gather. Using these operations usually makes intent clearer and lets the MPI implementation choose an efficient algorithm for the platform.
 
 #### Key MPI Collective Communication Functions
 
@@ -641,11 +642,12 @@ int main(int argc, char *argv[]) {
 Explanation:
 
 - The root process initializes the global array.
-- The array size is broadcasted to all processes to ensure they allocate the correct amount of memory.
-- The global array is scattered so that each process receives a segment.
+- The array size is broadcast to all processes so that each process can allocate its local storage.
+- The global array is scattered so that each process receives one segment.
 - Each process computes the sum of its local segment.
 - The local sums are reduced to a global sum using `MPI_Reduce` with the `MPI_SUM` operation.
 - The root process prints the global sum.
+- This simplified example assumes `array_size` is evenly divisible by the number of processes. For uneven partitions, use counts and displacements with `MPI_Scatterv`.
 
 #### Finite Difference Problem Using MPI
 
@@ -706,8 +708,9 @@ int main(int argc, char *argv[]) {
         // Initialize problem size and data
         size = 1000;
         work = malloc(size * sizeof(float));
+        const double pi = acos(-1.0);
         for (int i = 0; i < size; i++) {
-            work[i] = sin(i * M_PI / size);
+            work[i] = sin(i * pi / size);
 
         }
 
@@ -785,13 +788,14 @@ int main(int argc, char *argv[]) {
 Explanation:
 
 - The root process initializes the problem size and data array.
-- The problem size is broadcasted, and the data is scattered among processes.
-- Each process allocates extra space for ghost cells to hold boundary data from neighbors.
-- Processes exchange boundary data with their left and right neighbors using `MPI_Sendrecv`.
-- Each process updates its local data based on the finite difference scheme.
-- All processes compute their local error, and `MPI_Allreduce` is used to find the global maximum error.
-- The loop continues until the global error is below a specified threshold.
-- Final results are gathered at the root process.
+- The problem size is broadcast, and the data is scattered among processes.
+- Each process allocates extra space for ghost cells that hold boundary data from neighboring processes.
+- Processes exchange boundary values with their left and right neighbors using `MPI_Sendrecv`.
+- Each process updates its local data using the finite-difference stencil.
+- Each process computes a local error, and `MPI_Allreduce` finds the maximum error across all processes.
+- The loop continues until the global error falls below the chosen threshold.
+- The final local arrays are gathered at the root process.
+- Like the previous scatter example, this code assumes the global size is evenly divisible by the number of processes.
 
 ### MPI Modularity and Communicators
 
@@ -835,17 +839,19 @@ Creating an Intercommunicator:
 
 MPI_Comm intercomm;
 int local_leader = 0; // Rank of leader in local group
-int remote_leader = 0; // Rank of leader in remote group
+int remote_leader_world_rank = /* rank of the other group's leader in MPI_COMM_WORLD */;
 
-MPI_Intercomm_create(local_comm, local_leader, MPI_COMM_WORLD, remote_leader, tag, &intercomm);
+MPI_Intercomm_create(local_comm, local_leader, MPI_COMM_WORLD,
+                     remote_leader_world_rank, tag, &intercomm);
 
-// Now processes in local_comm can communicate with processes in the remote group via intercomm
+// remote_leader_world_rank identifies the leader of the other group
+// in the peer communicator (MPI_COMM_WORLD).
 
 ```
 
 ### MPI Derived Data Types
 
-In many applications, data to be sent or received may not be stored contiguously in memory. MPI allows the creation of **derived data types** to describe such complex memory layouts, enabling efficient communication without extra copying.
+Data sent through MPI is not always contiguous in memory. **Derived datatypes** describe structured or strided layouts so MPI can communicate them directly without requiring the application to manually pack every element into a contiguous buffer.
 
 | **Function**              | **Description**                                                                                      | **Parameters**                                                                                                       |
 |---------------------------|------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
@@ -887,7 +893,7 @@ Benefits:
 
 ### Asynchronous Communication
 
-Asynchronous communication allows a process to initiate a communication operation and then proceed without waiting for it to complete. This can help overlap computation and communication, improving performance.
+MPI non-blocking communication allows a process to initiate communication and continue before the operation is complete. This can enable communication/computation overlap, but actual asynchronous progress depends on the MPI implementation, configuration, and whether the program continues to enter MPI as needed.
 
 #### Non-blocking Operations
 
@@ -896,7 +902,7 @@ Asynchronous communication allows a process to initiate a communication operatio
 
 #### Probing for Messages
 
-Sometimes, a process may need to check if a message has arrived without actually receiving it.
+Sometimes a process needs to check whether a matching message is available before receiving it.
 
 | **Function**          | **Description**                                                                                | **Parameters**                                                                                         |
 |-----------------------|------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
@@ -947,16 +953,16 @@ Use Cases:
 
 ### Best Practices 
 
-1. Minimize communication overhead by reducing the number and size of messages.
-2. Use non-blocking communication to allow the program to continue executing while sending or receiving messages.
-3. Utilize collective communication operations for efficient communication among multiple processes.
-4. Ensure your program scales well with an increasing number of processes, distributing work evenly to prevent idle or overloaded processes (implement load balancing).
-5. Always check the return codes of MPI functions to handle errors gracefully.
-6. Ensure every `MPI_Send` has a matching `MPI_Recv` to avoid deadlocks.
-7. Use non-blocking communication or `MPI_Sendrecv` to prevent processes from waiting indefinitely and avoid deadlocks.
-8. Properly manage resources by allocating and freeing communicators and data types.
-9. Design algorithms that scale efficiently and minimize communication frequency and volume.
-10. Leverage MPI's optimized collective communication functions to improve performance.
+1. Minimize communication overhead by avoiding unnecessary messages and transferring only the data that is needed.
+2. Use non-blocking communication when it enables useful overlap or helps express communication dependencies clearly.
+3. Prefer collective operations when the communication pattern is naturally collective; MPI implementations can optimize them for the platform.
+4. Balance work across processes so that some ranks do not remain idle while others become bottlenecks.
+5. Check MPI return codes when using an error handler that returns errors, and handle failures deliberately.
+6. Make sure point-to-point sends and receives are matched consistently by communicator, source/destination, tag, datatype, and count.
+7. Use patterns such as `MPI_Sendrecv` or carefully completed non-blocking operations to avoid common cyclic-wait deadlocks; non-blocking calls alone do not guarantee deadlock freedom.
+8. Free communicators, derived datatypes, requests, and other resources when they are no longer needed.
+9. Design algorithms to reduce communication frequency and volume as process counts grow.
+10. Measure scalability rather than assuming that adding processes will improve performance.
 
 ### Examples
 
@@ -965,7 +971,7 @@ Use Cases:
 1. Install an MPI implementation, such as OpenMPI or MPICH.
 2. Compile your C/C++ MPI program using the provided wrapper scripts:
    - For C: `mpicc mpi_program.c -o mpi_program`
-   - For C++: `mpiCC mpi_program.cpp -o mpi_program`
+   - For C++: `mpic++ mpi_program.cpp -o mpi_program` (some implementations also provide `mpiCC`)
 3. Run your MPI program using the provided `mpiexec` or `mpirun` command:
    - `mpiexec -n <number_of_processes> ./mpi_program`
    - `mpirun -n <number_of_processes> ./mpi_program`
