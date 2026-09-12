@@ -1,21 +1,21 @@
 ## Multiprocessing
 
-**Multiprocessing** involves running multiple processes simultaneously. Each process has its own memory space, making them more isolated from each other compared to threads, which share the same memory. This isolation means that multiprocessing can be more robust and less prone to errors from shared state, as each process runs independently. Multiprocessing is often used to leverage multiple CPU cores, allowing a program to perform computationally intensive tasks in parallel, thus improving performance. Communication between processes is typically achieved through inter-process communication (IPC) mechanisms, such as pipes, sockets, or shared memory. While more resource-intensive than multithreading, due to the need for separate memory spaces, multiprocessing can achieve better performance for CPU-bound tasks and provides better fault isolation.
+**Multiprocessing** runs work across multiple processes. Each process normally has its own virtual address space, so processes are more isolated from one another than threads, which typically share a process's memory. This isolation reduces accidental shared-state interference and improves fault isolation. Multiprocessing is often used to take advantage of multiple CPU cores for CPU-bound work. Processes communicate through inter-process communication (IPC) mechanisms such as pipes, sockets, message queues, or explicitly shared memory. The trade-off is higher creation, memory, and communication overhead than with threads.
 
 ### Introduction to Processes
 
-In computing, a process is an instance of a program in execution. It includes the program code, current activity, and the state of the program's resources. Processes are crucial for multitasking environments, as they allow multiple programs to run concurrently on a single computer system. A process can create other processes during its execution, which are termed as child processes. These child processes are managed by the parent process, which can control and monitor their execution status, handle their termination, and communicate with them.
+In computing, a process is an instance of a program in execution. It includes the program code, execution state, and associated resources such as memory and file descriptors. Processes are fundamental to multitasking because they allow multiple programs to make progress concurrently on one system. A process can create other processes, called child processes. The creating process is the parent and can monitor, communicate with, and wait for its children.
 
 #### Child Processes
 
-A **Child Process** is a process created by another process, known as the **Parent Process**. Child processes enable applications to perform multiple tasks simultaneously by delegating work to separate processes. This approach can enhance performance, improve resource utilization, and increase application responsiveness.
+A **child process** is a process created by another process, known as the **parent process**. Child processes let an application delegate work to separate execution contexts. Depending on the workload and available CPU cores, this can improve throughput, resource use, responsiveness, or fault isolation.
 
 **Characteristics of Child Processes**
 
-- Each child process operates **independently** with its own memory space.
-- Multiple child processes can run **concurrently** executing tasks in parallel.
-- Parent and child processes can exchange information using various **Inter-Process Communication (IPC)** mechanisms.
-- The parent process can **manage** the creation, monitoring, and termination of child processes.
+- Each child process normally operates independently with its own virtual address space.
+- Multiple child processes can run concurrently and may run in parallel on different CPU cores.
+- Parent and child processes can exchange information through inter-process communication (IPC).
+- The parent can create, monitor, signal, and wait for child processes.
 
 **Parent and Child Process Relationship**
 
@@ -23,15 +23,15 @@ The relationship between parent and child processes is hierarchical. Here are th
 
 **Parent Process**:
 
-- Initiates the creation of child processes.
-- Monitors and controls child processes.
-- Waits for child processes to complete their tasks before proceeding.
+- Creates child processes.
+- Monitors or signals child processes when needed.
+- Can continue working concurrently and wait for children when their results or exit status are needed.
 
 **Child Process**:
 
-- Inherits specific attributes from the parent, such as environment variables.
-- Operates independently but can communicate with the parent and other child processes.
-- Terminates upon task completion or when instructed by the parent.
+- May inherit attributes from the parent, such as environment variables and open file descriptors, depending on how it is created.
+- Runs independently but can communicate with the parent or other processes through IPC.
+- Terminates when its work finishes, when it exits explicitly, or when it is terminated externally.
 
 **Diagram of Parent and Child Process Relationship**:
 
@@ -59,15 +59,15 @@ Creating child processes involves spawning new processes from an existing parent
 - In UNIX-based systems, forking involves the parent process creating a child process by duplicating itself, allowing both processes to continue execution independently from the point of the fork.  
 - On both Windows and UNIX systems, spawning allows the parent process to start a new child process, with the child initializing independently rather than inheriting the exact state of the parent.  
 - High-level libraries in programming languages, such as Python's `multiprocessing.Process`, offer simplified abstractions for process creation, reducing the complexity of manually handling system calls.  
-- Forking can result in processes sharing the same memory space, which is then duplicated using a mechanism like copy-on-write to minimize overhead.  
+- After `fork()`, the child has a separate virtual address space that initially mirrors the parent's. Operating systems commonly use copy-on-write so unchanged pages can share the same physical memory until either process writes to them.  
 - Spawning generally involves starting a completely new process that does not share memory or state with the parent, making it more isolated but potentially slower to initialize.  
 - On UNIX systems, the `fork()` system call is commonly used for process creation, whereas on Windows, functions like `CreateProcess()` handle similar tasks.  
 - Libraries like Python's `multiprocessing` module provide a consistent interface for process management across different operating systems, abstracting away platform-specific details.  
-- Using forking is generally efficient for processes that need to share a significant amount of initial data since memory sharing reduces duplication.  
+- Forking can be efficient when a child needs much of the parent's initial state because copy-on-write delays physical memory duplication until pages are modified.  
 - Spawning is more suitable for processes that require distinct and isolated environments to avoid accidental data interference.  
 - High-level abstractions also handle inter-process communication (IPC) and synchronization mechanisms, such as pipes and queues, making it easier for developers to manage complex workflows.  
 - The choice between forking and spawning often depends on the operating system, programming language, and specific application requirements.  
-- On modern systems, forking can sometimes involve additional steps, such as invoking an `exec` family function, to replace the child process image with a new program.  
+- A common UNIX pattern is `fork()` followed by an `exec` family call, which replaces the child's process image with a new program.  
 - Both techniques require careful consideration of process termination and resource cleanup to prevent issues like zombie processes or memory leaks.  
 - High-level libraries often include utilities to manage process lifecycles, allowing developers to terminate or join processes without directly handling low-level details.
 
@@ -97,7 +97,7 @@ Different Process States:
 
 #### Zombie Process
 
-A zombie process is a process that has completed its execution but still has an entry in the process table. This situation occurs because the parent process has not yet read the exit status of the child process. Although zombies do not consume significant system resources, they occupy a slot in the process table. If a parent process does not properly clean up after its children, numerous zombie processes can accumulate, potentially exhausting the system's available process slots and slowing down system performance.
+A zombie process is a child process that has finished execution but still has an entry in the process table because its parent has not yet collected its exit status. A zombie no longer runs and uses very few resources, but it still consumes a process-table entry. If many zombies accumulate, they can eventually exhaust available process identifiers or process-table capacity.
 
 Normal Process Termination:
 
@@ -131,7 +131,7 @@ Zombie Process Scenario:
 |  +-------------+         |
 |         |                |
 |         V                |
-|  Parent Not Calls wait() |
+| Parent Does Not wait()  |
 |         |                |
 |  Child Status: Zombie    |
 +--------------------------+
@@ -153,7 +153,7 @@ Process Table:
 
 #### Orphan Process
 
-An orphan process is a process whose parent process has terminated before the child process. When a parent process terminates, its child processes are typically adopted by the system's init process (PID 1), which becomes their new parent. The init process periodically reaps orphaned processes, ensuring that they do not become zombies. Orphan processes continue running and are managed like any other process by the system.
+An orphan process is a child whose parent terminates while the child is still running. On UNIX-like systems, the orphan is reparented to a designated system process, often PID 1 or a configured subreaper. The child continues running normally. When it later exits, its new parent is responsible for collecting its exit status so it does not remain a zombie.
 
 Normal Process Hierarchy:
 
@@ -191,8 +191,8 @@ Parent Terminates:
         |
         V
 +-------------------+
-|  init/System Idle |
-|  Process (PID=1)  |
+| init / subreaper  |
+| (new parent)      |
 |                   |
 |  +-------------+  |
 |  | Child Proc  |  | (Adopted)
@@ -209,7 +209,7 @@ Original Hierarchy:
 [Parent Process] ---> [Child Process]
 
 After Parent Terminates:
-[init/System Idle] ---> [Orphan Child Process]
+[init/subreaper] ---> [Orphan Child Process]
 ```
 
 ### Communication Between Processes
@@ -235,11 +235,11 @@ Producer sends messages to the Message Queue.
 Consumer retrieves messages from the Message Queue.
 ```
 
-Message passing is beneficial because it naturally supports the isolation of processes, reducing the risk of interference and increasing system robustness. However, it can introduce overhead, particularly when large messages are involved, due to the need to copy data between processes. Additionally, ensuring the order and delivery of messages can be complex, especially in distributed systems.
+Message passing preserves process isolation because data is exchanged explicitly rather than through ordinary shared variables. Its main cost is communication overhead, which may include serialization, copying, buffering, and system calls. Ordering and delivery guarantees depend on the IPC mechanism and can become more complex in distributed systems.
 
 #### Shared Memory
 
-Shared memory allows multiple processes to access a common memory area, enabling them to read and write data quickly. This method is efficient for large data exchanges because it avoids the overhead associated with copying data between processes. Shared memory is particularly useful in scenarios where low-latency data transfer is critical, such as in real-time applications or high-performance computing.
+Shared memory maps a common memory region into multiple processes, allowing them to exchange data without repeatedly copying it through an IPC channel. It can be efficient for large or latency-sensitive data transfers, but the processes must coordinate access explicitly.
 
 ```
 +---------------------+
@@ -265,15 +265,15 @@ Time Step | Process A Actions       | Process B Actions       | Shared Memory St
 However, shared memory requires careful management to prevent data corruption and ensure consistency. Challenges include:
 
 - Without proper synchronization mechanisms like locks, semaphores, or condition variables, concurrent access by multiple processes can lead to race conditions, where the outcome depends on the non-deterministic order of operations.
-- Shared memory regions must be carefully managed to ensure that only authorized processes can access sensitive data, as they bypass the usual protection mechanisms provided by process isolation.
+- Shared memory weakens the normal isolation between participating processes, so permissions and access to the shared region must be managed carefully.
 - Shared memory is generally **limited** to processes running on the same machine, as it involves direct access to memory. While there are techniques to extend shared memory across networked systems, such as distributed shared memory, they introduce additional complexity and overhead.
 
 #### Pipes
 
-Pipes are a simple and efficient form of inter-process communication that allow one-way data flow between processes. There are two main types of pipes:
+Pipes are a simple IPC mechanism for streaming bytes between processes. A single pipe is typically unidirectional, so bidirectional communication normally uses two pipes or a duplex IPC mechanism. Two common forms are:
 
 - **Anonymous Pipes** are used for communication between processes that have a common ancestor, typically a parent-child relationship. They are created using system calls and provide a unidirectional channel for data flow. Anonymous pipes are often used for simple data transfer where one process writes data to the pipe, and the other reads it. However, they do not support complex communication patterns, and their lifespan is tied to the processes that use them.
-- **Named Pipes** also known as FIFOs (First In, First Out), can be used for communication between unrelated processes. Unlike anonymous pipes, named pipes have a presence in the file system, allowing processes to access them by name. They support both local and networked inter-process communication and can be bidirectional. Named pipes provide a flexible mechanism for data transfer and synchronization, but managing access permissions and ensuring proper closing of the pipes can add complexity.
+- **Named Pipes**, also known as FIFOs on POSIX systems, can be used by unrelated processes because they are referenced by a filesystem name. POSIX FIFOs are local IPC objects and are conceptually one-way byte streams; two FIFOs are commonly used for two-way communication. Windows named pipes have different semantics and can support duplex and remote communication. Permissions and correct endpoint cleanup still need to be managed carefully.
 
 ```
 Initial State:
@@ -284,7 +284,7 @@ Initial State:
 Creating Pipe:
 +-----------+        Pipe        +-----------+
 | Process A | ------------------> | Process B |
-| (Write)   | <------------------ | (Read)    |
+| (Write)   |                      | (Read)    |
 +-----------+                  +-----------+
 
 Data Transmission:
@@ -311,7 +311,7 @@ Multiprocessing introduces several challenges, particularly in managing and coor
 
 Debugging multiprocessing applications is inherently more complex than debugging single-process applications. Each process may have its own set of bugs and issues, and the interaction between processes can introduce additional challenges. Standard debugging tools often focus on a single process, making it necessary to debug each process individually and then understand how they interact. Specific challenges include:
 
-- Occur when the outcome depends on the timing or sequence of events across multiple processes. These are notoriously difficult to reproduce and fix, as they may not consistently manifest.
+- Timing-dependent race conditions can be difficult to reproduce because they may appear only under particular scheduling or load conditions.
 - The parallel nature of multiprocessing can lead to nondeterministic behavior, where the same inputs do not always produce the same outputs due to the variability in process scheduling and execution order.
 - Effective logging and monitoring are essential but challenging in a multiprocessing environment, as logs from different processes need to be correlated accurately.
 
@@ -358,7 +358,7 @@ Preventing or mitigating deadlocks requires careful design, such as implementing
 
 #### Data Races
 
-Data races occur when two or more processes or threads access shared data simultaneously, and at least one of the accesses is a write operation. This can lead to inconsistent or incorrect data being read or written, as the processes may overwrite each other's changes unpredictably.
+When processes explicitly share memory, unsynchronized concurrent accesses can create race conditions similar to data races in multithreaded code. If multiple participants access the same location and at least one writes without adequate synchronization, updates can be lost or inconsistent values can be observed.
 
 ```
 Shared Variable:
@@ -407,14 +407,14 @@ Process management keeps concurrent work safe and fast by following these best p
 
 - Guard shared state with the right synchronization primitive (e.g., mutex, read-write lock, semaphore).
 - Enforce a consistent lock order to prevent deadlocks.
-- Prefer atomic operations for frequently updated ("hot") counters or flags.
+- For shared-memory designs, use process-shared atomic operations for small hot counters or flags when the platform supports them.
 - Shape workflow with bounded queues and rate limits to avoid overload.
 - Balance work dynamically using techniques like a central queue or work stealing.
 - Scale out behind a load balancer (LB) when possible.
 - Track key metrics such as p95 latency and queue depth to monitor system health.
 ### Process Synchronization
 
-Process synchronization is the coordination of concurrent processes so they can safely share resources without conflicts or inconsistent results. In a multiprogramming OS, processes often need to access critical sections—code that touches shared data or devices. Synchronization mechanisms (locks, semaphores, monitors, condition variables) ensure mutual exclusion (only one process at a time in a critical section) and proper ordering of operations, preventing race conditions, deadlocks, or starvation while allowing maximum parallelism where possible.
+Process synchronization coordinates concurrent processes so they can share resources and order dependent operations safely. When processes use shared memory, files, devices, or other common resources, synchronization primitives such as locks, semaphores, monitors, and condition variables can enforce mutual exclusion or ordering. Used correctly, they prevent race conditions; used poorly, they can also introduce deadlock, starvation, or unnecessary contention.
 
 **Pick the right primitive**
 
@@ -422,11 +422,11 @@ Process synchronization is the coordination of concurrent processes so they can 
 * **RW Lock**: many readers or one writer.
 * **Counting Semaphore**: N identical resources (e.g., a pool of 8 DB conns).
 * **Condition Variable / Monitor**: wait for a state change.
-* **Barrier**: wait until *all* threads reach a point.
-* **Atomics (CAS/fetch-add)**: tiny, hot counters/flags without kernel hops.
+* **Barrier**: wait until all participating workers reach a synchronization point.
+* **Atomics (CAS/fetch-add)**: small shared counters or flags when the platform provides process-shared atomic access.
 
 ```
-[Threads] -> [Wait Queue] -> [ CRITICAL SECTION ] -> [Release]
+[Processes] -> [Wait Queue] -> [ CRITICAL SECTION ] -> [Release]
                  ^                                     |
                  +----------(blocked)------------------+
 ```
@@ -448,7 +448,7 @@ In an operating system with multiple *processes*, deadlock can occur when proces
  → Both processes stuck forever
 ```
 
-✅ *Prevention (resource ordering):*
+*Prevention (resource ordering):*
 
 Impose a strict global order for resource acquisition. If every process requests resources in the same order, cycles cannot form.
 
@@ -466,8 +466,8 @@ This breaks the *circular wait* condition, preventing deadlock among processes.
 
 A *counting semaphore* can control access to a *pool of limited resources* (e.g., DB connections, worker threads, file handles). The semaphore’s counter tracks how many slots are available.
 
-* `wait(sem)` decrements the counter; if it’s zero, the process waits until a slot is free.
-* `signal(sem)` increments the counter, releasing a slot back to the pool.
+* `wait(sem)` acquires a slot: if the counter is greater than zero, it decrements it; otherwise the process waits.
+* `signal(sem)` releases a slot by incrementing the counter and potentially waking a waiter.
 * At most `capacity` processes can use the resource concurrently.
 
 ```c
@@ -477,7 +477,7 @@ resource_use();     // critical work using one resource
 signal(sem);        // release slot (increment counter)
 ```
 
-✅ This ensures *bounded concurrency*: no more than 8 processes can enter the critical section simultaneously.
+This ensures *bounded concurrency*: no more than eight processes can hold a slot at the same time.
 
 **Producer–Consumer with semaphores (bounded buffer)**
 
@@ -505,8 +505,7 @@ signal(m)                  signal(m)      // unlock buffer
 signal(full)               signal(empty)  // update counters
 ```
 
-✅ Ensures producers stop when the buffer is full, and consumers stop when it’s empty.
-✅ Mutex `m` ensures only one process manipulates the buffer at a time.
+Producers wait when the buffer is full, and consumers wait when it is empty. The binary semaphore `m` ensures that only one process manipulates the buffer at a time.
 
 **Monitor sketch (one place to put state + waiting)**
 
@@ -536,9 +535,7 @@ monitor BoundedQ {
 }
 ```
 
-✅ Producers call `put` and wait if the buffer is full.
-✅ Consumers call `get` and wait if the buffer is empty.
-➡️ The monitor enforces both **safety** (no race conditions) and **liveness** (progress when conditions change).
+Producers call `put` and wait if the buffer is full; consumers call `get` and wait if it is empty. The monitor provides mutual exclusion and condition-based waiting. Progress still depends on correct signaling and fair enough scheduling.
 
 **Readers–Writers (favor readers, simple)**
 
@@ -551,12 +548,16 @@ The *readers–writers problem* arises when multiple processes/threads need *con
 ```pseudo
 rw_lock:
   read_lock():
-    atomic_inc(readers)
+    lock(rmutex)
+    readers += 1
     if readers == 1: lock(wmutex)     # first reader blocks writers
+    unlock(rmutex)
 
   read_unlock():
-    atomic_dec(readers)
+    lock(rmutex)
+    readers -= 1
     if readers == 0: unlock(wmutex)   # last reader releases writers
+    unlock(rmutex)
 
   write_lock():
     lock(wmutex)                      # exclusive access
@@ -565,10 +566,10 @@ rw_lock:
     unlock(wmutex)
 ```
 
-✅ *Pros:* simple, efficient for read-heavy workloads.
-⚠️ *Con:* writers may starve if readers keep arriving.
+*Pros:* simple and efficient for read-heavy workloads.  
+*Con:* writers may starve if readers keep arriving.
 
-*When to avoid locks*: Short counters? Use `atomic_fetch_add`; Hot flags? Use `atomic<bool>`; High contention lists? Use queues with **Multi-Producer Single-Consumer (MPSC)/Single-Producer Single-Consumer (SPSC)** lock-free structures.
+*When to avoid locks*: For very small shared counters or flags, process-shared atomics may be appropriate. For communication-heavy designs, queues or specialized lock-free structures such as MPSC/SPSC queues may reduce lock contention when their assumptions fit the workload.
 
 #### Load Balancing
 
@@ -578,7 +579,7 @@ Load balancing in multiprocessing is the strategy of distributing tasks across m
 
 * All tasks go into a *single shared queue*.
 * *Workers* repeatedly pop from it.
-* *Backpressure* is naturally expressed by the queue length (longer queue → system is overloaded).
+* Queue length is a useful overload signal; a bounded queue can also apply backpressure when producers outpace workers.
 
 ```
           +-----------+
@@ -589,12 +590,12 @@ Producers→|   QUEUE   |← shared
            W1  W2  W3     (workers pop tasks)
 ```
 
-✅ *Pros:* simple, fair, and effective at balancing load.
-⚠️ *Cons:* contention on the queue can become a bottleneck at high thread counts.
+*Pros:* simple, fair, and effective at balancing load.
+*Cons:* contention on the queue can become a bottleneck at high worker counts.
 
-**Work stealing (scales on many threads)**
+**Work stealing (scales across many workers)**
 
-* Each *worker thread* owns a *double-ended queue (deque)* of tasks.
+* Each worker owns a *double-ended queue (deque)* of tasks.
 * *Owner* takes tasks from the *bottom* (LIFO, good for cache locality).
 * *Idle workers* steal from the *top* of others’ deques (FIFO, avoids contention).
 
@@ -607,7 +608,7 @@ Producers→|   QUEUE   |← shared
           pops bottom                       steals top
 ```
 
-✅ *Why it scales well:*
+*Why it can scale well:*
 
 * No central queue → avoids bottlenecks.
 * Most operations are local (fast).
@@ -660,18 +661,17 @@ Static:
 **Dynamic (central queue):**
 
 * Workers keep pulling tasks as they finish.
-* The long $500$ ms task runs alone on one worker,
-  while the other clears all 9 short tasks ($9 \times 50 = 450$ ms).
-* Total time = max(500, 450) = **500 ms**.
+* If the 500 ms task is dequeued early, one worker can spend 500 ms on it while the other processes the short tasks.
+* In that favorable schedule, the total time is about **500 ms**. If the long task is dequeued late, the total can still approach **700 ms**.
 
 ```
-Dynamic:
+Dynamic (long task dequeued early):
  Worker A: [500]                  → 500 ms
  Worker B: [50]...[50] (9×)       → 450 ms
- Total = 500 ms
+ Total ≈ 500 ms
 ```
 
-✅ **Dynamic scheduling reduces idle time** and balances uneven workloads better than static partitioning.
+Dynamic scheduling can reduce idle time and handle uneven workloads better than a fixed partition, but it does not guarantee an optimal schedule.
 
 **Cluster patterns you’ll actually use**
 
@@ -755,7 +755,7 @@ $$
 
 **Contention & false sharing**
 
-When multiple processors update different variables that happen to reside in the *same cache line*, they can cause *false sharing*: the cache line bounces between cores even though the variables are logically independent. This leads to unnecessary contention and degraded scalability.
+When multiple cores update different variables that reside in the *same shared cache line*, they can cause *false sharing*: cache-coherence traffic repeatedly moves or invalidates the line even though the variables are logically independent. In multiprocessing, this matters when the processes actually share the underlying memory.
 
 *Bad (false sharing):*
 
@@ -775,13 +775,13 @@ struct Counters {
 };
 ```
 
-✅ Now `a` and `b` can be updated independently by different cores without interfering in the cache.
+With suitable alignment and layout, `a` and `b` are less likely to share a cache line, reducing false sharing.
 
 **NUMA awareness checklist**
 
-* Pin threads: `taskset -c 0-7 ./app`
-* Local alloc: start thread on node then allocate.
-* Big pools per-NUMA node; avoid cross-node chatter.
+* Pin processes or threads when affinity is useful: `taskset -c 0-7 ./app`.
+* Prefer NUMA-local allocation when workers mostly access local data.
+* Consider per-NUMA-node worker or memory pools to reduce cross-node traffic.
 
 **Backpressure & queues**
 
@@ -816,13 +816,13 @@ struct Counters {
 
 ### Alternatives to Multiprocessing
 
-While traditional multiprocessing is a widely used approach for parallel execution and resource management, several alternative methods achieve concurrency, isolation, and efficient utilization of system resources. These alternatives offer various advantages, including improved scalability, easier deployment, and better resource isolation. Here are some notable alternatives:
+Multiprocessing is one way to gain parallelism and isolation, but broader architectural approaches can address some of the same goals. The following options are not direct replacements for operating-system processes—in fact, many use processes internally—but they provide different ways to structure, deploy, isolate, or scale work:
 
 #### Containers
 
-Containers provide a lightweight alternative to traditional multiprocessing by encapsulating applications in isolated environments. This encapsulation includes the application's code, libraries, dependencies, and configuration files. Containers are often used in a microservice architecture, where each service runs in its own container, simplifying deployment and management. They offer advantages such as:
+Containers package applications and their dependencies into isolated runtime environments while sharing the host kernel. They are often used with microservices and deployment platforms to simplify packaging, rollout, and scaling. Advantages include:
 
-- Containers ensure that applications run in isolated environments, preventing conflicts between dependencies and reducing the risk of security vulnerabilities.
+- Containers isolate filesystems, processes, and other resources, reducing dependency conflicts and limiting some forms of interference between applications.
 - Containers can be easily scaled up or down to meet demand, enabling efficient use of resources.
 - By packaging all necessary components together, containers ensure that applications run consistently across different environments, from development to production.
 - Containers can be quickly started or stopped, making them ideal for environments where quick scaling and deployment are necessary.
@@ -924,7 +924,7 @@ VMs tend to have higher overhead compared to containers, as they require running
 |-------------------|----------------------------------------------------|---------------------------------------------|
 | **Isolation**     | Application-level isolation using namespaces       | OS-level isolation with separate kernels    |
 | **Resource Usage**| Lightweight, shares host OS kernel                 | Heavier, each VM runs its own OS             |
-| **Startup Time**  | Rapid startup (seconds)                            | Slower startup (minutes)                     |
+| **Startup Time**  | Usually fast (often seconds or less)               | Usually slower because a guest OS must boot   |
 | **Portability**   | Highly portable across environments                | Portable but less flexible due to OS dependencies |
 | **Use Cases**     | Microservices, scalable applications, CI/CD pipelines | Running multiple OSes, legacy application support, full isolation for security |
 
@@ -932,7 +932,7 @@ VMs tend to have higher overhead compared to containers, as they require running
 
 #### Examples in C++
 
-In C++, processes can be created and managed using various system APIs and libraries. A process is an instance of a running program that has its own memory space and resources. Unlike threads, processes do not share memory, which provides better isolation but also requires more overhead for inter-process communication (IPC).
+In C++, process creation and management are provided mainly by operating-system APIs rather than by a standard C++ process class. Processes normally have separate virtual address spaces and resources. Unlike threads in one process, they do not share ordinary application memory by default, so IPC or explicitly shared memory is required to exchange data.
 
 ##### Creating Processes
 
@@ -965,30 +965,37 @@ In this example, `fork()` creates a new process. The return value in the child p
 
 ##### Process Termination
 
-Processes can be terminated using the `exit()` function, which ends the process and returns a status code to the operating system. The parent process can wait for the termination of the child process using the `wait()` or `waitpid()` functions.
+A process can terminate normally with `exit()` or by returning from `main()`. A parent can wait for a child with `wait()` or `waitpid()` and then inspect the returned status to determine how the child exited.
 
 ```cpp
+#include <cstdlib>
 #include <iostream>
 #include <sys/wait.h>
 #include <unistd.h>
 
 int main() {
     pid_t pid = fork();
-    
+
     if (pid == 0) {
         std::cout << "Child process terminating." << std::endl;
-        exit(0);
-    } else {
+        std::exit(0);
+    } else if (pid > 0) {
         int status;
         waitpid(pid, &status, 0);
-        std::cout << "Child process finished with status " << status << std::endl;
+        if (WIFEXITED(status)) {
+            std::cout << "Child process exited with code "
+                      << WEXITSTATUS(status) << std::endl;
+        }
+    } else {
+        std::cerr << "Fork failed!" << std::endl;
+        return 1;
     }
-    
+
     return 0;
 }
 ```
 
-Here, the parent process waits for the child to terminate and retrieves its exit status.
+Here, the parent waits for the child and uses the wait-status macros to obtain the child's normal exit code.
 
 ##### Inter-Process Communication (IPC)
 
@@ -996,6 +1003,7 @@ Processes can communicate with each other using IPC mechanisms, such as pipes, m
 
 ```cpp
 #include <iostream>
+#include <cstring>
 #include <unistd.h>
 
 int main() {
@@ -1027,7 +1035,7 @@ In this example, a pipe is used for communication between the parent and child p
 
 ##### Shared Memory
 
-Shared memory allows multiple processes to access the same memory space, providing a fast way to share data. This requires careful synchronization to prevent race conditions.
+Shared memory maps the same region into multiple processes, providing a fast way to exchange data without copying it through a pipe or socket. Concurrent access still requires synchronization when operations can conflict.
 
 ```cpp
 #include <iostream>
@@ -1060,45 +1068,61 @@ Here, `mmap` is used to create a shared memory region accessible by both the par
 
 ##### Process Synchronization
 
-Processes can be synchronized using various techniques like semaphores or mutexes to control access to shared resources. For example, POSIX semaphores can be used to coordinate access to shared memory.
+Processes can be synchronized with primitives such as semaphores or process-shared mutexes. The following example uses a POSIX semaphore to signal that data in shared memory is ready to be read.
 
 ```cpp
+#include <cstring>
 #include <iostream>
+#include <semaphore.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <semaphore.h>
-#include <cstring>
 
 int main() {
     const int SIZE = 4096;
-    void* shared_memory = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-    sem_t* sem = static_cast<sem_t*>(mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0));
-    sem_init(sem, 1, 1); // Shared between processes, initial value 1
+
+    void* shared_memory = mmap(
+        nullptr, SIZE, PROT_READ | PROT_WRITE,
+        MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+
+    sem_t* sem = static_cast<sem_t*>(mmap(
+        nullptr, sizeof(sem_t), PROT_READ | PROT_WRITE,
+        MAP_SHARED | MAP_ANONYMOUS, -1, 0));
+
+    sem_init(sem, 1, 0); // Shared between processes; initially not signaled
 
     pid_t pid = fork();
-    
+
     if (pid == 0) {
-        // Child process
-        sem_wait(sem);
-        std::strcpy(static_cast<char*>(shared_memory), "Child writes to shared memory");
+        // Child process: produce data, then signal the parent.
+        std::strcpy(static_cast<char*>(shared_memory),
+                    "Child writes to shared memory");
         sem_post(sem);
+
         munmap(shared_memory, SIZE);
-    } else {
-        // Parent process
-        wait(nullptr);
-        sem_wait(sem);
-        std::cout << "Parent reads: " << static_cast<char*>(shared_memory) << std::endl;
-        sem_post(sem);
-        munmap(shared_memory, SIZE);
+        munmap(sem, sizeof(sem_t));
+        return 0;
     }
-    
-    sem_destroy(sem);
-    return 0;
+
+    if (pid > 0) {
+        // Parent process: wait until the child has produced the data.
+        sem_wait(sem);
+        std::cout << "Parent reads: "
+                  << static_cast<char*>(shared_memory) << std::endl;
+
+        waitpid(pid, nullptr, 0);
+        sem_destroy(sem);
+        munmap(shared_memory, SIZE);
+        munmap(sem, sizeof(sem_t));
+        return 0;
+    }
+
+    std::cerr << "Fork failed!" << std::endl;
+    return 1;
 }
 ```
 
-In this example, a semaphore is used to synchronize access to the shared memory between the parent and child processes.
+Here, the semaphore provides ordering: the parent blocks until the child has written the shared data and signaled that it is ready.
 
 ##### Performance Considerations and Best Practices
 
@@ -1131,7 +1155,7 @@ In this example, a semaphore is used to synchronize access to the shared memory 
 
 #### Examples in Python
 
-In Python, processes can be created and managed using the `multiprocessing` module, which provides a way to create separate processes that run concurrently. Each process has its own memory space, making it a safer option for parallel execution, especially when working with CPU-bound tasks.
+In Python, the `multiprocessing` module creates and manages separate processes. Each process has its own interpreter and ordinary memory space, which provides stronger isolation than threads and allows CPU-bound Python code to run in parallel across cores in CPython.
 
 ##### Creating Processes
 
@@ -1155,7 +1179,7 @@ In this example, a new process is created to run the `print_message` function. T
 
 ##### Process Termination
 
-A process can be terminated using the `terminate()` method, which stops the process abruptly. The `exitcode` attribute of the `Process` object can be checked to see how the process exited.
+A process can be asked to terminate with the `terminate()` method. This is an abrupt termination mechanism, so cleanup code in the child may not run. After `join()`, the `exitcode` attribute can be inspected to see how the process exited.
 
 ```python
 from multiprocessing import Process
@@ -1179,7 +1203,7 @@ Here, the process is terminated after 2 seconds, regardless of whether it has co
 
 ##### Inter-Process Communication (IPC)
 
-Python provides several ways for processes to communicate, such as pipes, queues, and shared memory. Queues are particularly easy to use and allow safe data sharing between processes.
+Python provides several ways for processes to communicate, including pipes, queues, and shared memory. Queues are convenient for safe message passing because the processes do not need to manipulate the same ordinary Python objects concurrently.
 
 ```python
 from multiprocessing import Process, Queue
@@ -1231,7 +1255,7 @@ In this example, multiple processes safely increment a shared integer using a `V
 
 ##### Process Synchronization
 
-Synchronization between processes can be achieved using locks, events, conditions, and semaphores. These synchronization primitives ensure that only one process can access a critical section at a time.
+Synchronization between processes can use locks, events, conditions, semaphores, and related primitives. Locks and binary semaphores can provide mutual exclusion, while events and conditions are mainly used for notification and coordination.
 
 ```python
 from multiprocessing import Process, Lock
@@ -1279,7 +1303,7 @@ In this example, a pool of four processes is created to compute the square of nu
 - Ensure that synchronization primitives are used correctly to avoid deadlocks, where processes are stuck waiting for each other.
 - Properly manage resources such as file descriptors and shared memory. Clean up resources when they are no longer needed to avoid leaks and ensure system stability.
 
-Python's `multiprocessing` module makes it easy to create and manage processes, providing a higher level of parallelism and isolation compared to threading. This is particularly useful for CPU-bound tasks and scenarios where memory safety is a concern.
+Python's `multiprocessing` module provides process-based parallelism and isolation. It is especially useful for CPU-bound work in CPython and for designs that benefit from separate process state, at the cost of higher startup and IPC overhead.
 
 | No. | Filename                                          | Description                                           |
 |-----|---------------------------------------------------|-------------------------------------------------------|
@@ -1300,11 +1324,11 @@ Python's `multiprocessing` module makes it easy to create and manage processes, 
 
 #### Examples in JavaScript
 
-In Node.js, processes can be created and managed using the `child_process` module. This module allows you to spawn new processes, execute commands, and communicate with child processes. Node.js is single-threaded by default, but the `child_process` module provides the ability to utilize multiple processes for parallel execution.
+In Node.js, the `child_process` module can spawn programs, run commands, and communicate with child processes. JavaScript callbacks normally run on a single event-loop thread within each Node.js process, while the runtime may also use background threads internally. Child processes provide a separate process boundary and can run CPU work in parallel on other cores.
 
 ##### Creating Processes
 
-Node.js provides several methods to create child processes, including `spawn`, `exec`, `execFile`, and `fork`. The `spawn` method is used to launch a new process with a specified command.
+Node.js provides several ways to create child processes, including `spawn`, `exec`, `execFile`, and `fork`. `spawn` launches a command directly, while Node's `fork` is a specialized helper for starting another Node.js process with an IPC channel; it is not the POSIX `fork()` system call.
 
 ```javascript
 const { spawn } = require('child_process');
@@ -1333,15 +1357,19 @@ A process can be terminated using the `kill` method, which sends a signal to the
 ```javascript
 const { spawn } = require('child_process');
 
-const process = spawn('node', ['-e', 'console.log("Running"); setTimeout(() => {}, 10000)']);
+const child = spawn('node', ['-e', 'console.log("Running"); setTimeout(() => {}, 10000)']);
 
 setTimeout(() => {
-  process.kill('SIGTERM');
-  console.log('Process terminated');
+  child.kill('SIGTERM');
+  console.log('SIGTERM sent');
 }, 2000);
+
+child.on('exit', (code, signal) => {
+  console.log(`Child exited: code=${code}, signal=${signal}`);
+});
 ```
 
-Here, the process is terminated after 2 seconds using `kill`.
+Here, the parent sends `SIGTERM` after two seconds and listens for the child's `exit` event to confirm that it has actually ended.
 
 ##### Inter-Process Communication (IPC)
 
@@ -1391,7 +1419,7 @@ This example uses `exec` to run a command and handle the output and errors in a 
 
 ##### Using Process Pools
 
-Node.js does not have a built-in concept of process pools like some other languages. However, you can manage a pool of processes by manually spawning a set number of processes and reusing them. For more advanced scenarios, libraries like `generic-pool` or `node-pool` can be used to manage resource pools.
+Node.js does not provide a general-purpose `ProcessPool` abstraction in `child_process`. A program can maintain a fixed set of child processes and reuse them, and server applications can also use the `cluster` module or external process managers for worker-style designs.
 
 ```javascript
 const { fork } = require('child_process');
@@ -1415,13 +1443,13 @@ In this example, a pool of worker processes is created and managed manually.
 
 ##### Performance Considerations and Best Practices
 
-- Node.js is single-threaded, and blocking the event loop can prevent the system from handling other tasks. Offload CPU-intensive tasks to child processes to maintain responsiveness.
+- Keep CPU-intensive work off the main event-loop thread when it would block request or event handling; child processes are one option when process isolation or separate CPU execution is useful.
 - When using IPC, minimize the data transferred between processes to reduce overhead. Use efficient data formats and avoid unnecessary serialization.
 - Ensure that processes are terminated gracefully. Handle cleanup tasks like closing database connections and freeing resources before terminating.
 - Always handle errors when working with child processes. Use event listeners for `error`, `exit`, and `close` events to handle unexpected situations.
 - Be cautious when executing external commands to avoid security vulnerabilities, such as command injection attacks. Sanitize inputs and validate all arguments.
 
-Node.js's `child_process` module offers a powerful way to handle multiple processes, enabling parallel execution and efficient resource management. This is particularly useful for offloading heavy computation tasks and handling large I/O operations.
+Node.js's `child_process` module is useful for running external programs, isolating work, and executing CPU-heavy tasks in separate processes. Ordinary asynchronous I/O usually does not need a child process because Node's event loop already handles it efficiently.
 
 | No. | Filename                                          | Description                                           |
 |-----|---------------------------------------------------|-------------------------------------------------------|
