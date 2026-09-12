@@ -480,12 +480,12 @@ Poor GPU workloads often have:
 #### Typical GPU Execution Flow
 
 ```text
-+-------------------------+       1. Copy input       +------------------------+
++-------------------------+       1. Copy input        +------------------------+
 |      CPU / Host         | -------------------------> |      GPU / Device      |
-|                         |                           |                        |
-| Runs host code          |       3. Copy output      | Executes kernels       |
+|                         |                            |                        |
+| Runs host code          |       3. Copy output       | Executes kernels       |
 | Allocates device memory | <------------------------- | Stores device data     |
-+-------------------------+                           +-----------+------------+
++-------------------------+                            +-----------+------------+
                                                                ^
                                                                |
                                                        2. Kernel launch
