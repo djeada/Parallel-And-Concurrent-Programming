@@ -1,6 +1,6 @@
 ## Multithreading
 
-**Multithreading** refers to the capability of a CPU, or a single core within a multi-core processor, to execute multiple threads concurrently. A thread is the smallest unit of processing that can be scheduled by an operating system. In a multithreaded environment, a program, or process, can perform multiple tasks at the same time, as each thread runs in the same shared memory space. This can be useful for tasks that are IO-bound, as threads can be used to keep the CPU busy while waiting for IO operations to complete. However, because threads share the same memory, they must be carefully synchronized to avoid issues like race conditions, where two threads attempt to modify the same data concurrently, leading to unpredictable outcomes.
+**Multithreading** is the use of multiple threads within a process so that work can proceed concurrently. A thread is a unit of execution that the operating system can schedule. Threads in the same process share an address space and many process resources, while each thread has its own execution state, such as a stack and registers. Depending on the hardware and runtime, threads may run in parallel on different cores or take turns on the same core. Multithreading is especially useful for I/O-bound work because one thread can make progress while another waits for I/O. Because threads can access shared memory, shared state must be synchronized carefully to avoid data races and other concurrency bugs.
 
 ### Thread Pool vs On-Demand Thread
 
@@ -26,42 +26,42 @@
 +----------------+        +----------------+
 ```
 
-* Two ways to create threads in multithreading are using a thread pool or on-demand thread spawning.
-* Thread pool pre-spawns threads to reduce the creation costs associated with starting new threads.
-* On-demand thread spawning creates threads as needed, which can help in reducing resource wastage.
-* However, on-demand thread spawning may slow down the program when threads are needed due to the overhead of creating threads at runtime.
+* Two common approaches are reusing threads through a thread pool and creating threads on demand.
+* A thread pool maintains a set of reusable worker threads, reducing repeated thread-creation overhead and helping control concurrency.
+* On-demand spawning creates threads only when needed, which can avoid keeping idle workers around.
+* The tradeoff is that creating threads at runtime adds latency and can lead to excessive thread counts if demand is not bounded.
 
 ### Worker Threads
 
-* In multithreading, the main thread typically initiates all other threads, which are known as worker threads.
-* Worker threads only perform tasks when they are allocated by the main thread or another controlling thread.
-* To regulate and limit the number of worker threads, a thread pool can be employed.
+* A program often starts with a main thread and creates additional worker threads to perform tasks.
+* Worker threads may receive work from the main thread, a task queue, or another coordination mechanism.
+* A thread pool can be used to reuse workers and limit how many threads run concurrently.
 
-A web server process, for example, receives a request and assigns it to a thread from its pool for processing. That thread then follows the main thread's instructions, completes the task, and returns to the pool, allowing the main thread to remain free for other tasks.
+For example, a web server may place incoming requests in a work queue and let threads from a pool process them. After a worker finishes a request, it becomes available for more work, while the accepting thread can continue handling new connections.
 
 ### Advantages of Threads over Processes
 
-* Multithreading has several advantages over using multiple processes.
-* One advantage is better responsiveness, allowing a program to remain responsive even when part of it is performing a lengthy operation.
-* Another benefit is faster context transitions between threads compared to processes, as threads share the same memory space.
-* Threads also improve resource sharing since code, data, and files can be shared across all threads within a process.
+* Threads can offer several advantages over separate processes when work belongs within the same application.
+* They can improve responsiveness by moving long-running or blocking work away from a thread that must remain interactive.
+* Switching between threads in the same process is often cheaper than switching between processes, although the exact cost depends on the operating system and workload.
+* Threads also make sharing in-process data and resources straightforward because they use the same address space.
 
 ### Challenges with Multithreading
 
-- In multithreaded programs, threads share a **common state**, which makes inter-thread communication easier but introduces risks when accessing shared resources.
-- A primary concern is maintaining **data consistency**. Without proper synchronization, multiple threads can attempt to read or modify shared data at the same time, causing **race conditions** and unpredictable outcomes.
-- **Efficient resource management** is important. Thread creation, context switching, and lock handling introduce **overhead**. If not managed properly, these factors can negate the performance benefits of multithreading.
-- Managing **shared memory** is challenging. When multiple threads access the same memory location, inconsistencies can occur unless synchronization mechanisms like locks, mutexes, or semaphores are in place.
-- The **nondeterministic** nature of thread scheduling by the operating system complicates debugging and testing. Errors that depend on timing and ordering may only appear sporadically, making them difficult to reproduce and fix.
-- Balancing **performance** with thread safety is vital. Techniques such as locking prevent data corruption but may reduce concurrency, increasing wait times and hindering potential speedups.
+- Threads can share state directly, which makes communication efficient but requires care when that state is mutable.
+- Data consistency is a primary concern. Unsynchronized conflicting accesses can cause data races, while timing-dependent logic can cause broader race conditions.
+- Thread creation, context switching, synchronization, and cache contention all add overhead. Poorly managed concurrency can erase the expected performance gains.
+- Shared memory must be coordinated with appropriate synchronization, such as mutexes, atomics, semaphores, condition variables, or higher-level concurrent data structures.
+- Operating-system scheduling is nondeterministic, which makes timing-dependent bugs difficult to reproduce and test.
+- Thread safety often trades some concurrency for correctness. The goal is to synchronize only the state that actually needs protection and keep critical sections small.
 
 #### Data Race
 
-- A data race (or **race condition**) happens when the correctness of a multithreaded program depends on the timing or sequence of thread execution, potentially causing errors and unpredictable results.
-- Because threads are **preemptively switched** by the OS, programmers have limited control over when a context switch happens, increasing the likelihood of conflicts.
-- While preemptive switching removes the burden of manually controlling **task-switching**, it also means a thread can be paused at any point, possibly causing inconsistent or incomplete operations on shared data.
+- A **race condition** is a broader logic problem in which correctness depends on the timing or ordering of concurrent operations.
+- A **data race** is more specific: two threads access the same memory location concurrently, at least one access is a write, and the accesses are not properly synchronized. In C++, a data race results in undefined behavior.
+- Because thread scheduling can occur at many points, code must not rely on an assumed execution order unless that order is enforced explicitly.
 
-Consider an example: two functions, `funA()` and `funB()`, where `funB()` relies on the output of `funA()`. In a single-threaded program:
+Consider two functions, `funA()` and `funB()`, where `funB()` depends on work completed by `funA()`. In a single-threaded program:
 
 ```python
 funA()
@@ -78,21 +78,22 @@ funA()
 funB()
 ```
 
-The execution order becomes unpredictable. If `funB()` runs before `funA()` has completed, the result could be incorrect.
+The execution order is no longer guaranteed. If `funB()` runs before `funA()` completes, the program may produce an incorrect result. This is an ordering race; it becomes a data race only if the functions perform unsynchronized conflicting accesses to the same memory.
 
-- A data race specifically occurs when two threads **concurrently** access the same memory location, with at least one thread modifying it. This can lead to **memory corruption** if no proper safeguards are in place.
-- **Locks** (or other synchronization primitives) are typically used to protect important sections so that only one thread can access specific memory at a time, ensuring data integrity.
+- A data race occurs when threads perform conflicting accesses to the same memory without the synchronization required by the language and memory model.
+- Locks, atomics, and other synchronization primitives can establish safe access rules and the ordering relationships needed for correct shared-state updates.
 
-**Analogy**:  
+Analogy:  
 
-*Imagine a busy kitchen with multiple chefs working on the same dish. They share the same utensils and ingredients. Without coordination, two chefs might grab the same tool or ingredient at the same time, causing confusion or mistakes. Likewise, a data race occurs when multiple threads share data without proper synchronization, leading to unpredictable outcomes.*
+*Imagine several chefs working on the same dish. Sharing the kitchen is fine, but if two chefs change the same ingredient at the same time without coordinating, the result becomes unpredictable. Threads have the same problem when they perform conflicting accesses to shared state without synchronization.*
 
-**Example**:
+Example:
 
 ```cpp
 #include <iostream>
 #include <thread>
 #include <vector>
+#include <chrono>
 
 // Shared counter variable
 int counter = 0;
@@ -101,7 +102,7 @@ int counter = 0;
 void incrementCounter(int numIncrements) {
     for (int i = 0; i < numIncrements; ++i) {
         // Read, increment, and write back the counter
-        // This is not an atomic operation and can cause race conditions
+        // This is not an atomic operation and causes a data race
         counter++;
     }
 }
@@ -142,7 +143,7 @@ int main() {
 
 ```
 
-**Possible Output**:
+Possible Output:
 
 ```
 Final counter value: 282345
@@ -151,7 +152,7 @@ Time taken: 0.023456 seconds
 
 ```
 
-**What is happening**:
+What is happening:
 
 ```
 +----------------------------+
@@ -200,28 +201,29 @@ Write Counter = 101  Write Counter = 101
 
 ```
 
-In this scenario, both threads read the same value (100) before either has a chance to write back the incremented value. This leads to lost updates and an incorrect final result.
+This diagram illustrates one possible lost-update interleaving: both threads read `100`, both compute `101`, and both write `101`. In the C++ program above, however, the unsynchronized accesses to `counter` constitute a data race, so the language does not guarantee any particular outcome.
 
-**What do we mean by a resource?**
+What do we mean by a resource?
 
-In the context of computing and multithreading, a resource refers to any hardware or software component that applications and processes need to operate effectively. This includes elements such as CPU time, memory, storage, network bandwidth, files, and shared data structures. Resources are limited and must be managed efficiently to make sure that multiple threads or processes can access them without conflicts. Proper resource management is necessary for maintaining optimal system performance, preventing bottlenecks, and avoiding issues like deadlocks or excessive contention when multiple threads compete for the same assets.
+In computing, a resource is any hardware or software asset that a program needs, such as CPU time, memory, storage, network bandwidth, files, locks, or shared data structures. Some resources are limited or require coordinated access. Managing them well helps prevent bottlenecks, excessive contention, and deadlocks.
 
 #### Mutex
 
-- A **mutex** (short for *mutual exclusion*) ensures that only one thread can access a important section of code (and thus shared data) at any given time.
-- If one thread holds the mutex, other threads attempting to acquire it will block (or go to sleep) until the mutex is released.
+- A **mutex** (short for *mutual exclusion*) provides exclusive ownership of a lock, allowing one thread at a time to enter the protected critical section.
+- If a thread already owns the mutex, another thread that tries to lock it must wait until the mutex is released.
 
-**Analogy**:  
+Analogy:  
 
-*Imagine a single-stall public restroom. If multiple people try to enter simultaneously, chaos ensues. Instead, a lock on the door ensures only one person can use it at a time. Similarly, a mutex ensures exclusive access to a shared resource.*
+*Think of a single-stall restroom with a door lock. One person holds the lock while using the room; everyone else waits until it is released. A mutex provides the same kind of exclusive access for a critical section.*
 
-**Example**:
+Example:
 
 ```cpp
 #include <iostream>
 #include <thread>
 #include <vector>
 #include <mutex>
+#include <chrono>
 
 // Shared counter variable
 int counter = 0;
@@ -272,7 +274,7 @@ int main() {
 }
 ```
 
-**Possible Output**:
+Possible Output:
 
 ```
 Final counter value: 1000000
@@ -280,7 +282,7 @@ Expected counter value: 1000000
 Time taken: 0.234567 seconds
 ```
 
-**What is happening**:
+What is happening:
 
 ```
 ┌────────────────────────────┐
@@ -316,28 +318,28 @@ The mutex ensures that only one thread can modify the shared counter at a time, 
 
 #### Atomic
 
-An **atomic** operation ensures that a read-modify-write sequence completes as one indivisible action. This means no other thread can interrupt or observe a partial update, preventing data races for simple shared variables without needing a heavier synchronization mechanism like a mutex. Atomic operations can apply to various fundamental data types (e.g., `int`, `bool`, `pointer` types) and, in many implementations, to user-defined types that are trivially copyable and do not exceed a certain size (often the size of a machine word).  
+An **atomic** operation is indivisible with respect to other atomic operations on the same object: other threads do not observe a partially completed update. This makes atomics useful for simple shared state such as counters and flags without requiring a mutex around each operation. In C++, `std::atomic<T>` can be used with supported trivially copyable types, although an atomic type is not necessarily lock-free on every platform.
 
-In C++, these atomic types are provided by `std::atomic<T>`, and some specialized versions like `std::atomic_flag` offer specific functionalities. The standard guarantees that reads and writes to these types occur as single, uninterruptible steps. Operations like `load`, `store`, `fetch_add`, `fetch_sub`, `compare_exchange`, and similar can all be made atomic.
+C++ provides atomic operations through `std::atomic<T>` and types such as `std::atomic_flag`. Operations including `load`, `store`, `fetch_add`, `fetch_sub`, and `compare_exchange` are atomic on the atomic object. Their memory-order argument determines how those operations synchronize with other memory accesses.
 
-**What do we gain by using atomics?**
+What do we gain by using atomics?
 
-- Atomics utilize **hardware**-level instructions that are lighter than mutexes, enhancing efficiency for simple operations.
-- Operations using atomics avoid **contention** since threads don't wait for locks to be released, allowing independent progression.
-- Atomics provide **simplicity** for managing basic shared data like counters and flags, reducing the risk of race conditions.
+- Atomics can be cheaper than mutexes for simple operations and are often implemented with dedicated hardware instructions.
+- They avoid mutex ownership and blocking lock acquisition, but they can still suffer from contention, especially when many threads update the same cache line.
+- Atomics are convenient for basic shared state such as counters and flags when a single atomic operation expresses the required update.
 
-**What do we lose by using atomics?**
+What do we lose by using atomics?
 
-- Using atomics requires careful management of **memory** ordering, as incorrect orderings can lead to subtle bugs.
-- Atomics are **limited** to simple operations and are not suitable for complex data structures or large objects.
-- Ensuring the correctness of higher-level algorithms with atomics can lead to **concurrency** pitfalls such as livelocks or ABA problems.
-- In scenarios with heavy contention, atomic operations may not be **faster** than other synchronization methods, depending on hardware and use case.
+- Atomics require careful reasoning about memory ordering when synchronization extends beyond the atomic variable itself.
+- A single atomic variable is easy to use, but coordinating multi-step invariants or complex data structures is much harder.
+- Lock-free algorithms can introduce subtle problems such as livelock and the ABA problem.
+- Under heavy contention, atomics may perform no better than lock-based approaches and can sometimes perform worse.
 
-**Analogy**:
+Analogy:
 
-*Imagine a vending machine that instantly dispenses an item the moment you press a button and inserts your bill into a slot—no one can see a partial transaction or grab the bill out mid-transaction. The entire action (paying and getting the item) is handled as a single, uninterruptible event.*
+*Think of a vending machine that accepts a payment and updates its internal balance as one indivisible transaction. Other customers never observe the balance halfway through that update. An atomic operation provides a similar all-or-nothing update for one shared value.*
 
-**Example**:
+Example:
 
 ```cpp
 #include <iostream>
@@ -375,7 +377,7 @@ int main() {
 }
 ```
 
-**What is happening**:
+What is happening:
 
 ```
              Atomic Counter
@@ -395,24 +397,25 @@ int main() {
 
 To clear up the common confusion surrounding this term, let’s clarify how it differs from related concepts:
 
-- An operation executed as a single, indivisible step, known as **atomic**, ensures it is free from race conditions.
-- The **lock-free** property guarantees that at least one thread will always make progress, even under contention, preventing the system from blocking entirely.
-- A **wait-free** guarantee ensures that every thread makes progress within a bounded number of steps, offering maximum fairness and predictability.
+- **Atomic** describes an operation that is indivisible with respect to competing accesses to the same atomic object. It prevents data races on that atomic object, but it does not make a larger algorithm automatically free of race conditions.
+- **Lock-free** means the system as a whole is guaranteed to make progress: at least one thread completes an operation in a finite number of steps, even if individual threads may starve.
+- **Wait-free** is stronger: every participating thread is guaranteed to complete its operation within a bounded number of steps.
 
 #### Deadlock
 
 A **deadlock** occurs when two or more threads are blocked, each waiting for a lock that another thread already holds. Because all threads are waiting on one another, no progress can be made, and the system is effectively stuck.
 
-**Analogy**:  
+Analogy:  
 
 *Imagine two cars on a narrow one-lane bridge coming from opposite ends. Each driver refuses to back up, and neither can move forward. Both are blocked indefinitely, waiting for the other to yield.*
 
-**Example**:
+Example:
 
 ```cpp
 #include <iostream>
 #include <thread>
 #include <mutex>
+#include <chrono>
 
 std::mutex mutexA;
 std::mutex mutexB;
@@ -440,7 +443,7 @@ int main() {
 }
 ```
 
-**What is happening**:
+What is happening:
 
 ```
 Thread 1                    Thread 2
@@ -461,13 +464,13 @@ Neither lock is ever freed -> deadlock)
 
 #### Livelock
 
-A **livelock** occurs when two or more threads actively respond to each other in a way that prevents them from making progress. Unlike a deadlock, the threads are not blocked; they keep "moving," but they continually change their states in a manner that still prevents the system from completing its task.
+A **livelock** occurs when threads keep reacting to one another but still fail to make useful progress. Unlike a deadlock, the threads are active rather than blocked; they repeatedly change state or retry without completing the work.
 
-**Analogy**:  
+Analogy:  
 
 *Picture two people in a narrow hallway who both step aside to let the other pass—only to keep stepping in the same direction repeatedly. They’re not standing still, but neither can get by the other.*
 
-**Example**:
+Example:
 
 ```cpp
 #include <iostream>
@@ -518,7 +521,7 @@ int main() {
 }
 ```
 
-**What is happening**:
+What is happening:
 
 ```
 Thread 1                Thread 2
@@ -535,21 +538,21 @@ Thread 1                Thread 2
        v                      v
   loop again             loop again
 
-(Threads keep attempting to acquire both locks,
-but they often release them and try again at the
-same time, never settling and never fully blocking,
-thus making no actual forward progress -> livelock)
+(Under an unlucky repeated interleaving, both threads can
+keep acquiring one lock, failing on the other, releasing,
+and retrying in step. They remain active but make no
+forward progress: a livelock.)
 ```
  
 #### Semaphore
 
-A **semaphore** is a synchronization mechanism that uses a counter to control how many threads can access a shared resource at once. Each thread performs an atomic **wait** (or *acquire*) operation before entering the critical section, which decrements the semaphore’s counter. When a thread finishes its work, it performs a **signal** (or *release*) operation, incrementing the counter and allowing other waiting threads to proceed.
+A **semaphore** is a synchronization primitive that uses a counter to limit how many threads may proceed at once. An `acquire` operation waits until the count is positive and then decrements it atomically. A `release` operation increments the count and may wake a waiting thread.
 
-**Analogy**:  
+Analogy:  
 
 *Think of a parking garage with a limited number of spaces. Each car (thread) must check if a space is available before entering (acquire). If no space is free, the car must wait. When a car leaves (release), a space opens up for the next waiting car.*
 
-**Example** (using C++20 counting semaphore):
+Example (using C++20 counting semaphore):
 
 ```cpp
 #include <iostream>
@@ -591,7 +594,7 @@ int main() {
 }
 ```
 
-**What is happening**:
+What is happening:
 
 ```
                [Semaphore with count = 2]
@@ -623,29 +626,29 @@ int main() {
 
 #### Common Misconceptions
 
-**Binary Semaphore vs. Mutex**  
+Binary Semaphore vs. Mutex  
 
 There is a common misconception that a binary semaphore and a mutex are equivalent. While both can restrict access to a resource, their primary use cases differ:
 
-- A **mutex** is typically used to gain exclusive ownership over a resource. Only the thread that acquires the mutex can unlock it.
-- A **binary semaphore**, although it can only hold one of two possible states (0 or 1), is commonly employed as a **signaling mechanism**. A “producer” thread signals that an event or condition has occurred (e.g., data is ready), and one or more “consumer” threads can then proceed to act on that information.
+- A **mutex** represents exclusive ownership. The thread that locks it is responsible for unlocking it.
+- A **binary semaphore** has a count of 0 or 1 and does not have mutex-style ownership. This makes it useful for signaling: one thread can release the semaphore to indicate that an event or resource is available, and a waiting thread can acquire it.
 
-**Multithreading Automatically Improves Performance**
+Multithreading Automatically Improves Performance
 
 Many developers believe that incorporating multiple threads always leads to faster execution. However, multithreading can also slow down an application if not designed and tuned properly. The overhead of context switching, synchronization, and resource contention can negate performance gains, especially if the tasks are not well-suited for parallelism.
 
-**More Threads Equals Better Performance**
+More Threads Equals Better Performance
 
 It is often assumed that creating more threads will consistently boost performance. In reality, once the number of threads exceeds the available CPU cores or the nature of the task’s concurrency limits, performance may degrade. Excessive thread creation can lead to increased scheduling overhead, cache thrashing, and resource contention—ultimately harming efficiency.
 
-**Multithreaded Code Is Always Harder to Write and Maintain**  
+Multithreaded Code Is Always Harder to Write and Maintain  
 
 While concurrency introduces challenges—such as synchronization, potential race conditions, and timing-related bugs—multithreaded code is not necessarily more difficult to manage than single-threaded code. Modern languages and frameworks provide abstractions (e.g., thread pools, futures, async/await mechanisms) that simplify parallelism. With proper design, testing strategies, and usage of these tools, writing reliable and maintainable multithreaded applications becomes more approachable.
 
 #### Problems for which multithreading is the answer
 
-- Intensive computations, such as large-scale data analysis, scientific simulations, or complex mathematical calculations that require significant processing power.
-- External clients sending requests to a process in a random and unpredictable fashion, like a PostgreSQL database handling multiple simultaneous queries from various users.
+- CPU-intensive computations that can be divided into independent work and can actually run in parallel in the chosen language/runtime.
+- Servers that must handle many independent client requests or connections concurrently.
 - Tasks that can be intuitively split into independent processing steps, allowing different threads to handle separate parts of a workflow concurrently.
 - Continuous access to a large read-only data set, where multiple threads can efficiently read and process the data without needing to modify it.
 - Tasks whose performance would be unacceptable as a single thread, necessitating parallel execution to meet performance requirements.
@@ -654,7 +657,7 @@ While concurrency introduces challenges—such as synchronization, potential rac
 - Problems where each step has a clear input and output, facilitating parallel processing of sequential steps in a pipeline.
 - Processes where the workload cannot be anticipated, allowing the system to dynamically allocate threads to handle varying loads effectively.
 - Real-time data processing tasks, such as financial trading systems that require immediate handling of incoming market data to execute trades without delay.
-- Asynchronous I/O operations, where applications perform multiple file reads and writes simultaneously without blocking the main execution thread.
+- Blocking I/O workloads where multiple threads can overlap waits for files, networks, or other external resources.
 - Maintaining user interface responsiveness in applications by offloading long-running tasks to background threads, ensuring the UI remains interactive.
 - Parallel data processing pipelines, like ETL (Extract, Transform, Load) processes in data warehousing, where different stages run concurrently to enhance throughput.
 - Simulation and modeling applications, such as climate models or physics simulations, that divide the environment into regions processed in parallel to speed up computations.
@@ -670,7 +673,7 @@ While concurrency introduces challenges—such as synchronization, potential rac
 - High contention for shared resources occurs when multiple threads frequently compete for the same resources, leading to excessive locking and reduced performance.
 - Applications relying on single-threaded libraries or APIs are not designed to be thread-safe, making multithreading difficult or error-prone.
 - Limited hardware resources mean environments have insufficient CPU cores or memory, where adding more threads could degrade overall system performance.
-- Real-time systems with strict timing requirements need predictable and deterministic execution times, where the unpredictability of thread scheduling can cause issues.
+- Systems with strict timing guarantees may not benefit from ordinary, unmanaged multithreading because general-purpose scheduling can introduce unpredictable delays. Real-time systems can still use threads when paired with appropriate real-time scheduling and design.
 - Applications requiring high synchronization involve tasks that need extensive coordination between threads, resulting in bottlenecks and diminishing returns from parallelism.
 - Debugging and maintenance complexity arises in projects where the added complexity of multithreading introduces significant challenges in debugging, testing, and maintaining the codebase.
 - Deterministic execution needs are present in applications that require consistent and repeatable behavior for debugging, security, or compliance reasons, which can be disrupted by the non-deterministic nature of multithreading.
@@ -689,37 +692,38 @@ While concurrency introduces challenges—such as synchronization, potential rac
 | Use case | Pattern summary | C++ (preferred) | Python (preferred) | Why this choice | Shutdown behavior |
 |---|---|---|---|---|---|
 | High-throughput web server: handle many requests | Worker pool reuses threads for each request | Thread pool (joinable) | ThreadPoolExecutor (joinable) | Limits thread count, good control of lifecycle, back-pressure via queue | Stop accepting work, drain queue, join pool |
-| Background logging/telemetry uploader | Fire-and-forget uploader reading from a queue | jthread (auto-join) | Daemon thread | Non-critical work; jthread lets you cancel; daemon won’t block exit | On shutdown, try flush; daemons may drop work |
+| Background logging/telemetry uploader | Background worker reads from a queue | jthread (auto-join) | Managed thread or daemon thread | A managed worker supports cancellation and flushing; daemon threads are suitable only for best-effort work | Signal stop and flush if delivery matters; daemon work may be dropped at exit |
 | Periodic metrics/health pinger | Loop with sleep to send heartbeats | jthread (auto-join) | Daemon thread | Runs for app lifetime; easy cancel/stop; ok if it ends abruptly | Signal stop, allow one last send if needed |
 | GUI app: offload long task (keep UI responsive) | Worker thread performs blocking work, reports progress | Joinable thread (or QThread) | Joinable thread | Ensure task finishes/cleans up before closing app | Signal cancel, join before window closes |
 | Real-time sensor acquisition → queue | Reader thread pushes samples to a bounded queue | Joinable thread (or jthread) | Joinable thread | Data loss unacceptable; deterministic shutdown | Stop signal, flush buffer, join |
 | Producer→consumer pipeline (download→parse→write) | Stage per thread, connected by queues | Joinable threads or pool | Joinable threads with queue | Back-pressure and orderly teardown | Send sentinels, join in stage order |
 | Parallel I/O (e.g., web scraping many hosts) | Cap concurrency using pool/executor | Thread pool (joinable) | ThreadPoolExecutor (joinable) | I/O-bound; pooling avoids oversubscription | Shutdown executor, wait=True |
-| CPU-bound parallel compute (e.g., image filters) | True parallelism for heavy CPU tasks | Thread pool (joinable) | Use processes (multiprocessing) | C++ threads run in parallel; Python GIL limits CPU threads | Join pool / close process pool |
+| CPU-bound parallel compute (e.g., image filters) | Parallelize independent CPU work | Thread pool (joinable) | Usually processes for GIL-enabled CPython | C++ threads can run in parallel; the GIL limits CPU-bound Python threads in conventional CPython builds | Join pool / close process pool |
 | Connection timeout watchdog | Sleeps, then cancels/alerts if overdue | jthread (auto-join) | Daemon thread or Timer | Short-lived helper; safe if it dies at exit | Cancel timer / stop token |
-| Cache warmer / prefetcher | Preloads likely-needed data in background | Detached thread | Daemon thread | Best-effort; shouldn’t block shutdown | Allow early exit; no guarantees |
+| Cache warmer / prefetcher | Preloads likely-needed data in background | jthread or managed pool | Daemon thread or executor | Best-effort work can run in the background, but keeping lifecycle control avoids unsafe detached access | Cancel or stop cleanly; best-effort work may be skipped at shutdown |
 | Background email/SMS sender in a web app | Queue of messages consumed by workers | Thread pool (joinable) | ThreadPoolExecutor (joinable) | Must ensure delivery or retry logic | Drain queue, join; otherwise use external task queue |
 | Game asset streaming loader | Loads textures/models while game runs | Joinable thread | Joinable thread | Coordinate with main loop; avoid torn state | Signal cancel, join before scene swap |
-| Game telemetry/analytics uploader | Buffers and uploads non-critical events | Detached thread | Daemon thread | Don’t stall frame rate or exit | Best-effort flush only |
+| Game telemetry/analytics uploader | Buffers and uploads non-critical events | jthread or managed worker | Daemon thread or managed worker | Best-effort work should not stall the main loop, but managed lifetime avoids unsafe detached access | Best-effort flush; stop managed workers cleanly |
 | File system watcher (hot-reload) | Watches dirs and enqueues change events | Joinable thread | Joinable thread | Needs clean shutdown to release handles | Stop watcher, join |
 | DB connection keepalive / pool maintenance | Occasional pings, cleanup of idle conns | jthread (auto-join) | Daemon thread | Low-importance periodic task | Cancel on stop; ok to skip final ping |
-| CLI tool spawns background maintenance (e.g., log rotation) | Helper that outlives brief main work | Detached thread | Daemon thread | Main shouldn’t wait; tolerates early exit | No join; rely on OS cleanup |
-| Small chat server: one thread per client (naïve) | Spawn per connection, handle then exit | Detached thread (small scale only) | Joinable thread (or executor) | Detached avoids bookkeeping; Python prefers controlled join | Prefer pool for scale; join on shutdown |
+| CLI tool runs background maintenance (e.g., log rotation) | Helper runs concurrently with the main work | jthread or joinable thread | Managed thread | A thread cannot outlive its process, so important maintenance should be completed or handed to a separate service/process | Signal stop and join, or delegate persistent work to another process |
+| Small chat server: one thread per client (naïve) | Spawn per connection, handle then exit | Joinable thread or pool | Joinable thread or executor | Simple at small scale, but explicit lifecycle management is safer than detaching | Prefer a pool for scale; stop accepting clients and join workers on shutdown |
 | Market data listener → queue | Network read loop pushes updates | Joinable thread (or jthread) | Joinable thread | Data integrity and ordering matter | Signal stop, flush, join |
 
 ### Examples
 
 #### Examples in C++
 
-In C++, every application starts with a single default main thread, represented by the `main()` function. This main thread can create additional threads, which are useful for performing multiple tasks simultaneously. Since C++11, the Standard Library provides the `std::thread` class to create and manage threads. The creation of a new thread involves defining a function that will execute in parallel and passing it to the `std::thread` constructor, along with any arguments required by that function.
+In a typical C++ program, `main()` runs on the initial thread. That thread can create additional threads so work can proceed concurrently. Since C++11, the Standard Library has provided `std::thread` for creating and managing threads. A new thread is started by passing a callable, along with any arguments, to the `std::thread` constructor.
 
 ##### Creating Threads
 
-A new thread in C++ can be created by instantiating the `std::thread` object. The constructor accepts a callable object (like a function, lambda, or function object) and optional arguments to be passed to the callable object.
+A new C++ thread is created by constructing a `std::thread`. Its constructor accepts a callable—such as a function, lambda, or function object—plus any arguments to pass to that callable.
 
 ```cpp
 #include <iostream>
 #include <thread>
+#include <string>
 
 void printMessage(const std::string& message) {
     std::cout << message << std::endl;
@@ -738,15 +742,15 @@ In this example, `printMessage` is called in a separate thread, and the main thr
 
 The `join()` function is called on a `std::thread` object to wait for the associated thread to complete execution. This blocks the calling thread until the thread represented by `std::thread` finishes.
 
-**Advantages**:
+Advantages:
 
-- The main program can wait for the thread to **complete**, ensuring synchronization between threads.
-- It facilitates proper resource **management** by ensuring threads finish before the program terminates.
+- The calling thread can wait for a worker to complete before using its results or continuing shutdown.
+- Joining provides a clear lifecycle boundary and helps prevent threads from being abandoned while they still use process resources.
 
-**Disadvantages**:
+Disadvantages:
  
-- A **drawback** is that the main program may block while waiting, potentially reducing responsiveness.
-- It requires careful handling to prevent deadlocks or race **conditions** during synchronization.
+- `join()` blocks the calling thread until the target thread finishes, so joining at the wrong time can hurt responsiveness.
+- A join can wait indefinitely if the target thread is stuck, so shutdown and cancellation paths still need careful design.
 
 ```cpp
 t1.join(); // Main thread waits for t1 to finish
@@ -754,17 +758,17 @@ t1.join(); // Main thread waits for t1 to finish
 
 ##### Thread Detaching
 
-Using `detach()`, a thread is separated from the `std::thread` object and continues to execute independently. This allows the main thread to proceed without waiting for the detached thread to finish. However, once detached, the thread becomes non-joinable, meaning it cannot be waited on or joined, and it will run independently until completion.
+Using `detach()`, a thread is disassociated from its `std::thread` object and continues independently within the process. The original thread can continue without waiting for it. Once detached, the thread cannot be joined through that `std::thread` object, which makes lifetime and shutdown management much harder.
 
-**Advantages**:
+Advantages:
 
-- The main program continues without waiting for the detached thread, facilitating fire-and-forget tasks.
-- It is useful for **fire-and-forget** tasks.
+- The creating thread can continue without waiting for the detached thread.
+- It can be acceptable for narrowly scoped, truly independent best-effort work.
 
-**Disadvantages**:
+Disadvantages:
 
-- There is no **control** over when the thread finishes.
-- There is a risk of resources not being properly managed, as the program might end before the thread completes.
+- The creating code loses the ability to join the thread or directly manage its completion.
+- The process may exit while the thread is still running, and detached threads can easily outlive objects they reference if lifetimes are not designed carefully.
 
 ```cpp
 std::thread t2(printMessage, "This is a detached thread");
@@ -848,7 +852,7 @@ In this example, `std::lock_guard` automatically locks the mutex on creation and
 
 ##### Deadlocks and Avoidance
 
-Deadlocks occur when two or more threads are waiting for each other to release resources, resulting in a standstill. To avoid deadlocks, you need to lock multiple resources in a consistent order, use try-lock mechanisms, or employ higher-level concurrency primitives like `std::lock` or condition variables.
+Deadlocks occur when threads wait on one another in a cycle, so none can proceed. Common prevention techniques include acquiring locks in a consistent order, reducing nested locking, or using utilities such as `std::lock`/`std::scoped_lock` that acquire multiple mutexes without deadlocking.
 
 ```cpp
 #include <iostream>
@@ -881,7 +885,7 @@ int main() {
 }
 ```
 
-Here, `std::lock` locks both mutexes without risking a deadlock by ensuring that both mutexes are acquired in a consistent order.
+Here, `std::lock` uses a deadlock-avoidance algorithm to acquire both mutexes. The `std::lock_guard` objects then adopt ownership so the mutexes are released automatically when the function returns.
 
 ##### Condition Variables
 
@@ -931,6 +935,7 @@ C++20 introduces `std::counting_semaphore` and `std::binary_semaphore`. Semaphor
 #include <iostream>
 #include <thread>
 #include <semaphore>
+#include <chrono>
 
 std::binary_semaphore semaphore(1);
 
@@ -982,7 +987,7 @@ In this example, each thread has its own instance of `localVar`, independent of 
 
 ##### Atomic Operations
 
-For cases where synchronization is needed, but mutexes are too heavy-weight, C++ provides atomic operations via the `std::atomic` template. This allows for lock-free programming and can be used to implement simple data structures or counters safely in a multithreaded environment.
+For simple shared values that need atomic updates, C++ provides the `std::atomic` template. Atomics can avoid an explicit mutex for operations such as counters and flags, but `std::atomic<T>` is not guaranteed to be lock-free on every platform.
 
 ```cpp
 #include <iostream>
@@ -1022,31 +1027,31 @@ C++ provides six memory order enumerations in `std::memory_order`:
 5. **`std::memory_order_acq_rel`**  
 6. **`std::memory_order_seq_cst`**  
 
-Each ordering offers different guarantees about how operations on one thread become visible to other threads and in what sequence they appear to happen. Understanding these guarantees can greatly affect both the correctness and performance of concurrent code.
+Each ordering provides different guarantees about how an atomic operation relates to other memory accesses. Choosing the correct ordering affects correctness first and can also affect performance.
 
-Below is a **comparison table** that summarizes the main C++ memory orderings, their guarantees, common use cases, and potential pitfalls. Use this as a quick reference to decide which ordering is best suited for a particular concurrency scenario.
+Below is a comparison table of the main C++ memory orderings, their guarantees, common uses, and common pitfalls.
 
 | **Memory Order**               | **Brief Description**                                                          | **Guarantees**                                                                                                                                                                                          | **Common Use Cases**                                                                                                                    | **Pitfalls & Advice**                                                                                                                                        |
 |--------------------------------|-------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
-| **`std::memory_order_relaxed`** | Provides only atomicity, no ordering constraints                             | - The operation itself is atomic (indivisible)  <br/> - No guarantees about visibility or ordering relative to other operations                                                                             | - Simple counters or statistics <br/> - Non-critical flags where ordering doesn’t matter                                                                                     | - Easy to introduce data races if other parts of the program rely on the update’s order <br/> - Great performance but requires careful design                 |
+| **`std::memory_order_relaxed`** | Provides atomicity without synchronization ordering for other memory accesses | - The atomic operation itself is indivisible <br/> - Operations on the same atomic still follow its modification order, but there is no cross-thread synchronization for unrelated memory | - Counters or statistics where only the atomic value matters <br/> - Flags that do not publish other data | - Easy to choose incorrectly when other state depends on the atomic update <br/> - Use only when no ordering relationship is required |
 | **`std::memory_order_consume`** | Intended to enforce data dependency ordering (rarely implemented properly)   | - Theoretically only dependent reads are ordered  <br/> - In practice, compilers often treat it like `acquire`                                                                                              | - Very specialized, mostly replaced by `acquire` in real-world code                                                                                                           | - Not well supported by most compilers <br/> - Avoid in portable or production code                                                                                              |
-| **`std::memory_order_acquire`** | Prevents following reads/writes from moving before the acquire operation      | - Ensures that subsequent operations see all side effects that happened before a matching `release` <br/> - Acts as a one-way barrier after the load                                                         | - Loading a “ready” flag to know that data is now valid <br/> - Synchronizing consumer who must see the producer’s writes                                                    | - Only ensures that instructions *after* the acquire load can’t be reordered before it <br/> - Must pair with `release` for full producer-consumer semantics |
-| **`std::memory_order_release`** | Prevents preceding reads/writes from moving after the release operation       | - Ensures all prior writes are visible to a thread that does an `acquire` on the same atomic <br/> - One-way barrier before the store                                                                        | - Setting a “ready” flag after populating shared data <br/> - Synchronizing producer who writes data before signaling availability                                          | - Doesn’t prevent instructions *after* the release from moving before it <br/> - Must pair with `acquire` to guarantee another thread will observe the updates |
+| **`std::memory_order_acquire`** | Prevents later operations from being reordered before the acquire             | - When an acquire reads a value from a matching release sequence, earlier writes from the releasing thread become visible to the acquiring thread <br/> - Acts as a one-way ordering barrier after the acquire | - Loading a “ready” flag before reading published data <br/> - Consumer-side synchronization | - An acquire only synchronizes when it observes the relevant release/release sequence <br/> - Usually paired with `release` in producer-consumer patterns |
+| **`std::memory_order_release`** | Prevents earlier operations from being reordered after the release             | - Publishes prior writes to a thread whose matching acquire observes this release (or its release sequence) <br/> - Acts as a one-way ordering barrier before the release | - Setting a “ready” flag after preparing shared data <br/> - Producer-side synchronization | - A release alone does not make another thread observe the data <br/> - It must participate in a matching synchronization relationship |
 | **`std::memory_order_acq_rel`** | Acquire + Release in one read-modify-write operation                          | - Combines the effects of `acquire` and `release` for RMW ops (e.g., `fetch_add`, `compare_exchange`) <br/> - Ensures no reorder before or after the operation                                              | - Updating shared state in a single atomic step where you must see previous writes and publish new writes (e.g., lock-free structures)                                     | - Can be stronger (thus slower) than needed if you only require a one-way barrier <br/> - Must be used carefully in highly concurrent scenarios              |
 | **`std::memory_order_seq_cst`** | Enforces total sequential consistency across all threads                     | - Provides a single, global order of all sequentially consistent operations <br/> - Easiest model to reason about, strongest ordering guarantee                                                             | - When correctness is paramount and performance concerns are secondary <br/> - Prototyping concurrency code before optimizing                                               | - Highest potential performance cost <br/> - May introduce unnecessary fences on weaker architectures                                                        |
 
-**What Do We Gain By Careful Use of Memory Orderings?**
+What Do We Gain By Careful Use of Memory Orderings?
 
 - **Weaker orderings** such as `relaxed`, `acquire`, and `release` can compile to more efficient instructions on some hardware, resulting in better performance compared to using a blanket `seq_cst`.
 - Careful use of memory orderings provides **control** by ensuring only the minimal necessary barriers are in place, which helps prevent the use of expensive hardware fences when they are not needed.
 
-**What Do We Lose / Need to Beware Of?**
+What Do We Lose / Need to Beware Of?
 
 - Managing memory orderings introduces **complexity**, making it easy to introduce subtle bugs if the chosen ordering is too weak to guarantee the necessary data visibility.
 - Code that utilizes specialized memory orderings can suffer from reduced **portability** and become harder to maintain, especially when new developers join the project.
-- Using  **overly strong orderings** like `seq_cst` everywhere can lead to over-synchronization, causing potential performance losses by missing out on possible optimizations.
+- Using an ordering stronger than necessary, such as `seq_cst` everywhere, can limit compiler or hardware optimizations on some architectures.
 
-**Analogy**
+Analogy
 
 Imagine you’re coordinating a relay race: 
 
@@ -1055,7 +1060,7 @@ Imagine you’re coordinating a relay race:
 - `relaxed` would be like running without caring about handing the baton off or receiving it properly—fast, but not synchronized.  
 - `seq_cst` would be like having a strict official track judge making sure everyone runs in a strictly observed, universal order—less chance of cheating but more overhead.
 
-**Example**
+Example
 
 Below is a small snippet that demonstrates `release` and `acquire`:
 
@@ -1102,7 +1107,7 @@ int main() {
 - The **producer** writes `data.value = 42` and then calls `ready.store(true, std::memory_order_release)`, ensuring that any subsequent acquire operation on `ready` will see the updated `data.value`.
 - The **consumer** spins until `ready.load(std::memory_order_acquire)` becomes true, and because it’s an acquire load, once it returns true, the consumer also sees `data.value = 42`.
 
-**What is happening**:
+What is happening:
 
 ```
    Producer Thread                Consumer Thread
@@ -1116,14 +1121,14 @@ int main() {
                                  sees data.value = 42
 ```
 
-- A **release** operation ensures that all writes before it, including `data.value = 42`, are visible to another thread that performs an acquire operation.
-- An **acquire** operation ensures that once `ready` is seen as `true`, the consumer consistently sees the "before-release" state, such as `data.value = 42`.
+- The **release** store publishes earlier writes, including `data.value = 42`.
+- When the **acquire** load reads the value written by that release, the operations synchronize, so the consumer can safely observe `data.value = 42`.
 
 ##### Performance Considerations and Best Practices
 
 - The frequent creation and destruction of threads can be costly, leading to significant overhead. To minimize this, it is advisable to use thread pools or reuse threads, which can reduce the performance impact associated with thread lifecycle management.
 - Synchronization mechanisms, such as mutexes, should be used sparingly because excessive synchronization can lead to contention and reduced performance. It is important to apply these mechanisms only when necessary to avoid unnecessary delays and overhead.
-- To avoid data races, always protect shared data with appropriate synchronization primitives. This ensures that only one thread can access the data at a time, preventing concurrent modifications that could lead to inconsistent or incorrect data states.
+- Protect shared mutable data with synchronization appropriate to the access pattern. That may mean a mutex, an atomic, a reader-writer lock, a concurrent data structure, or another mechanism that establishes safe access and ordering.
 - Utilizing modern features introduced in C++11 and later, such as `std::thread`, `std::mutex`, `std::lock_guard`, and `std::future`, can greatly simplify thread management and help avoid common pitfalls. These features provide robust and standardized ways to handle concurrency, making the code more maintainable and less error-prone.
 
 Here are some example code snippets demonstrating various aspects of multithreading in C++:
@@ -1131,7 +1136,7 @@ Here are some example code snippets demonstrating various aspects of multithread
 | #  | Example                  | Description                                                                   |
 |----|--------------------------|-------------------------------------------------------------------------------|
 | 1  | [single_worker_thread](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/01_single_worker_thread.cpp)  | Introduce the concept of threads by creating a single worker thread using `std::thread`.         |
-| 2  |  [thread_subclass](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/02_thread_subclass.cpp)        | Demonstrate how to create a custom thread class by inheriting `std::thread`.     |
+| 2  |  [thread_subclass](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/02_thread_subclass.cpp)        | Demonstrate a custom thread wrapper built around `std::thread`.     |
 | 3  |  [multiple_worker_threads](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/03_multiple_worker_threads.cpp)  | Show how to create and manage multiple worker threads using `std::thread`.                      |
 | 4  |  [race_condition](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/04_race_condition.cpp)        | Explain race conditions and their impact on multi-threaded applications using C++ examples.      |
 | 5  |  [mutex](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/05_mutex.cpp)    | Illustrate the use of `std::mutex` to protect shared resources and avoid race conditions in C++ applications. |
@@ -1147,7 +1152,7 @@ Here are some example code snippets demonstrating various aspects of multithread
 
 #### Examples in Python
 
-Python provides built-in support for concurrent execution through the `threading` module. While the Global Interpreter Lock (GIL) in CPython limits the execution of multiple native threads to one at a time per process, threading is still useful for I/O-bound tasks, where the program spends a lot of time waiting for external events.
+Python provides built-in threading support through the `threading` module. In conventional GIL-enabled CPython builds, only one thread executes Python bytecode at a time, so threads usually do not speed up CPU-bound Python code. They remain useful for I/O-bound tasks because one thread can run while another waits for external I/O. Other Python implementations, and free-threaded CPython builds, can have different execution characteristics.
 
 ##### Creating Threads
 
@@ -1177,11 +1182,11 @@ t1.join()  # Main thread waits for t1 to finish
 
 ##### Thread Detaching
 
-Python threads do not have a direct `detach()` method like C++. However, once started, a thread runs independently. The main program can continue executing without waiting for the threads, similar to detached threads in C++. However, you should ensure that all threads complete before the program exits to avoid abrupt termination.
+Python threads do not have a `detach()` method like C++. By default, threads are non-daemon threads, and the interpreter waits for them before normal program shutdown. A thread can instead be marked as a daemon, in which case it does not keep the process alive and may be stopped abruptly during shutdown. Important work should therefore use non-daemon threads and an explicit completion or shutdown protocol.
 
 ##### Thread Lifecycle and Resource Management
 
-Python threads are automatically managed by the interpreter. However, you should still ensure that threads are properly joined or allowed to finish their tasks to prevent any issues related to resource management or incomplete executions.
+Python manages thread objects and interpreter integration, but application code is still responsible for thread lifecycle. Join threads that must finish, provide stop signals for long-running workers, and avoid leaving important work to daemon threads at shutdown.
 
 ##### Passing Arguments to Threads
 
@@ -1243,7 +1248,7 @@ In this example, `counter_lock` ensures that only one thread modifies the `count
 
 ##### Deadlocks and Avoidance
 
-Deadlocks can occur when multiple threads are waiting for each other to release resources. In Python, you can avoid deadlocks by carefully planning the order of acquiring locks or by using `try-lock` mechanisms.
+Deadlocks can occur when threads acquire multiple locks in incompatible orders. Common prevention techniques include using a consistent lock order, keeping lock scopes small, or using timed/non-blocking acquisition when appropriate. The example below intentionally uses opposite lock orders and can deadlock.
 
 ```python
 import threading
@@ -1273,7 +1278,7 @@ t4.join()
 t5.join()
 ```
 
-In this example, care must be taken to avoid deadlocks by ensuring that locks are acquired in a consistent order.
+In this example, `task1` acquires `lock1` then `lock2`, while `task2` does the reverse. If each thread acquires its first lock before the other attempts the second, they can deadlock. Using the same acquisition order in both functions avoids that cycle.
 
 ##### Condition Variables
 
@@ -1317,6 +1322,7 @@ Python's `threading` module includes `Semaphore` and `BoundedSemaphore` for mana
 
 ```python
 import threading
+import time
 
 sem = threading.Semaphore(2)  # Allows up to 2 threads to access the resource
 
@@ -1324,7 +1330,7 @@ def access_resource(thread_id):
     with sem:
         print(f"Thread {thread_id} is accessing the resource")
         # Simulate some work
-        threading.Thread.sleep(1)
+        time.sleep(1)
 
 # Create multiple threads
 threads = [threading.Thread(target=access_resource, args=(i,)) for i in range(5)]
@@ -1365,9 +1371,9 @@ In this example, each thread has its own `local_data` value, independent of the 
 
 ##### Atomic Operations
 
-In multi-threaded Python programs, there is often confusion regarding whether certain operations are truly atomic. This confusion largely stems from the presence of the Global Interpreter Lock (GIL), which ensures that only one thread is executing Python bytecode at any given time. Some developers interpret this to mean that operations like `counter += 1` are automatically safe and cannot cause race conditions. However, this is **not** guaranteed by Python's documentation or design.
+In multithreaded Python code, it is easy to assume that the GIL makes compound operations such as `counter += 1` safe. That is not a portable synchronization guarantee. Code that shares mutable state should use an explicit synchronization mechanism rather than depend on interpreter implementation details.
 
-While the GIL does prevent multiple threads from running Python *bytecode* simultaneously, many Python operations, including integer increments, actually consist of several steps under the hood (e.g., loading the current value, creating a new integer, and storing it). These intermediate steps can be interleaved with operations from other threads, making race conditions possible if no additional synchronization mechanism is employed. Therefore, if you need to ensure correct and consistent results when multiple threads modify a shared variable, you must use locks (like `threading.Lock`) or other thread-safe data structures.
+In a GIL-enabled CPython build, only one thread executes Python bytecode at a time, but a compound source-level operation can still involve multiple interpreter steps, may invoke code that releases the GIL, and is not specified as a general synchronization primitive. If multiple threads modify shared state, use `threading.Lock` or another thread-safe coordination mechanism.
 
 Below is an example illustrating the use of a lock to ensure a thread-safe increment of a shared `counter`:
 
@@ -1396,7 +1402,7 @@ for t in threads:
 print(f"Counter: {counter}")
 ```
 
-In this example, `counter_lock` ensures that the increment operation is effectively atomic by preventing multiple threads from modifying `counter` at the same time. Without this lock, two or more threads could potentially load the same value of `counter`, increment it independently, and overwrite each other's updates—resulting in an incorrect final value. Keep in mind that **the GIL itself does not guarantee atomicity** for these kinds of operations, which is why locks (or other concurrency primitives) are essential when sharing mutable state across threads.
+In this example, `counter_lock` makes the read-modify-write sequence mutually exclusive, so only one thread updates `counter` at a time. Without explicit synchronization, code should not rely on the GIL to make a compound update thread-safe. Locks or other concurrency primitives make that requirement clear and portable.
 
 ##### Performance Considerations and Best Practices
 
@@ -1404,7 +1410,7 @@ In this example, `counter_lock` ensures that the increment operation is effectiv
 - Minimizing lock contention is good for performance. To achieve this, fine-grained locks can be implemented, and the time spent in critical sections should be minimized to reduce the likelihood of threads waiting for access to shared resources.
 - Appropriate synchronization mechanisms, such as locks, semaphores, and condition variables, should be used to coordinate thread activities and prevent data races. This ensures that threads operate safely without corrupting shared data.
 - Understanding the Global Interpreter Lock (GIL) is essential, especially in Python. The GIL can limit the effectiveness of threading in CPU-bound applications by allowing only one thread to execute Python bytecode at a time. In such cases, using multiprocessing or other parallelism strategies may be more effective than threading.
-- For background tasks, daemon threads should be used, as they automatically exit when the program terminates. This can be done by setting `thread.setDaemon(True)`, ensuring that these threads do not prevent the application from closing if they are still running.
+- Use daemon threads only for best-effort background work that can be abandoned at shutdown. For important work, prefer non-daemon threads with a clear stop-and-join lifecycle. When a daemon is appropriate, set `daemon=True` when creating the thread rather than relying on the older `setDaemon()` API.
 
 
 Here are some example code snippets demonstrating various aspects of multithreading in Python:
@@ -1419,19 +1425,19 @@ Here are some example code snippets demonstrating various aspects of multithread
 | 6  |  [semaphore](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/semaphore.py)           | Demonstrate the use of semaphores to limit the number of concurrent threads accessing a shared resource. |
 | 7  |  [producer_consumer](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/producer_consumer.py)    | Present a classic multi-threading problem (Producer-Consumer) and its solution using synchronization mechanisms like mutexes and condition variables. |
 | 8  |  [fetch_parallel](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/fetch_parallel.py)        | Showcase a practical application of multi-threading for parallel fetching of data from multiple sources. |
-| 9  |  [merge_sort](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/merge_sort.py)           | Use multi-threading to parallelize a merge sort algorithm, demonstrating the potential for performance improvements. |
+| 9  |  [merge_sort](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/merge_sort.py)           | Demonstrate a threaded merge sort and the limits or potential benefits of parallel work depending on the Python runtime and workload. |
 | 10 |  [schedule_every_n_sec](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/schedule_every_n_sec.py)   | Show how to schedule tasks to run periodically at fixed intervals using threads. |
 | 11 |  [barrier](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/barrier.py)          | Demonstrate the use of barriers to synchronize multiple threads at a specific point in the execution. |
 | 12 |  [thread_local_storage](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/thread_local_storage.py)   | Illustrate the concept of Thread Local Storage (TLS) and how it can be used to store thread-specific data. |
 | 13 |  [thread_pool](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/thread_pool.py)          | Show how to create and use a thread pool to efficiently manage a fixed number of worker threads for executing multiple tasks. |
 | 14 |  [reader_writer_lock](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/reader_writer_lock.py)   | Explain the concept of Reader-Writer Locks and their use for efficient access to shared resources with multiple readers and a single writer. |
-| 15 |  [daemon_demo](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/daemon_demo.py)   | Demonstrate daemon threads that terminate automatically when the main program exits. |
+| 15 |  [daemon_demo](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/daemon_demo.py)   | Demonstrate daemon threads, which do not keep the Python process alive and may be stopped during interpreter shutdown. |
 
 #### Examples in JavaScript (Node.js)
 
-Node.js traditionally uses a single-threaded event loop to handle asynchronous operations. However, since version **10.5.0**, Node.js has included support for worker threads, which allow multi-threaded execution. This is particularly useful for **CPU-intensive** tasks (e.g., image processing, cryptography), which can block the event loop and degrade performance in a purely single-threaded environment.
+Node.js runs JavaScript on an event-loop thread by default, while many asynchronous operations are handled by the runtime and operating system. The `worker_threads` module adds separate JavaScript threads for work that benefits from parallel CPU execution. This is especially useful for CPU-intensive tasks such as image processing or computation that would otherwise block the event loop.
 
-Worker threads in Node.js are provided by the `worker_threads` module, enabling the creation of additional JavaScript execution contexts. Each worker thread runs in its own isolated V8 instance and does **not** share state with other worker threads or with the main thread. Instead, communication is accomplished by **message passing** and, optionally, by sharing specific memory buffers (e.g., `SharedArrayBuffer`).
+Worker threads are provided by the `worker_threads` module. Each worker has its own V8 isolate and ordinary JavaScript objects are not shared implicitly with the main thread or other workers. Workers usually communicate through message passing, but they can explicitly share memory through objects such as `SharedArrayBuffer`.
 
 ##### Creating Worker Threads
 
@@ -1474,7 +1480,7 @@ In this example:
 
 ##### Handling Communication
 
-Communication between the main thread and worker threads is done via **message passing** using `postMessage` and `on('message', callback)`. This serialization-based messaging ensures that no implicit shared state is introduced.
+Communication between the main thread and workers commonly uses message passing through `postMessage` and `on('message', callback)`. Values are handled through the structured-clone mechanism, with some objects transferable rather than copied. Shared memory is separate and must be created explicitly.
 
 ```javascript
 // main.js (continued)
@@ -1494,7 +1500,7 @@ Here, the main thread sends a structured message to the worker with a `command` 
 
 ##### Worker Termination
 
-Workers can be terminated from **either** the main thread or within the worker itself.
+Workers can be stopped by the parent or can end from within their own execution.
 
 I. From the main thread, you can call `worker.terminate()`, which returns a Promise resolving to the exit code:
 
@@ -1509,10 +1515,10 @@ II. Inside the worker, you can terminate execution using `process.exit()`:
 
 ```javascript
 // worker.js
-process.exit(0); // Graceful exit
+process.exit(0); // Immediate exit
 ```
 
-Terminating the worker ends its event loop and frees its resources. Any pending operations in the worker are discarded once termination begins.
+Terminating a worker stops its execution and eventually releases its resources. Forced termination can interrupt pending work, so cooperative shutdown is preferable when cleanup or data flushing matters.
 
 ##### Passing Data to Workers
 
@@ -1542,34 +1548,38 @@ This pattern is useful for small or essential bits of configuration data that th
 
 ##### Transferring Ownership of Objects
 
-Some objects (like `ArrayBuffer` and `MessagePort`) can be **transferred** to a worker, meaning the main thread loses ownership and can no longer use the object once it’s transferred. This can be more efficient than copying large data structures.
+Some objects, such as `ArrayBuffer` and `MessagePort`, can be **transferred** to a worker. Transfer moves ownership instead of copying the underlying resource, and a transferred `ArrayBuffer` becomes detached in the sender.
 
 ```javascript
 // main.js
 const { Worker } = require('worker_threads');
-const buffer = new SharedArrayBuffer(1024);
+const buffer = new ArrayBuffer(1024);
 
-const worker = new Worker('./worker.js', { workerData: buffer });
+const worker = new Worker('./worker.js', {
+  workerData: buffer,
+  transferList: [buffer]
+});
 ```
 
-In this snippet, a `SharedArrayBuffer` is provided to the worker. Both the main thread and the worker thread can access and modify this shared memory concurrently, which is useful for scenarios requiring **high-performance concurrent access** (e.g., streaming or real-time data processing). Synchronization in such cases typically uses `Atomics` (part of JavaScript’s standard library).
+In this example, ownership of the `ArrayBuffer` moves to the worker, so the main thread can no longer use its contents. This differs from `SharedArrayBuffer`, which is not transferred: both threads retain access to the same shared memory and must coordinate concurrent access, typically with `Atomics`.
 
 ##### Using `Atomics` and `SharedArrayBuffer`
 
-When sharing memory (via `SharedArrayBuffer`), JavaScript provides the `Atomics` object for performing atomic operations (e.g., `Atomics.add`, `Atomics.load`, `Atomics.store`). Unlike higher-level synchronization primitives in other languages (like mutexes or semaphores), JavaScript concurrency with `SharedArrayBuffer` and `Atomics` relies on these low-level primitives for correctness.
+When memory is shared through `SharedArrayBuffer`, JavaScript provides the `Atomics` object for atomic operations such as `Atomics.add`, `Atomics.load`, and `Atomics.store`, along with wait/notify operations on supported typed arrays. These primitives provide the synchronization needed when multiple threads access the same shared locations.
 
-**Example**:
+Example:
 
 ```javascript
 // main.js
 const { Worker } = require('worker_threads');
 const sharedBuffer = new SharedArrayBuffer(4);  // Enough for one 32-bit integer
+const sharedArray = new Int32Array(sharedBuffer);
 
 const worker = new Worker('./worker.js', { workerData: sharedBuffer });
 
-// Optionally communicate via messages as well
 worker.on('message', (msg) => {
   console.log('Message from worker:', msg);
+  console.log('Final value:', Atomics.load(sharedArray, 0));
 });
 ```
 
@@ -1595,11 +1605,11 @@ In this example:
 1. The main thread creates a `SharedArrayBuffer` of 4 bytes (enough space for an `Int32Array` element).  
 2. That buffer is passed to the worker.  
 3. The worker increments the shared integer atomically 100,000 times using `Atomics.add`.  
-4. Both threads can read the final value in `sharedArray[0]` safely, without data races.
+4. After the worker reports completion, the main thread reads the final value with `Atomics.load(sharedArray, 0)`.
 
 ##### Error Handling
 
-Handling errors in multi-threaded environments isn’t easy, but it’s something you can’t skip:
+Worker-thread errors need an explicit handling strategy:
 
 ```javascript
 // main.js
@@ -1622,11 +1632,11 @@ If an uncaught exception occurs in the worker, the main thread’s `error` event
 
 ##### Performance Considerations and Best Practices
 
-- When handling CPU-intensive tasks, worker threads are particularly advantageous as they can execute computationally heavy operations without blocking the event loop. For tasks that are I/O-bound, however, the Node.js event loop is generally more efficient and sufficient.
-- It is important to avoid heavy data transfers between the main thread and worker threads because the process of serialization and deserialization can be inefficient. To enhance efficiency, shared memory structures like `SharedArrayBuffer` should be used when possible, as they allow for direct memory access without the overhead of copying data.
-- Proper management of the worker lifecycle is important. Workers should be terminated once they have completed their tasks to prevent resource leaks, which can occur if worker threads remain active unnecessarily and continue consuming system resources.
-- Strong error handling is necessary for maintaining stability and reliability in applications that use worker threads. This involves catching and managing exceptions and errors that may occur within worker threads, making sure that these failures do not lead to crashes or unpredictable behavior in the main application.
-- Security considerations must be taken into account, as worker threads have access to the complete Node.js API and run in separate V8 instances. To mitigate security risks, it is important to avoid executing untrusted code within worker threads, as this could potentially lead to vulnerabilities and exploits in the system.
+- Worker threads are most useful for CPU-intensive JavaScript that would otherwise block the event loop. For ordinary I/O-bound work, Node.js asynchronous APIs are usually simpler and more efficient.
+- Large messages can be expensive to copy. Consider transfer lists for ownership transfer, or `SharedArrayBuffer` when shared memory is genuinely needed and the required synchronization is well understood.
+- Manage worker lifecycles explicitly. Reuse workers for repeated tasks when appropriate, and shut them down when they are no longer needed.
+- Handle worker errors and abnormal exits so failures do not leave the application in an inconsistent state.
+- Worker threads are not a security sandbox. Do not use them to execute untrusted code merely because they run in separate V8 isolates.
 
 ##### Example: Prime Number Calculation
 
