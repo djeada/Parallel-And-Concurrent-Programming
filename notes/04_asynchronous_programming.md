@@ -1,24 +1,24 @@
 ## Asynchrony
 
-Asynchronous programming is a technique used to achieve concurrency, where tasks can be executed independently without waiting for other tasks to finish. It allows for nonblocking behavior, in contrast to synchronous execution that waits for one task to complete before starting the next task.
+Asynchronous programming is a technique for achieving concurrency without forcing one operation to block progress while it waits for another to finish. Instead of requiring each task to complete before the next can make progress, asynchronous code can suspend waiting work and continue with other ready work.
 
 ### Building Blocks of Asynchronous Programming
 
-Asynchronous programming offers non-blocking execution, which is especially beneficial for I/O-bound operations. The two main pillars of this paradigm are the event loop and async functions.
+Asynchronous programming is especially useful for I/O-bound operations because waiting work can be suspended without blocking other ready work. Common building blocks include event loops, coroutines or async functions, futures, and tasks.
 
-#### Function vs Corutine
+#### Function vs Coroutine
 
 A **function** is a reusable block of code that performs a specific task. It can take inputs, called **arguments**, and may return an output that the rest of the program can use.
 
-Functions make programs easier to build and maintain by breaking large problems into smaller, clearer steps. In most cases, when a function is called, the program enters the function, runs its instructions, and waits until the function finishes before moving on. The function ends when it reaches its last line or a `return` statement.
+Functions make programs easier to build and maintain by breaking large problems into smaller, clearer steps. A regular function normally runs until it returns or reaches the end of its body before control goes back to its caller.
 
-A **coroutine** is similar to a function, but with one important difference: it can pause during execution and continue later from the same point. This is useful for tasks that spend time waiting, such as reading a file, loading data from a server, or waiting for user input.
+A **coroutine** is similar to a function, but it can suspend during execution and later resume from the same point. This is useful for tasks that spend time waiting, such as receiving network data, waiting for a timer, or waiting for user input.
 
-Coroutines are often used in **asynchronous programming**. Instead of blocking the entire program while one task waits, a coroutine can pause and allow other work to happen. Once the needed resource or event is ready, the coroutine resumes where it left off.
+Coroutines are commonly used in asynchronous programming. Instead of blocking the executing thread while one task waits, a coroutine can suspend and allow other ready work to run. Once the awaited resource or event is ready, the coroutine can resume where it left off.
 
-Depending on the programming language, coroutines may use keywords such as `await` or `yield` to pause execution and hand control back to the caller or scheduler.
+Depending on the language and coroutine model, keywords such as `await` or `yield` can suspend execution and hand control back to a caller or scheduler.
 
-A regular function runs from start to finish when called, while a coroutine can pause, let other tasks run, and then continue later while remembering its previous state. This makes coroutines especially useful for writing efficient programs that handle multiple waiting tasks at the same time.
+A regular function normally runs until it returns, while a coroutine can suspend, let other work run, and later continue with its state preserved. This makes coroutines well suited to programs that manage many operations that spend time waiting.
 
 
 ```
@@ -50,13 +50,13 @@ Function:                         Coroutine:
 
 #### Event Loop
 
-The **event loop** is the part of an asynchronous program that keeps everything moving. It continually checks which tasks are ready to run and gives them a chance to execute.
+An **event loop** is a scheduler used by many asynchronous runtimes. It tracks work that is ready to run and dispatches callbacks or resumes tasks when their awaited operations become ready.
 
 For example, a program may be waiting for a file to load, a network request to finish, or a timer to expire. Instead of stopping the entire program until one of these tasks is complete, the event loop allows other work to continue in the meantime.
 
-The event loop is responsible for scheduling tasks, handling completed I/O operations, and managing timers or timeouts. When an operation finishes or a scheduled time is reached, it ensures that the appropriate task runs.
+The event loop coordinates ready tasks and callbacks, completed I/O notifications, and timers. When an operation becomes ready or a timer expires, the associated callback or task can be scheduled to run.
 
-This allows a program to handle multiple tasks efficiently, even when it is running on a single thread. The tasks are not necessarily executing at the exact same moment; instead, the event loop quickly switches between tasks whenever one is waiting, helping the program stay responsive and avoid unnecessary delays.
+This lets a program handle many concurrent operations efficiently even when the event loop itself runs on a single thread. Those tasks are not necessarily executing at the same instant; they take turns as work becomes ready, which helps the program stay responsive without dedicating a thread to every waiting operation.
 
 
 ```
@@ -102,19 +102,19 @@ This allows a program to handle multiple tasks efficiently, even when it is runn
 
 #### Futures and Tasks
 
-A **future** is an object that represents a result that is not ready yet. It is often created when an asynchronous operation begins, such as loading data or waiting for a network response.
+A **future** is an object that represents a result that may not be available yet. It is commonly associated with an operation whose value or error will be supplied later.
 
-At first, a future is usually **pending**. Later, it becomes **completed** when the operation succeeds, or **failed** if an error occurs. Once completed, the result can be retrieved; if the operation failed, the error can be handled.
+A future is typically pending at first. Later, it becomes completed with either a result or an error. Once it is complete, consumers can retrieve the value or handle the failure.
 
 A future does not usually perform the work itself. Instead, it keeps track of the eventual result of work being carried out elsewhere, such as by an event loop or a thread pool.
 
-A **task** is a future that is connected to the execution of a coroutine. When a coroutine is turned into a task, the event loop can schedule it to run alongside other tasks.
+A **task** is a scheduled unit of asynchronous work. In runtimes such as Python's `asyncio`, a task wraps a coroutine, schedules it on the event loop, and is also a specialized kind of future.
 
 A task can be **awaited**, meaning another coroutine can pause until that task finishes without blocking the entire program. While one task is waiting, the event loop can continue running other tasks.
 
 Tasks can also be canceled when they are no longer needed, or grouped together so that a program can wait for several operations to finish. They are also useful for building workflows where one operation depends on the result of another.
 
-A **future** represents a result that will become available later, while a **task** represents a coroutine that is actively being scheduled and run to produce a result.
+A **future** represents an eventual result, while a **task** represents scheduled asynchronous work. Some runtimes model tasks as a specialized kind of future, but that relationship is not universal across languages.
 
 ### Asynchrony vs. Multithreading
 
@@ -128,7 +128,7 @@ Many real applications use both approaches together. For example, a web server m
 
 **Parallelism** means that multiple tasks are actually running at the same time, usually on different CPU cores. For example, a video encoder may process several frames simultaneously to finish the job faster.
 
-You can think about it in this way, **async is mainly about avoiding unnecessary waiting**, while **threads or processes can help perform multiple pieces of work at the same time**.
+A useful rule of thumb is that async is mainly about avoiding unnecessary blocking, while threads and processes provide additional execution contexts that may also enable parallel work.
 
 **I. Synchronous Code on a Single Thread**
 
@@ -248,7 +248,7 @@ In thread-based programs, reduce shared mutable state whenever possible. Passing
 | Calling blocking code from async code              | Prevent a blocking library call from freezing the event loop                   | Run the blocking operation on a controlled worker pool                                               | `asyncio.to_thread()` for blocking I/O; use a process pool for CPU-heavy Python work when appropriate         | Blocking I/O must leave the event-loop thread; CPU-heavy work generally needs separate execution resources | Bound the worker pool, stop admitting new calls, await or abandon work according to policy, and shut down executors cleanly. ([Python documentation][4]) |
 
 [1]: https://www.boost.org/doc/libs/latest/libs/beast/doc/html/index.html "Chapter 1. Boost.Beast"
-[2]: https://fastapi.tiangolo.com/advanced/events/?utm_source=chatgpt.com "Lifespan Events"
+[2]: https://fastapi.tiangolo.com/advanced/events/ "Lifespan Events"
 [3]: https://docs.python.org/3/library/asyncio-task.html "Coroutines and tasks — Python 3.14.5 documentation"
 [4]: https://docs.python.org/3/library/asyncio-eventloop.html "Event loop — Python 3.14.5 documentation"
 [5]: https://docs.python.org/3/library/asyncio-subprocess.html "Subprocesses — Python 3.14.5 documentation"
@@ -257,16 +257,17 @@ In thread-based programs, reduce shared mutable state whenever possible. Passing
 
 #### Examples in C++
 
-Asynchronous programming in C++ involves performing tasks without blocking the main thread, allowing other operations to continue in parallel. This can be particularly useful for I/O-bound or computationally intensive tasks. The C++ Standard Library provides facilities for asynchronous programming, including the `std::async` function, `std::future`, and `std::promise`.
+In C++, asynchronous and concurrent work can be expressed with facilities such as `std::async`, `std::future`, and `std::promise`, while event-driven asynchronous I/O is typically provided by libraries such as Boost.Asio. These mechanisms can keep a caller responsive or coordinate work that completes later, but they are not all based on an event loop.
 
 ##### Asynchronous Tasks with `std::async`
 
-The `std::async` function runs a function asynchronously, returning a `std::future` that will eventually hold the result of the function.
+With `std::launch::async`, `std::async` starts a callable asynchronously and returns a `std::future` that will hold its result or exception.
 
 ```cpp
 #include <iostream>
 #include <future>
 #include <thread>
+#include <chrono>
 
 int compute(int x) {
     std::this_thread::sleep_for(std::chrono::seconds(2)); // Simulate a long computation
@@ -289,12 +290,14 @@ In this example, `std::async` launches the `compute` function asynchronously, al
 
 ##### Using `std::future` and `std::promise`
 
-`std::future` and `std::promise` provide a way to communicate between threads asynchronously. A `std::promise` object is used to set a value that will be available to a `std::future` object.
+`std::future` and `std::promise` share a result state between a producer and a consumer, often across threads. A `std::promise` stores a value or exception that can later be retrieved through its associated `std::future`.
 
 ```cpp
 #include <iostream>
 #include <future>
 #include <thread>
+#include <chrono>
+#include <functional>
 
 void set_value(std::promise<int>& promise) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -326,6 +329,7 @@ The `std::future` object provides a way to wait for a result that is being compu
 #include <iostream>
 #include <future>
 #include <thread>
+#include <chrono>
 
 int slow_add(int a, int b) {
     std::this_thread::sleep_for(std::chrono::seconds(3));
@@ -344,7 +348,7 @@ int main() {
 }
 ```
 
-Here, `future.wait_for` periodically checks if the result is ready, allowing the main thread to perform other tasks while waiting.
+Here, `future.wait_for` performs a timed wait and lets the program check repeatedly whether the result is ready. The loop still waits for up to 500 ms on each call; useful work could be placed between checks if needed.
 
 ##### Exception Handling with Asynchronous Operations
 
@@ -385,6 +389,7 @@ A `std::shared_future` allows multiple threads to share the result of an asynchr
 #include <future>
 #include <thread>
 #include <vector>
+#include <chrono>
 
 int compute_value() {
     std::this_thread::sleep_for(std::chrono::seconds(2));
@@ -451,11 +456,11 @@ For true non-blocking chaining, use C++20 coroutines (see `coroutine_task.cpp`) 
 
 ##### Performance Considerations and Best Practices
 
-- Use asynchronous operations for long-running tasks to keep the main thread responsive.
-- Ensure that exceptions are properly handled in asynchronous tasks to prevent crashes.
-- Be cautious with resources shared between asynchronous tasks; use synchronization mechanisms like mutexes if necessary.
-- Creating too many threads can be costly. Use asynchronous mechanisms and thread pools where appropriate.
-- Leverage C++11 and later features like `std::async`, `std::future`, and `std::promise` for cleaner and more efficient asynchronous programming.
+- Use asynchronous or concurrent execution when it helps keep the caller responsive or overlap independent work.
+- Handle exceptions from asynchronous operations explicitly, especially when retrieving results through futures.
+- Protect shared mutable state with appropriate synchronization when work can run concurrently.
+- Creating too many threads can be costly. Reuse execution resources or use a controlled thread pool when appropriate.
+- Use `std::async`, `std::future`, and `std::promise` when their result-oriented model fits the problem; use an event-driven library when true asynchronous I/O is required.
 
 | No. | Filename                                                                                         | Description                                              |
 |-----|--------------------------------------------------------------------------------------------------|----------------------------------------------------------|
@@ -628,7 +633,7 @@ class AsyncCounter:
         self.limit = limit
         self.count = 0
 
-    async def __aiter__(self):
+    def __aiter__(self):
         return self
 
     async def __anext__(self):
@@ -699,7 +704,7 @@ In this example, `fs.readFile` reads a file asynchronously and calls the provide
 
 ##### Asynchronous Programming with Promises
 
-Promises provide a more elegant way to handle asynchronous operations by avoiding the callback pyramid of doom (nested callbacks). A Promise represents a value that may be available now, or in the future, or never.
+Promises provide a more structured way to compose asynchronous operations and avoid deeply nested callbacks. A Promise represents the eventual fulfillment or rejection of an asynchronous operation.
 
 ```javascript
 const fs = require('fs').promises;
@@ -719,7 +724,7 @@ Here, `fs.promises.readFile` returns a Promise. The `then` method handles the re
 
 ##### Asynchronous Programming with `async`/`await`
 
-The `async`/`await` syntax in Node.js (available from ECMAScript 2017) is syntactic sugar over Promises, making asynchronous code look and behave more like synchronous code.
+The `async`/`await` syntax is built on Promises and makes asynchronous control flow read more like synchronous code.
 
 ```javascript
 const fs = require('fs').promises;
@@ -737,7 +742,7 @@ readFile();
 console.log('Reading file...');
 ```
 
-In this example, `async` declares an asynchronous function, and `await` pauses the execution until the Promise is resolved, making the code more readable and maintainable.
+In this example, `async` declares an asynchronous function, and `await` suspends that function until the Promise settles without blocking the event loop.
 
 ##### Handling Multiple Asynchronous Operations
 
@@ -766,7 +771,7 @@ async function fetchData() {
 fetchData();
 ```
 
-In this example, `Promise.all` waits for all the promises to resolve before continuing. This is useful when you need to perform multiple independent asynchronous operations and handle their results together.
+In this example, `Promise.all` waits for all input promises to fulfill and rejects if any of them rejects. It is useful when independent asynchronous operations should be started together and all results are required.
 
 ##### Error Handling in Asynchronous Code
 
@@ -822,6 +827,8 @@ Here, `for-await-of` iterates over each line of a file asynchronously, making it
 To avoid deeply nested callbacks (callback hell), use Promises or the `async`/`await` syntax. For example:
 
 ```javascript
+const fs = require('fs');
+
 // Callback Hell Example
 function doSomething(callback) {
     fs.readFile('file1.txt', 'utf8', (err, data1) => {
@@ -836,8 +843,8 @@ function doSomething(callback) {
 // Using Promises or async/await
 async function doSomethingBetter() {
     try {
-        const data1 = await fs.readFile('file1.txt', 'utf8');
-        const data2 = await fs.readFile('file2.txt', 'utf8');
+        const data1 = await fs.promises.readFile('file1.txt', 'utf8');
+        const data2 = await fs.promises.readFile('file2.txt', 'utf8');
         return data1 + data2;
     } catch (err) {
         console.error('Error:', err);
@@ -892,4 +899,3 @@ Here is a table comparing asynchronous programming features in C++, Python, and 
 | **Task**                 | There is no direct standard-library equivalent of Python's `asyncio.Task`. `std::packaged_task` wraps a callable and connects it to a future, but it does not schedule a coroutine. In Boost.Asio, coroutine work is commonly represented by `awaitable<T>` and launched with `co_spawn`. | `asyncio.Task` wraps and schedules a coroutine on the event loop. It is also a subclass of `Future`.                                      | Node.js does not expose a separate task type equivalent to `asyncio.Task`; async work is usually represented and coordinated through promises.               |
 | **Typical use**          | `std::async` and futures are useful for result-oriented concurrent work; Boost.Asio coroutines are suited to asynchronous networking and timers.                                                                                                                                          | Well suited to high-concurrency I/O tasks such as network requests, servers, database calls, and subprocess management.                   | Well suited to servers, file and network I/O, streams, timers, and other event-driven applications.                                                          |
 | **Important limitation** | C++ coroutines provide suspension syntax, but they do not automatically provide an event loop, thread pool, or asynchronous I/O implementation.                                                                                                                                           | Blocking synchronous code inside the event loop can prevent other tasks from running.                                                     | Long-running synchronous JavaScript blocks the event loop and delays other requests and callbacks.                                                           |
-
