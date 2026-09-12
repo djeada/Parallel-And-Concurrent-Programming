@@ -1,163 +1,477 @@
 ## Evaluating Performance in Parallel Computing
 
-Evaluating the performance of parallel computing systems is crucial for understanding their efficiency and identifying potential bottlenecks. Here are some metrics and concepts for evaluating performance:
+Evaluating a parallel program means more than asking whether it runs faster with more processors. Good performance analysis looks at **how much faster it becomes, how efficiently it uses additional resources, where time is lost, and whether the behavior remains stable as the workload or machine size grows**.
+
+The most useful measurements combine application-level metrics such as latency and throughput with parallel-specific metrics such as speedup, efficiency, load balance, communication cost, synchronization time, and scaling behavior.
 
 ### Performance Metrics
 
 I. Throughput
 
-- The number of tasks or operations completed per unit of time.
-- Higher throughput indicates better performance.
-- Calculated as:
-  
+- **Throughput** is the amount of useful work completed per unit of time.
+- Depending on the application, the unit may be requests/second, images/second, iterations/second, transactions/second, or processed bytes/second.
+- Higher throughput is usually desirable, but it should be interpreted together with latency, correctness, and resource consumption.
+- A system can improve throughput without improving the latency of an individual task.
+
+A simple definition is:
+
 $$
-\text{Throughput} = \frac{\text{number of tasks}}{\text{time}}
+\text{Throughput} = \frac{\text{completed work}}{\text{elapsed time}}
+$$
+
+For example, if a program processes 12,000 images in 60 seconds:
+
+$$
+\text{Throughput} = \frac{12000}{60} = 200 \text{ images/s}
 $$
 
 II. Latency
 
-- The time taken to complete a single task or operation.
-- Lower latency is preferable for performance-sensitive applications.
-- Calculated as:
+- **Latency** is the elapsed time required for one operation, request, or unit of work to complete.
+- Lower latency is especially important for interactive systems and applications with deadlines.
+- In parallel systems, latency can include computation, communication, queueing, synchronization, and waiting for slower workers.
+
+For one operation:
 
 $$
-\text{Latency} = \frac{\text{time}}{\text{single task}}
+\text{Latency} = t_{\text{finish}} - t_{\text{start}}
 $$
+
+When many operations are measured, the average alone may hide slow outliers. Percentiles such as **p50, p95, and p99 latency** are often more informative for services and irregular workloads.
 
 III. Speedup
 
-- The ratio of the time taken to complete a task using a single processor to the time taken using multiple processors.
-- Calculated as:
+- **Speedup** measures how much faster a parallel implementation is than a reference implementation.
+- The usual reference is the execution time on one processor using the same algorithm and problem size.
+- Speedup should be based on **wall-clock elapsed time**, because that is the time observed by the user.
 
 $$
-\text{Speedup} = \frac{T_1}{T_p}
+S_p = \frac{T_1}{T_p}
 $$
 
-where $T_1$ is the time with one processor, and $T_p$ is the time with $p$ processors.
+where:
+
+- $T_1$ is the execution time using one processor.
+- $T_p$ is the execution time using $p$ processors.
+
+Example:
+
+If a computation takes 100 seconds on one processor and 28 seconds on four processors:
+
+$$
+S_4 = \frac{100}{28} \approx 3.57
+$$
+
+The ideal speedup with four processors is $4$, so this result is good but not perfectly linear.
+
+Speedup can occasionally be **superlinear**, where $S_p > p$. This does not mean the processors are violating the usual scaling limits. It can happen because the parallel run has a more favorable cache working set, reduces paging, or changes the algorithm's effective behavior.
 
 IV. Efficiency
 
-- The ratio of speedup to the number of processors used.
-- Calculated as:
+- **Parallel efficiency** measures how effectively the available processors contribute to speedup.
+- It is speedup normalized by the number of processors.
 
 $$
-\text{Efficiency} = \frac{\text{Speedup}}{p}
+E_p = \frac{S_p}{p}
 $$
+
+It is often expressed as a percentage:
+
+$$
+E_p(\%) = \frac{S_p}{p} \times 100
+$$
+
+Using the previous example:
+
+$$
+E_4 = \frac{3.57}{4} \approx 0.893 = 89.3\%
+$$
+
+An efficiency near $1$ indicates that the additional processors are being used effectively. Efficiency usually decreases as the processor count grows because communication, synchronization, and serial work become more significant.
 
 V. Scalability
 
-- The ability of a system to maintain or improve performance as the number of processors or the load increases.
-- Measured by analyzing how performance metrics change with varying numbers of processors.
+- **Scalability** describes how performance changes as more processing resources are added.
+- A scalable program continues to gain useful performance without communication, synchronization, memory contention, or serial work dominating the runtime.
+- Scalability should be measured experimentally rather than inferred only from CPU utilization.
 
-Weak Scaling:
-
-- Variable number of processors with a fixed problem size *per processor*.
-- Accomplish *more work* in the *same time*.
+Two common scaling models are used.
 
 Strong Scaling:
 
-- Variable number of processors with a fixed total problem size.
-- Accomplish *same work* in *less time*.
+- The **total problem size remains fixed** while the number of processors increases.
+- The goal is to complete the **same work in less time**.
+- Strong-scaling speedup is usually measured with $S_p = T_1/T_p$.
+- Strong scaling eventually saturates because the work per processor becomes too small relative to communication and synchronization overhead.
+
+A useful strong-scaling efficiency is:
+
+$$
+E_{\text{strong}}(p) = \frac{T_1}{pT_p}
+$$
+
+Weak Scaling:
+
+- The **problem size per processor remains approximately fixed** while the processor count increases.
+- The total amount of work therefore grows with the machine size.
+- The goal is to accomplish **more total work in roughly the same time**.
+
+If $T_1$ is the runtime for one unit of work on one processor and $T_p$ is the runtime for $p$ units of work on $p$ processors, one common weak-scaling efficiency is:
+
+$$
+E_{\text{weak}}(p) = \frac{T_1}{T_p}
+$$
+
+A value near $1$ indicates that runtime stayed nearly constant while the total workload grew.
 
 VI. Load Balancing
 
-- The distribution of workloads evenly across processors to avoid some processors being idle while others are overloaded.
-- Evaluated by comparing the workloads on each processor.
+- **Load balancing** describes how evenly useful work is distributed across processors, threads, GPU blocks, or cluster nodes.
+- Poor load balance causes some workers to wait while the slowest worker finishes.
+- In synchronized parallel programs, overall runtime is often determined by the slowest participant.
+
+If worker execution times are $T_1, T_2, \ldots, T_p$, a simple imbalance indicator is:
+
+$$
+\text{Imbalance} = \frac{T_{\max}}{T_{\text{avg}}}
+$$
+
+where:
+
+$$
+T_{\text{avg}} = \frac{1}{p}\sum_{i=1}^{p} T_i
+$$
+
+An imbalance close to $1$ is desirable. Larger values indicate that one or more workers are doing substantially more work than the others.
+
+Common causes of imbalance include:
+
+- Uneven input data.
+- Tasks with unpredictable execution times.
+- Static partitioning of irregular workloads.
+- Different processor speeds or NUMA placement.
+- Contention for shared resources.
+- Stragglers in distributed systems.
+
+Dynamic scheduling, work queues, work stealing, and finer-grained task decomposition can improve balance, although they introduce scheduling overhead.
 
 VII. Overhead
 
-- The extra time or resources required to manage parallel tasks, such as communication between processors and synchronization.
-- Lower overhead indicates better efficiency.
+- **Parallel overhead** is work introduced by parallel execution that is not part of the original useful computation.
+- Sources include communication, synchronization, thread/process creation, scheduling, data movement, cache-coherence traffic, reductions, barriers, and idle waiting.
+- Lower overhead generally improves scalability, but some overhead is necessary to coordinate parallel work.
+
+A useful total-overhead definition is:
+
+$$
+T_o = pT_p - T_1
+$$
+
+Here, $pT_p$ is the total processor-time consumed by the parallel run, while $T_1$ is the useful work represented by the single-processor baseline.
+
+The **cost** of a parallel execution is:
+
+$$
+C_p = pT_p
+$$
+
+A parallel algorithm is called **cost-optimal** when its total cost is asymptotically comparable to the best sequential execution time.
 
 VIII. Resource Utilization
 
-- The extent to which the computing resources (CPU, memory, I/O) are being used.
-- Higher resource utilization can indicate better performance but may also signal potential bottlenecks.
+- **Resource utilization** measures how much of a hardware resource is active during execution.
+- Useful resources to observe include CPU cores, GPU compute units, memory bandwidth, cache capacity, network links, storage, and accelerators.
+- High utilization is not automatically evidence of good performance. A processor can be 100% busy while repeatedly missing in cache, spinning on a lock, or doing unnecessary work.
+- Low utilization can indicate insufficient parallelism, load imbalance, blocking I/O, synchronization, or a bottleneck elsewhere.
+
+Resource utilization should therefore be interpreted together with throughput, latency, efficiency, and hardware-counter data.
+
+IX. Communication-to-Computation Ratio
+
+Parallel performance often depends on how much useful computation is performed for each unit of communication.
+
+A conceptual ratio is:
+
+$$
+\text{CCR} = \frac{T_{\text{communication}}}{T_{\text{computation}}}
+$$
+
+Lower communication-to-computation ratios are generally easier to scale. If communication grows faster than useful computation, adding processors can eventually make the program slower.
+
+For distributed-memory systems, important communication costs include:
+
+- Message startup latency.
+- Transfer time proportional to message size.
+- Network contention.
+- Collective operations.
+- Waiting for communication partners.
+
+For shared-memory systems, analogous costs include:
+
+- Cache-line transfers.
+- Lock contention.
+- Barrier waiting.
+- False sharing.
+- NUMA remote-memory access.
 
 ### Amdahl's Law
 
-Amdahl's Law, formulated by Gene Amdahl in 1967, is used to find the maximum improvement in processing speed that can be expected from a system when only part of the system is improved. It is particularly useful in parallel computing to understand the potential gains from using multiple processors.
+Amdahl's Law, introduced by Gene Amdahl in 1967, estimates the speedup available for a **fixed-size workload** when only part of the program can benefit from parallel execution.
 
-The law is mathematically expressed as:
+If a fraction $P$ of the execution time can be parallelized and the remaining fraction $1-P$ must execute serially, the idealized speedup on $n$ processors is:
 
-$$S(n) = \frac{1}{(1 - P) + \frac{P}{n}}$$
+$$
+S(n) = \frac{1}{(1-P) + \frac{P}{n}}
+$$
 
 Where:
 
-- $S(n)$ is the speedup of the system using $n$ processors.
-- $P$ is the proportion of the program that can be parallelized.
-- $1 - P$ is the proportion of the program that cannot be parallelized.
+- $S(n)$ is the predicted speedup using $n$ processors.
+- $P$ is the fraction of execution time that can be parallelized.
+- $1-P$ is the serial fraction.
+- $n$ is the number of processors.
 
 Important Points:
 
-1. The sequential portion $(1 - P)$ refers to the part of the task that remains serial and cannot be improved by adding more processors.
-2. The parallel portion $(P)$ is the part of the task that can be divided among multiple processors.
-3. Diminishing returns occur as the number of processors increases, making the impact of the sequential portion more significant and limiting the overall speedup.
-4. Scalability of a system is limited by the non-parallelizable portion of the workload.
+1. The sequential portion $(1-P)$ eventually limits the benefit of adding processors.
+2. The parallel portion $P$ is assumed to divide ideally among the processors.
+3. Real programs usually perform worse than the basic formula predicts because the simple model does not explicitly include communication, synchronization, load imbalance, memory contention, or scheduling overhead.
+4. Diminishing returns appear as $n$ increases because $\frac{P}{n}$ becomes small while the serial fraction remains.
+5. For an unlimited number of processors:
+
+$$
+\lim_{n\to\infty} S(n) = \frac{1}{1-P}
+$$
+
+For example, if $P=0.95$, then even infinitely many processors would give an idealized maximum speedup of:
+
+$$
+S_{\max} = \frac{1}{0.05} = 20
+$$
+
+If $P=0.99$, the corresponding limit is:
+
+$$
+S_{\max} = \frac{1}{0.01} = 100
+$$
+
+This illustrates why apparently small serial fractions become important at large processor counts.
 
 Practical Implications:
 
-- Optimizing parallelism involves maximizing the parallelizable portion of the task to achieve significant speedup.
-- Amdahl’s Law is crucial in system design, helping to predict and enhance the performance of parallel systems by minimizing the sequential portion of tasks.
-- It aids in cost-benefit analysis, helping to understand the trade-offs between the cost of adding more processors and the expected performance improvement.
+- Reducing serial work can matter more than adding processors.
+- Communication and synchronization should be considered part of the effective non-scaling portion of a real implementation.
+- Optimizing a part of the program that consumes little total time has limited impact on end-to-end runtime.
+- Amdahl's Law is particularly useful when evaluating **strong scaling**, because the total workload is fixed.
+- Performance work should target the part of the program that dominates actual measured runtime, not merely the code that appears most parallelizable.
+
+Amdahl's Law also explains why optimization must be evaluated end to end. Suppose 80% of a program is accelerated by a factor of 10 while the remaining 20% is unchanged:
+
+$$
+S = \frac{1}{0.2 + \frac{0.8}{10}}
+  = \frac{1}{0.28}
+  \approx 3.57
+$$
+
+Even though most of the program became ten times faster, the complete application becomes only about $3.57\times$ faster.
 
 #### Visual Representation of Amdahl's Law
 
 ![Speedup vs. Number of Processors](https://github.com/user-attachments/assets/f94b018d-9741-46ee-80ae-ecfb52141fba)
 
-The graph illustrates the relationship between speedup (y-axis) and the number of processors (x-axis) for varying values of the parallelizable portion $P$. As the value of $P$ increases, the speedup improves, but eventually reaches a plateau, highlighting the diminishing returns when additional processors are added. This visual representation underscores the impact of the sequential portion of a task on the overall performance improvement.
+The graph illustrates the relationship between speedup on the y-axis and the number of processors on the x-axis for different values of the parallel fraction $P$. Larger values of $P$ produce better scaling, but every curve eventually bends away from ideal linear speedup because the serial fraction remains.
+
+Amdahl's Law should not be interpreted as saying that large machines are useless. It models a fixed-size problem. In practice, larger machines are often used to solve **larger problems**, not only to solve the same problem faster. This is the motivation behind weak-scaling analysis and related models such as Gustafson's Law.
+
+For a workload that grows with the number of processors, Gustafson's Law expresses scaled speedup as:
+
+$$
+S_G(p) = p - \alpha(p-1)
+$$
+
+where $\alpha$ is the measured serial fraction of the scaled workload. Amdahl's and Gustafson's views answer different questions:
+
+- **Amdahl:** How much faster can this fixed problem run?
+- **Gustafson:** How much larger a problem can we solve in roughly the same time as resources grow?
 
 ### Performance Measurement Techniques
 
+Performance measurement should be systematic and reproducible. A single timing result is rarely sufficient because parallel execution is affected by scheduling, cache state, network traffic, frequency scaling, operating-system activity, and input-dependent behavior.
+
+Before profiling or monitoring, establish a reliable measurement procedure:
+
+- Use a representative workload and realistic input size.
+- Define a clear baseline.
+- Measure wall-clock time for end-to-end speedup.
+- Repeat experiments and report variation, not only the best run.
+- Separate warm-up effects from steady-state measurements when relevant.
+- Keep hardware, software versions, compiler options, and environment variables consistent.
+- Record the processor/thread count, affinity, NUMA placement, and GPU configuration.
+- Measure both useful work and overhead.
+- Avoid adding synchronization only for timing unless the synchronization is part of the real algorithm.
+- Validate correctness after every optimization.
+
 I. Profiling
 
-- Profiling in parallel computing involves collecting data about a program's execution, aiming to identify performance bottlenecks, hotspots, and inefficiencies.
-- Understanding where a program spends most of its time is crucial in profiling, as it highlights parts of the code that are heavily utilized and potential areas for parallelization.
-- Identifying hotspots is essential, as these sections of code consume the most computational resources, indicating where optimization efforts should be focused.
-- Locating inefficiencies helps in recognizing areas where the program does not perform optimally, such as sections with high latency or unnecessary computations.
-- Measuring performance metrics is a helpful aspect of profiling, involving the collection of data on execution time, memory usage, CPU usage, and other relevant parameters.
-- Profiling provides insights that guide optimization efforts, helping developers to enhance code, improve parallelism, and boost overall performance.
+- **Profiling** collects detailed information about where execution time and hardware resources are being consumed.
+- Its purpose is to locate bottlenecks before attempting optimization.
+- In parallel programs, the hottest function is not always the main scalability problem. Time can instead be lost in synchronization, communication, memory stalls, or load imbalance.
+- Profiling should therefore examine both **computation** and **waiting**.
+
+Important questions include:
+
+- Which functions consume the most wall-clock or CPU time?
+- Which threads or processes are idle?
+- How much time is spent in locks, barriers, communication, or I/O?
+- Are workers balanced?
+- Is performance limited by computation or memory bandwidth?
+- Are cache misses, branch mispredictions, or NUMA accesses unusually high?
+- On GPUs, are kernels limited by memory bandwidth, occupancy, synchronization, or instruction throughput?
+- In distributed programs, how much time is spent in MPI communication and collectives?
+
+There are two common profiling approaches:
+
+- **Sampling** periodically records the executing code and has relatively low overhead.
+- **Instrumentation** inserts measurement points around functions or events and can provide precise call/event data, but may perturb execution more strongly.
 
 Tools for Profiling in Parallel Computing:
 
-| **Tools**                 | **Description**                                                                                                        | **Features**                                                                                              | **Usage**                                                              |
-|---------------------------|------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
-| **gprof**                 | GNU profiler for Unix applications                                                                                     | - Function call graph <br> - Flat profile <br> - Easy integration with GCC compiler                       | - Compile with `-pg` <br> - Run to generate `gmon.out` <br> - Analyze with `gprof`                          |
-| **Intel VTune**           | Performance analysis tool for Intel processors                                                                         | - Advanced hotspot analysis <br> - Concurrency and threading analysis <br> - Memory access analysis        | - Instrument application <br> - Run with VTune <br> - Analyze with VTune GUI or command line                |
-| **Valgrind**              | Tool for memory debugging, leak detection, and profiling                                                               | - Detailed memory profiling <br> - Cache usage analysis <br> - Detects memory leaks and errors             | - Run with Valgrind using `--tool=callgrind` <br> - Visualize with `kcachegrind`                            |
+| **Tool** | **Description** | **Useful Features** | **Typical Use** |
+|---|---|---|---|
+| **gprof** | Traditional GNU function profiler | Flat profile and call graph | Basic profiling of instrumented native applications compiled with `-pg` |
+| **perf** | Linux performance-analysis toolkit | Sampling, hardware counters, call stacks, scheduler events | CPU hotspots, cache misses, branch behavior, context switches |
+| **Intel VTune Profiler** | CPU and threading performance analyzer | Hotspots, concurrency, memory access, microarchitecture analysis | Thread scaling, CPU bottlenecks, memory-bound code |
+| **Valgrind / Callgrind** | Dynamic instrumentation framework | Instruction-level profiling, call counts, simulated cache behavior | Detailed CPU investigation when high execution overhead is acceptable |
+| **NVIDIA Nsight Systems** | System-wide CPU/GPU timeline profiler | CUDA activity, CPU threads, synchronization, kernel launches, transfers | Understanding CPU-GPU overlap and scheduling |
+| **NVIDIA Nsight Compute** | GPU kernel profiler | Memory throughput, occupancy, instruction and warp metrics | Detailed CUDA kernel optimization |
+| **HPCToolkit** | Performance tools for HPC applications | Sampling, calling-context profiles, CPU/GPU analysis | Large parallel applications and scaling studies |
+| **mpiP** | Lightweight MPI profiling library | Per-call and per-rank MPI communication statistics | Identifying communication-heavy MPI code |
 
 Steps in Profiling Parallel Programs:
 
-- Modifying the code or using tools to insert probes that collect performance data during execution is known as instrumentation in profiling.
-- Running the instrumented program to generate profiling data requires ensuring that workloads and input sets are realistic and representative.
-- Data collection involves gathering information on execution time, memory usage, CPU usage, and other relevant metrics during the program's execution.
-- Analyzing the collected data with profiling tools helps in identifying hotspots and understanding performance bottlenecks within the program.
-- Optimization involves refactoring code based on profiling insights to enhance performance, improve parallelism, and eliminate inefficiencies.
-- Validation is the process of re-profiling the optimized program to ensure that improvements are realized and performance gains are validated.
+1. **Establish a baseline.** Record runtime, throughput, processor count, and important configuration details before optimization.
+2. **Choose representative input.** Small test data can hide memory, communication, and scaling bottlenecks.
+3. **Collect a coarse profile.** First determine where most time is spent before collecting very detailed data.
+4. **Separate useful work from waiting.** Distinguish computation from lock waits, barriers, communication, and I/O.
+5. **Inspect per-worker behavior.** Aggregate averages can hide one slow rank, thread, or GPU stream.
+6. **Use hardware counters when needed.** Cache misses, bandwidth, branch behavior, and stalled cycles help explain why a hotspot is slow.
+7. **Form a hypothesis.** Optimization should be based on a measured cause, such as poor locality or lock contention.
+8. **Change one major factor at a time.** This makes performance effects easier to attribute.
+9. **Re-measure.** Verify that the intended metric improved and that another bottleneck did not become dominant.
+10. **Validate correctness.** Faster incorrect code is not an optimization.
+
+#### Timing Parallel Code
+
+Timing parallel code requires care because different clocks answer different questions.
+
+- **Wall-clock time** measures elapsed real time and is normally the correct metric for application speedup.
+- **CPU time** measures processor time consumed and can increase even when wall-clock time falls.
+- Per-thread or per-process timers are useful for diagnosing imbalance but should not replace end-to-end wall time.
+
+For an MPI region, one common pattern is:
+
+```c
+MPI_Barrier(MPI_COMM_WORLD);
+double start = MPI_Wtime();
+
+/* Parallel operation being measured */
+
+double local_elapsed = MPI_Wtime() - start;
+double elapsed;
+
+MPI_Reduce(
+    &local_elapsed,
+    &elapsed,
+    1,
+    MPI_DOUBLE,
+    MPI_MAX,
+    0,
+    MPI_COMM_WORLD
+);
+```
+
+Taking the **maximum** process time reflects the fact that the parallel phase is not complete until its slowest participating process finishes.
+
+The barrier in this example is appropriate only when the measurement intentionally requires aligned start times. Adding barriers that are not present in the actual algorithm can change behavior and produce an unrealistic measurement.
+
+#### Strong-Scaling Experiment
+
+A simple strong-scaling study keeps the problem fixed and measures:
+
+| Processors | Runtime | Speedup | Efficiency |
+|---:|---:|---:|---:|
+| 1 | $T_1$ | $1.0$ | $100\%$ |
+| 2 | $T_2$ | $T_1/T_2$ | $S_2/2$ |
+| 4 | $T_4$ | $T_1/T_4$ | $S_4/4$ |
+| 8 | $T_8$ | $T_1/T_8$ | $S_8/8$ |
+
+A useful plot shows processor count against runtime, speedup, and efficiency. The point where additional processors provide little improvement is the **scaling knee** for that workload and configuration.
 
 II. Monitoring
 
-- Monitoring in parallel computing involves continuously observing the state and performance of a system to ensure it operates correctly and efficiently.
-- It helps detect and diagnose issues in real-time, ensuring system reliability, performance, and availability, which is essential for maintaining optimal operation in parallel computing environments.
-- Real-time observation means continuously tracking the performance and status of the system to stay informed about its current state.
-- Detecting anomalies involves identifying unusual behavior or performance issues that could indicate underlying problems.
-- Monitoring resource utilization includes keeping an eye on the usage of computational resources such as CPU, memory, disk I/O, and network.
-- Ensuring system health means verifying that the system is running smoothly and detecting any hardware or software failures promptly.
-- Analyzing performance trends over the long term helps anticipate future issues or needs, allowing for proactive management of the system.
+- **Monitoring** continuously observes a running system rather than analyzing one bounded profiling experiment.
+- It is especially useful for long-running services, clusters, production pipelines, and distributed systems.
+- Monitoring shows whether performance changes over time as workload, traffic, hardware health, or resource pressure changes.
+
+Important monitoring targets include:
+
+- CPU and GPU utilization.
+- Memory use and memory bandwidth.
+- Disk and network throughput.
+- Queue depth and request rate.
+- Application throughput.
+- p50/p95/p99 latency.
+- Error and retry rates.
+- Worker/rank health.
+- Temperature, clock throttling, and accelerator errors where relevant.
+- MPI job failures or scheduler state in HPC environments.
+- Container or node resource pressure in clustered environments.
+
+High-level system metrics help identify **when** a problem occurs, while profilers and traces help explain **why** it occurs.
 
 Tools for Monitoring in Parallel Computing
 
-| **Tools**                 | **Description**                                                                                                        | **Features**                                                                                              | **Usage**                                                              |
-|---------------------------|------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
-| **Nagios**                | Open-source monitoring tool for systems, networks, and infrastructure                                                  | - Real-time monitoring <br> - Alerting and notification <br> - Plugin support                             | - Install Nagios <br> - Configure to monitor hosts and services <br> - Set up alerting rules                |
-| **Prometheus**            | Open-source system monitoring and alerting toolkit                                                                     | - Time-series database <br> - PromQL query language <br> - Grafana integration                            | - Install Prometheus <br> - Configure data collection <br> - Use PromQL and Grafana for analysis            |
-| **Zabbix**                | Enterprise-level monitoring solution for networks, servers, and applications                                           | - Real-time monitoring <br> - Data visualization <br> - Automatic discovery                               | - Install Zabbix server and agents <br> - Configure items, triggers, and actions <br> - Use web interface   |
+| **Tool** | **Description** | **Useful Features** | **Typical Use** |
+|---|---|---|---|
+| **Nagios** | Infrastructure and service monitoring system | Health checks, alerts, plugin ecosystem | Host and service availability |
+| **Prometheus** | Metrics collection and time-series monitoring | Pull-based metrics, PromQL, alerting, exporter ecosystem | Application and cluster metrics |
+| **Grafana** | Dashboard and visualization platform | Dashboards, multiple data sources, alert visualization | Visualizing Prometheus and other telemetry |
+| **Zabbix** | Infrastructure monitoring platform | Agents, discovery, dashboards, triggers, alerting | Servers, networks, and application infrastructure |
+| **nvidia-smi** | NVIDIA GPU management and monitoring utility | Utilization, memory use, power, temperature, process information | Quick inspection of GPU workloads |
+| **Slurm accounting tools** | HPC scheduler/accounting interfaces | Job state, allocated resources, elapsed time, CPU/memory statistics | Cluster job monitoring and historical resource analysis |
 
 Steps in Monitoring Parallel Systems:
 
-- Setting up the monitoring infrastructure involves installing and configuring monitoring tools and agents.
-- Identifying and defining important metrics to be monitored is a helpful step in setting up an effective monitoring system.
-- Continuously collecting data on system performance and resource utilization ensures that the monitoring system stays up-to-date.
-- Setting up rules for alerting and notifications helps in promptly addressing anomalies or issues as they arise.
-- Using dashboards and reports for analysis and visualization allows for an in-depth understanding of the monitoring data.
-- Regularly updating and maintaining the monitoring setup is necessary to adapt to changes in the system and ensure ongoing effectiveness.
+1. **Define the service or job objectives.** Decide which outcomes matter: throughput, latency, completion time, utilization, or availability.
+2. **Select actionable metrics.** Avoid collecting large quantities of data that cannot be interpreted or acted upon.
+3. **Instrument the application.** System metrics alone cannot explain application-level queueing, phases, or request failures.
+4. **Collect per-node and aggregate data.** Cluster-wide averages can hide one overloaded or failing node.
+5. **Build dashboards around relationships.** Compare request rate with latency, CPU use with throughput, or queue depth with worker utilization.
+6. **Set meaningful alerts.** Alert on symptoms that require action rather than every temporary fluctuation.
+7. **Retain historical data.** Long-term trends help identify regressions, capacity limits, and gradual resource growth.
+8. **Correlate metrics with deployments and configuration changes.** A performance regression is easier to diagnose when it can be tied to a specific change.
+9. **Periodically review thresholds and dashboards.** Workloads evolve, so useful monitoring must evolve with them.
+10. **Use profiling after monitoring identifies a problem.** Monitoring locates the time and scope of an issue; profiling provides the detailed explanation.
+
+A useful performance workflow is therefore:
+
+```text
+Measure baseline
+      |
+      v
+Identify scaling or latency problem
+      |
+      v
+Monitor system-level behavior
+      |
+      v
+Profile the affected application or phase
+      |
+      v
+Form and test an optimization hypothesis
+      |
+      v
+Re-measure speedup, efficiency, and correctness
+```
+
+The central rule is simple: **measure before optimizing, explain the bottleneck with evidence, and measure again after every meaningful change**.
