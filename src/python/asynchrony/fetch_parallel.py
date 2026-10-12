@@ -8,7 +8,7 @@ blocking standard-library HTTP client to worker threads.
 Key Concepts:
 - asyncio.to_thread(): Run blocking I/O without blocking the event loop
 - asyncio.gather(): Collect multiple awaitable results
-- asyncio.timeout(): Bound each operation so tasks cannot hang forever
+- asyncio.timeout(): Limit how long a coroutine awaits a request
 
 Performance:
 - Synchronous: Each request waits for the previous one to complete
@@ -18,6 +18,9 @@ Good Practice:
 - http.client is blocking. Calling it directly inside async def would block the
   event loop, which is an anti-pattern.
 - This example uses asyncio.to_thread() as a safe bridge for blocking I/O.
+- Cancelling the await cannot stop a thread already doing I/O. Its socket timeout
+  limits individual blocking waits, not the total request time; asyncio.run()
+  still waits for executor threads to finish before exiting.
 - For production async HTTP, prefer aiohttp or httpx.AsyncClient.
 
 URLs used are public APIs that are generally available for testing.
@@ -25,7 +28,7 @@ URLs used are public APIs that are generally available for testing.
 
 import asyncio
 import http.client
-from urllib.parse import urlparse
+from urllib.parse import urlsplit
 import time
 
 URLS = [
@@ -37,11 +40,22 @@ URLS = [
 
 def fetch_sync(url):
     """Fetch URL synchronously (blocking)."""
-    url_parsed = urlparse(url)
-    conn = http.client.HTTPSConnection(url_parsed.netloc, timeout=10)
+    url_parsed = urlsplit(url)
+    if url_parsed.scheme not in {"http", "https"} or not url_parsed.hostname:
+        raise ValueError("Expected an HTTP or HTTPS URL with a hostname")
+    connection_type = (
+        http.client.HTTPSConnection if url_parsed.scheme == "https"
+        else http.client.HTTPConnection
+    )
+    conn = connection_type(url_parsed.hostname, port=url_parsed.port, timeout=10)
+    target = url_parsed.path or "/"
+    if url_parsed.query:
+        target += "?" + url_parsed.query
     try:
-        conn.request("GET", url_parsed.path or "/")
+        conn.request("GET", target, headers={"User-Agent": "concurrency-examples"})
         response = conn.getresponse()
+        if not 200 <= response.status < 300:
+            raise RuntimeError(f"HTTP {response.status}: {response.reason}")
         content = response.read()
         print(f"Fetched {len(content)} bytes from {url}")
         return len(content)
@@ -73,15 +87,15 @@ async def fetch_all_async(urls):
 def main():
     """Compare synchronous and asynchronous fetching."""
     # Synchronous approach
-    start_time_sync = time.time()
+    start_time_sync = time.perf_counter()
     fetch_all_sync(URLS)
-    elapsed_time_sync = time.time() - start_time_sync
+    elapsed_time_sync = time.perf_counter() - start_time_sync
     print(f"\nSynchronous execution took {elapsed_time_sync:.2f} seconds.\n")
 
     # Asynchronous approach
-    start_time_async = time.time()
+    start_time_async = time.perf_counter()
     asyncio.run(fetch_all_async(URLS))
-    elapsed_time_async = time.time() - start_time_async
+    elapsed_time_async = time.perf_counter() - start_time_async
     print(f"\nAsynchronous execution took {elapsed_time_async:.2f} seconds.\n")
 
 

@@ -22,13 +22,17 @@ Why asyncio.Event is useful:
 - no blocking the whole event loop
 
 Important:
-input() is blocking, so we run it with asyncio.to_thread().
-That allows the event loop to keep running while waiting for user input.
+Console reads are blocking and cannot be cancelled once they start. A daemon thread
+for console input forwards commands to the event loop. Unlike a default-executor
+thread, it does not keep asyncio.run() waiting when file processing finishes.
+Only console input uses a daemon; all processing tasks are awaited on shutdown.
 """
 
 import asyncio
+import os
+import sys
 import threading
-import time
+from contextlib import aclosing
 
 
 def log(message: str) -> None:
@@ -36,7 +40,7 @@ def log(message: str) -> None:
     Print a message with the current thread ID.
 
     The async worker runs on the main event-loop thread.
-    The blocking input() call runs in a helper thread through asyncio.to_thread().
+    Blocking console reads run in a separate thread.
     """
     thread_id = threading.get_ident()
     thread_name = threading.current_thread().name
@@ -90,9 +94,60 @@ async def pausable_file_processor(
         # If the user pressed "r", resume_event is set and this line continues.
         await resume_event.wait()
 
+        # Quitting also wakes a paused worker. Do not start another file then.
+        if stop_event.is_set():
+            return
+
         await process_file(filename)
 
     log("All files processed.")
+
+
+async def console_commands():
+    """Bridge blocking console input to this event loop for one program run.
+
+    Cancellation stops delivery, but cannot interrupt a read. The disposable
+    daemon reader may remain blocked until input arrives or the process exits.
+    """
+    loop = asyncio.get_running_loop()
+    commands = asyncio.Queue()
+    closed = threading.Event()
+
+    def forward(command):
+        if closed.is_set():
+            return False
+        try:
+            # asyncio.Queue is not thread-safe; enqueue on the event loop.
+            loop.call_soon_threadsafe(commands.put_nowait, command)
+        except RuntimeError:
+            return False  # The event loop has already closed.
+        return command is not None
+
+    def read_commands():
+        try:
+            # This CLI owns stdin. A separate, unbuffered descriptor avoids
+            # holding sys.stdin's buffer lock during interpreter shutdown.
+            with os.fdopen(os.dup(sys.stdin.fileno()), "rb", buffering=0) as stream:
+                while not closed.is_set():
+                    line = stream.readline()
+                    command = line.decode(sys.stdin.encoding or "utf-8") if line else None
+                    if not forward(command):
+                        return
+        except Exception as exc:
+            forward(exc)
+
+    threading.Thread(target=read_commands, name="console-input", daemon=True).start()
+    try:
+        while True:
+            print("\nCommand: [p]ause, [r]esume, [q]uit: ", end="", flush=True)
+            command = await commands.get()
+            if command is None:
+                return
+            if isinstance(command, Exception):
+                raise command
+            yield command
+    finally:
+        closed.set()
 
 
 async def command_listener(
@@ -102,32 +157,31 @@ async def command_listener(
     """
     Listen for user commands without blocking the event loop.
 
-    input() is blocking, so we run it in a helper thread with asyncio.to_thread().
+    End of input requests shutdown just like the quit command.
     """
-    while not stop_event.is_set():
-        command = await asyncio.to_thread(
-            input,
-            "\nCommand: [p]ause, [r]esume, [q]uit: ",
-        )
+    async with aclosing(console_commands()) as commands:
+        async for command in commands:
+            if stop_event.is_set():
+                return
+            command = command.strip().lower()
 
-        command = command.strip().lower()
+            if command == "p":
+                resume_event.clear()
+                log("Paused. Processing will stop at the next checkpoint.")
+            elif command == "r":
+                resume_event.set()
+                log("Resumed.")
+            elif command == "q":
+                stop_event.set()
+                resume_event.set()
+                log("Quit requested.")
+                return
+            else:
+                log("Unknown command. Use p, r, or q.")
 
-        if command == "p":
-            resume_event.clear()
-            log("Paused. Processing will stop at the next checkpoint.")
-
-        elif command == "r":
-            resume_event.set()
-            log("Resumed.")
-
-        elif command == "q":
-            stop_event.set()
-            resume_event.set()
-            log("Quit requested.")
-            return
-
-        else:
-            log("Unknown command. Use p, r, or q.")
+    stop_event.set()
+    resume_event.set()
+    log("End of input. Exiting.")
 
 
 async def main() -> None:
@@ -160,19 +214,18 @@ async def main() -> None:
         )
     )
 
-    done, pending = await asyncio.wait(
-        {processor_task, command_task},
-        return_when=asyncio.FIRST_COMPLETED,
-    )
-
-    # If the processor finishes first, stop the command listener.
-    stop_event.set()
-    resume_event.set()
-
-    for task in pending:
-        task.cancel()
-
-    await asyncio.gather(*pending, return_exceptions=True)
+    tasks = {processor_task, command_task}
+    try:
+        done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        for task in done:
+            task.result()  # Propagate failures instead of silently discarding them.
+    finally:
+        stop_event.set()
+        resume_event.set()
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
 
     log("Program finished.")
 

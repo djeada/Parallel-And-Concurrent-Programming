@@ -17,6 +17,10 @@ With asyncio.create_task():
 - we can do other work before awaiting the results
 - each Task stores its own result or exception
 
+Here TaskGroup.create_task() (Python 3.11+) also ties task lifetimes to the
+dashboard operation: a failure cancels and awaits the other requests, and
+raises an ExceptionGroup. Successful group exit means every result is ready.
+
 Important:
 A Task is Future-like. You normally do not create Future objects manually
 unless you are writing low-level code or adapting callback-based APIs.
@@ -94,17 +98,15 @@ async def build_dashboard_concurrently(user_id: int) -> dict:
     """
     start = time.perf_counter()
 
-    user_task = asyncio.create_task(fetch_user_profile(user_id))
-    orders_task = asyncio.create_task(fetch_recent_orders(user_id))
-    recommendations_task = asyncio.create_task(fetch_recommendations(user_id))
+    async with asyncio.TaskGroup() as group:
+        user_task = group.create_task(fetch_user_profile(user_id))
+        orders_task = group.create_task(fetch_recent_orders(user_id))
+        recommendations_task = group.create_task(fetch_recommendations(user_id))
+        header = await render_static_header()
 
-    header = await render_static_header()
-
-    user, orders, recommendations = await asyncio.gather(
-        user_task,
-        orders_task,
-        recommendations_task,
-    )
+    user = user_task.result()
+    orders = orders_task.result()
+    recommendations = recommendations_task.result()
 
     elapsed = time.perf_counter() - start
 
