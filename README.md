@@ -5,7 +5,7 @@
 ### *Master the Art of High-Performance Computing*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python](https://img.shields.io/badge/Python-3.7+-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
 [![C++](https://img.shields.io/badge/C++-11+-00599C.svg)](https://isocpp.org/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E.svg)](https://www.javascript.com/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
@@ -292,13 +292,16 @@ Before diving into parallel and concurrent programming, ensure you have:
 <details>
 <summary><b>Python Setup</b></summary>
 
+Use Python 3.11 or newer for the asyncio examples (`TaskGroup`, `timeout`, and
+`Barrier`). `asyncio` is part of the standard library.
+
 ```bash
 # Install MPI for distributed computing
 sudo apt-get install mpich
 pip install mpi4py
 
-# Install async libraries
-pip install aiohttp asyncio
+# Optional async HTTP library
+pip install aiohttp
 
 # Performance profiling
 pip install line_profiler memory_profiler
@@ -423,11 +426,11 @@ We welcome contributions from developers at all skill levels! Here's how you can
 
 4. **✅ Test Your Code**
    ```bash
-   # Python
-   python -m pytest tests/
+   # Python regression checks (Python 3.11+, standard library only)
+   python3 -m unittest discover -s tests -p 'test_python_regressions.py' -v
    
    # C++ regression checks (POSIX, g++, and AddressSanitizer required)
-   python3 -m unittest discover -s tests -v
+   python3 -m unittest discover -s tests -p 'test_cpp_regressions.py' -v
    
    # Node.js regression checks (Node.js 20.6+)
    node --test tests/test_node_examples.cjs

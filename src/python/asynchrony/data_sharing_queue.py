@@ -11,6 +11,7 @@ Key Concepts:
 - queue.get(): Remove and return items (awaitable)
 - queue.task_done() and queue.join(): Track when queued work is complete
 - Use None as sentinel value to signal termination
+- TaskGroup (Python 3.11+): Cancel and await sibling tasks if one fails
 
 Use Cases:
 - Producer-consumer patterns in async code
@@ -56,12 +57,13 @@ async def main():
     """Run producer and consumer concurrently."""
     queue = asyncio.Queue()
 
-    producer_task = asyncio.create_task(producer(queue))
-    consumer_task = asyncio.create_task(consumer(queue))
-
-    await producer_task
-    await queue.join()
-    await consumer_task
+    # A consumer failure must interrupt join() and stop the producer too.
+    async with asyncio.TaskGroup() as group:
+        producer_task = group.create_task(producer(queue))
+        group.create_task(consumer(queue))
+        await producer_task
+        await queue.join()
+    # Successful group exit also waits for the consumer to return.
 
 
 if __name__ == "__main__":

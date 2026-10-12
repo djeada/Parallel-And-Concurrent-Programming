@@ -26,6 +26,8 @@ Real-world use cases:
 
 Key idea:
 The queue is the buffer between fast producers and slower consumers.
+TaskGroup (Python 3.11+) owns all workers. If any worker fails, it cancels
+and awaits the others, then reports the failures in an ExceptionGroup.
 """
 
 import asyncio
@@ -49,7 +51,7 @@ async def save_page(url: str, html: str) -> None:
     print(f"Saved {url} ({len(html)} bytes)")
 
 
-async def producer(queue: asyncio.Queue[str], producer_id: int, urls: list[str]) -> None:
+async def producer(queue: asyncio.Queue[str | None], producer_id: int, urls: list[str]) -> None:
     """
     Producer adds URLs to the queue.
 
@@ -68,7 +70,7 @@ async def producer(queue: asyncio.Queue[str], producer_id: int, urls: list[str])
     print(f"Producer {producer_id}: finished")
 
 
-async def consumer(queue: asyncio.Queue[str], consumer_id: int) -> None:
+async def consumer(queue: asyncio.Queue[str | None], consumer_id: int) -> None:
     """
     Consumer processes URLs from the queue.
 
@@ -121,34 +123,23 @@ async def main():
         "https://example.com/product-4",
     ]
 
-    producers = [
-        asyncio.create_task(producer(queue, 1, urls_from_source_1)),
-        asyncio.create_task(producer(queue, 2, urls_from_source_2)),
-    ]
+    # On failure, TaskGroup interrupts queue waits and cleans up every worker.
+    async with asyncio.TaskGroup() as group:
+        producers = [
+            group.create_task(producer(queue, 1, urls_from_source_1)),
+            group.create_task(producer(queue, 2, urls_from_source_2)),
+        ]
+        consumers = [group.create_task(consumer(queue, i)) for i in range(1, 4)]
 
-    consumers = [
-        asyncio.create_task(consumer(queue, 1)),
-        asyncio.create_task(consumer(queue, 2)),
-        asyncio.create_task(consumer(queue, 3)),
-    ]
+        # Producers finish discovering work; consumers finish handling it.
+        await asyncio.gather(*producers)
+        await queue.join()
 
-    # Wait until producers have discovered all work.
-    await asyncio.gather(*producers)
-
-    # Wait until all real URLs have been processed.
-    await queue.join()
-
-    # Stop consumers.
-    #
-    # Each consumer needs one sentinel because each sentinel stops one consumer.
-    for _ in consumers:
-        await queue.put(None)
-
-    # Wait until the sentinel values have also been received.
-    await queue.join()
-
-    # Wait for the consumer tasks to actually exit.
-    await asyncio.gather(*consumers)
+        # Each consumer needs one sentinel to stop. Account for these items too.
+        for _ in consumers:
+            await queue.put(None)
+        await queue.join()
+    # Successful group exit waits for all consumer tasks to actually return.
 
 
 if __name__ == "__main__":
