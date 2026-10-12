@@ -321,3 +321,30 @@ test("worker pools fail visibly and release workers after an unexpected crash", 
     assert.match(result.stderr, /pool failed/i);
   }
 });
+
+test("parallel merge sort releases all workers when one fails or exits without a result", async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "node-sort-test-"));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const preload = path.join(directory, "fail-sort-worker.cjs");
+  fs.writeFileSync(preload, `
+    const { isMainThread, threadId, parentPort } = require('node:worker_threads');
+    if (!isMainThread) {
+      parentPort.postMessage = () => {}; // Other workers never return a result.
+      setInterval(() => {}, 1000);
+      if (threadId === 1) {
+        parentPort.once('message', () => {
+          if (process.env.SORT_FAILURE === 'exit') process.exit(0);
+          throw new Error('injected sort failure');
+        });
+      }
+    }
+  `);
+  for (const failure of ["error", "exit"]) {
+    const result = await runExample("multithreading/09_merge_sort.js", {
+      env: { NODE_OPTIONS: `--require=${preload}`, SORT_FAILURE: failure }, timeout: 3000,
+    });
+    assert.equal(result.code, 1, result.stderr);
+    assert.match(result.stderr, failure === "exit"
+      ? /Sort worker exited before returning a result/ : /injected sort failure/);
+  }
+});

@@ -65,27 +65,32 @@ const parallelMergeSort = async (arr) => {
     chunks.push(arr.slice(i, i + chunkSize));
   }
 
-  // Sort each chunk in parallel using workers
-  const sortPromises = chunks.map((chunk) => {
-    return new Promise((resolve, reject) => {
-      const worker = new Worker(__filename);
-      
-      worker.postMessage(chunk);
-      
-      let received = false;
-      worker.once("message", (sortedChunk) => {
-        received = true;
-        resolve(sortedChunk);
-      });
-      worker.once("exit", (code) => {
-        if (!received) reject(new Error(`Sort worker exited before returning a result (code ${code})`));
-      });
-      
-      worker.on("error", reject);
-    });
-  });
+  // Every worker belongs to this operation, including when another one fails.
+  const workers = [];
+  let sortedChunks;
+  try {
+    const sortPromises = chunks.map((chunk) => {
+      return new Promise((resolve, reject) => {
+        const worker = new Worker(__filename);
+        workers.push(worker);
 
-  const sortedChunks = await Promise.all(sortPromises);
+        let received = false;
+        worker.once("message", (sortedChunk) => {
+          received = true;
+          resolve(sortedChunk);
+        });
+        worker.once("exit", (code) => {
+          if (!received) reject(new Error(`Sort worker exited before returning a result (code ${code})`));
+        });
+        worker.once("error", reject);
+        worker.postMessage(chunk);
+      });
+    });
+    sortedChunks = await Promise.all(sortPromises);
+  } finally {
+    // Promise.all rejects immediately; pending peers must be stopped explicitly.
+    await Promise.all(workers.map((worker) => worker.terminate()));
+  }
 
   // Merge all sorted chunks
   return sortedChunks.reduce((acc, chunk) => merge(acc, chunk), []);
