@@ -1,5 +1,5 @@
 /**
- * Detached Threads
+ * ANTIPATTERN — Detached Threads
  *
  * This example demonstrates detached threads - threads that run independently
  * of the thread that created them. When a thread is detached, it continues

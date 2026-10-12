@@ -99,7 +99,7 @@ const workerTask = (workerId) => {
       type: "output",
       text: `Process ${workerId} completed task (PID: ${process.pid}, took ${elapsed}ms)`,
     });
-    process.send({ type: "done" });
+    process.send({ type: "done" }, () => process.disconnect());
   }, processingTime);
 };
 

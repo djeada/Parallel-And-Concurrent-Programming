@@ -29,24 +29,19 @@ const pipelineAsync = promisify(pipeline);
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // ── Helper: create a Readable that emits N numbered chunks ────────────────
-const makeCountingReadable = (n, label = "") =>
-  new Readable({
+const makeCountingReadable = (n, label = "") => {
+  let index = 0;
+  return new Readable({
     objectMode: true,
-    read() {},
-    construct(cb) {
-      let i = 0;
-      const push = () => {
-        if (i >= n) {
-          this.push(null); // signal end-of-stream
-          return;
-        }
-        this.push({ index: i++, label });
-        setImmediate(push); // yield to event loop between chunks
-      };
-      push();
-      cb();
+    read() {
+      while (index < n) {
+        // Stop producing when the buffer fills; _read resumes on demand.
+        if (!this.push({ index: index++, label })) return;
+      }
+      this.push(null);
     },
   });
+};
 
 // ── Helper: create a Writable that logs chunks with optional artificial lag ─
 const makeLoggingWritable = (lag = 0, highWaterMark = 8) =>
@@ -54,9 +49,13 @@ const makeLoggingWritable = (lag = 0, highWaterMark = 8) =>
     objectMode: true,
     highWaterMark, // internal buffer threshold — backpressure kicks in above this
     async write(chunk, _enc, callback) {
-      if (lag) await sleep(lag);
-      process.stdout.write(`  consumed: ${chunk.label}[${chunk.index}]\n`);
-      callback();
+      try {
+        if (lag) await sleep(lag);
+        process.stdout.write(`  consumed: ${chunk.label}[${chunk.index}]\n`);
+        callback();
+      } catch (error) {
+        callback(error);
+      }
     },
   });
 
@@ -172,4 +171,5 @@ const main = async () => {
   console.log("pipe()           — legacy; does NOT forward errors — avoid in new code");
 };
 
-main().catch(console.error);
+if (require.main === module) main().catch(console.error);
+module.exports = { makeCountingReadable };

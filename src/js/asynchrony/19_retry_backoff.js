@@ -38,6 +38,9 @@ class NonRetryableError extends Error {}
  * @param {{ maxAttempts?, baseDelayMs?, maxDelayMs? }} [options]
  */
 const withRetry = async (fn, { maxAttempts = 5, baseDelayMs = 100, maxDelayMs = 5000 } = {}) => {
+  if (!Number.isInteger(maxAttempts) || maxAttempts < 1) {
+    throw new RangeError("maxAttempts must be a positive integer");
+  }
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       return await fn();
@@ -71,6 +74,11 @@ class CircuitBreaker {
    * @param {number} recoveryTimeoutMs - Time to wait before attempting HALF_OPEN
    */
   constructor(failureThreshold = 3, recoveryTimeoutMs = 1000) {
+    if (!Number.isInteger(failureThreshold) || failureThreshold < 1 ||
+        !Number.isFinite(recoveryTimeoutMs) || recoveryTimeoutMs < 0) {
+      throw new RangeError("Invalid circuit breaker threshold or timeout");
+    }
+    this.generation = 0;
     this.threshold = failureThreshold;
     this.recoveryTimeout = recoveryTimeoutMs;
     this.state = CircuitState.CLOSED;
@@ -79,6 +87,9 @@ class CircuitBreaker {
   }
 
   async call(fn) {
+    if (this.state === CircuitState.HALF_OPEN) {
+      throw new Error("Circuit HALF_OPEN — probe already in progress");
+    }
     if (this.state === CircuitState.OPEN) {
       const elapsed = Date.now() - this.openedAt;
       if (elapsed < this.recoveryTimeout) {
@@ -89,12 +100,14 @@ class CircuitBreaker {
       console.log("  Circuit → HALF_OPEN (probing)");
     }
 
+    // Ignore completions from requests started before the circuit reopened.
+    const generation = this.generation;
     try {
       const result = await fn();
-      this._onSuccess();
+      if (generation === this.generation) this._onSuccess();
       return result;
     } catch (err) {
-      this._onFailure();
+      if (generation === this.generation) this._onFailure();
       throw err;
     }
   }
@@ -103,6 +116,7 @@ class CircuitBreaker {
     this.failures = 0;
     if (this.state === CircuitState.HALF_OPEN) {
       console.log("  Circuit → CLOSED (probe succeeded)");
+      this.generation++;
     }
     this.state = CircuitState.CLOSED;
   }
@@ -110,6 +124,7 @@ class CircuitBreaker {
   _onFailure() {
     this.failures++;
     if (this.state === CircuitState.HALF_OPEN || this.failures >= this.threshold) {
+      this.generation++;
       this.state = CircuitState.OPEN;
       this.openedAt = Date.now();
       console.log(`  Circuit → OPEN after ${this.failures} consecutive failures`);
@@ -214,4 +229,5 @@ const main = async () => {
   console.log("Circuit breaker: fail fast when service is down, probe on recovery timeout");
 };
 
-main().catch(console.error);
+if (require.main === module) main().catch(console.error);
+module.exports = { withRetry, CircuitBreaker, CircuitState };

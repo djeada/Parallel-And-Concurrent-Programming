@@ -48,6 +48,8 @@ int main() {
         return 1;
     }
 
+    std::cout.flush();
+
     pid_t pid = fork();
 
     if (pid == -1) {
@@ -59,6 +61,7 @@ int main() {
         // Child: consumer
         close(pipe_fd[1]);  // Close unused write end
         consumer(pipe_fd[0]);
+        std::cout.flush();
         _exit(0);
     } else {
         // Parent: producer

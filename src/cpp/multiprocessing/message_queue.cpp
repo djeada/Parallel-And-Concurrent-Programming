@@ -19,75 +19,82 @@
  * Build: g++ -std=c++17 -o message_queue message_queue.cpp -lrt
  */
 
+#include <cerrno>
+#include <csignal>
 #include <cstdlib>
 #include <fcntl.h>
 #include <iostream>
 #include <mqueue.h>
+#include <string>
 #include <sys/wait.h>
 #include <unistd.h>
 
-constexpr char QUEUE_NAME[] = "/example_queue";
-
-void producer() {
-    mq_attr attr{};
-    attr.mq_maxmsg = 10;
-    attr.mq_msgsize = sizeof(int);
-
-    mqd_t mq = mq_open(QUEUE_NAME, O_WRONLY | O_CREAT, 0666, &attr);
-    if (mq == -1) {
-        perror("mq_open");
-        _exit(1);
-    }
-
+bool producer(mqd_t mq) {
     for (int i = 1; i <= 5; ++i) {
         std::cout << "Producer: sending " << i << "\n";
-        mq_send(mq, reinterpret_cast<char*>(&i), sizeof(i), 0);
-        usleep(200'000);  // 200ms
+        while (mq_send(mq, reinterpret_cast<const char*>(&i), sizeof(i), 0) < 0) {
+            if (errno == EINTR) continue;
+            perror("mq_send");
+            return false;
+        }
+        usleep(200'000);
     }
-
-    mq_close(mq);
+    return true;
 }
 
-void consumer() {
-    mqd_t mq = mq_open(QUEUE_NAME, O_RDONLY);
-    if (mq == -1) {
-        perror("mq_open");
-        _exit(1);
-    }
-
-    mq_attr attr;
-    mq_getattr(mq, &attr);
-
-    int item;
+bool consumer(mqd_t mq) {
     for (int i = 0; i < 5; ++i) {
-        ssize_t bytes = mq_receive(mq, reinterpret_cast<char*>(&item),
-                                   attr.mq_msgsize, nullptr);
-        if (bytes > 0) {
-            std::cout << "Consumer: received " << item << "\n";
+        int item;
+        ssize_t bytes;
+        do {
+            bytes = mq_receive(mq, reinterpret_cast<char*>(&item), sizeof(item), nullptr);
+        } while (bytes < 0 && errno == EINTR);
+        if (bytes != sizeof(item)) {
+            if (bytes < 0) perror("mq_receive");
+            else std::cerr << "Unexpected message size\n";
+            return false;
         }
+        std::cout << "Consumer: received " << item << "\n";
     }
-
-    mq_close(mq);
+    return true;
 }
 
 int main() {
-    // Clean up any leftover queue
-    mq_unlink(QUEUE_NAME);
-
-    pid_t pid = fork();
-
-    if (pid == 0) {
-        // Give producer time to create queue
-        usleep(100'000);
-        consumer();
-        _exit(0);
-    } else {
-        producer();
-        waitpid(pid, nullptr, 0);
+    // Create before fork; both processes inherit the ready queue descriptor.
+    // A per-process name allows concurrent runs without deleting another queue.
+    std::string name = "/example_queue_" + std::to_string(getpid());
+    mq_attr attr{};
+    attr.mq_maxmsg = 10;
+    attr.mq_msgsize = sizeof(int);
+    mqd_t mq = mq_open(name.c_str(), O_RDWR | O_CREAT | O_EXCL, 0600, &attr);
+    if (mq == static_cast<mqd_t>(-1)) { perror("mq_open"); return 1; }
+    // Existing descriptors remain valid; the queue is removed at last close.
+    if (mq_unlink(name.c_str()) < 0) {
+        perror("mq_unlink");
+        mq_close(mq);
+        return 1;
     }
 
-    mq_unlink(QUEUE_NAME);
-    std::cout << "Done\n";
+    std::cout.flush();
+    pid_t pid = fork();
+    if (pid < 0) { perror("fork"); mq_close(mq); return 1; }
+    if (pid == 0) {
+        bool ok = consumer(mq);
+        mq_close(mq);
+        std::cout.flush();
+        _exit(ok ? 0 : 1);
+    }
 
+    bool ok = producer(mq);
+    mq_close(mq);
+    if (!ok) kill(pid, SIGTERM);  // Consumer must not wait for missing messages.
+    int status;
+    while (waitpid(pid, &status, 0) < 0) {
+        if (errno == EINTR) continue;
+        perror("waitpid");
+        return 1;
+    }
+    if (!ok || !WIFEXITED(status) || WEXITSTATUS(status) != 0) return 1;
+    std::cout << "Done\n";
     return 0;
 }

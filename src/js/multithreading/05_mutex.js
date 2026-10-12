@@ -11,7 +11,7 @@
  * - Atomics.notify: wake up waiting threads
  * - Critical section protection
  *
- * Compare with 04_race_condition.js to see the difference proper synchronization makes.
+ * Compare with 04_race_condition_antipattern.js to see the difference proper synchronization makes.
  */
 
 "use strict";
@@ -23,7 +23,7 @@ if (isMainThread) {
   console.log("Multiple threads modifying shared counter WITH mutex protection\n");
 
   const NUM_THREADS = 5;
-  const ITERATIONS = 10;
+  const ITERATIONS = 4; // 120^4 fits in the shared signed 32-bit counter
 
   // Shared memory layout: [counter (4 bytes), mutex (4 bytes), doneCount (4 bytes)]
   const sharedBuffer = new SharedArrayBuffer(12);
@@ -51,13 +51,14 @@ if (isMainThread) {
         if (doneCounterView[0] === NUM_THREADS) {
           console.log(`\n=== Results ===`);
           console.log(`Final counter value: ${counterView[0]}`);
+          console.log(`Expected counter value: ${120 ** ITERATIONS}`);
           console.log("Note: With mutex, updates are properly synchronized!");
         }
       }
     });
     
     worker.on("error", (error) => console.error(`Worker ${i} error:`, error));
-    worker.postMessage({ type: "init", id: i, sharedBuffer });
+    worker.postMessage({ type: "init", id: i, sharedBuffer, iterations: ITERATIONS });
     workers.push(worker);
   }
 } else {
@@ -71,7 +72,7 @@ if (isMainThread) {
       counterView = new Int32Array(message.sharedBuffer, 0, 1);
       mutexView = new Int32Array(message.sharedBuffer, 4, 1);
 
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < message.iterations; i++) {
         // Acquire mutex (spin until we get it)
         while (Atomics.compareExchange(mutexView, 0, 0, 1) === 1) {
           // Wait for mutex to be released (value to become 0)
@@ -96,6 +97,7 @@ if (isMainThread) {
       }
 
       parentPort.postMessage({ type: "done" });
+      parentPort.close();
     }
   });
 }

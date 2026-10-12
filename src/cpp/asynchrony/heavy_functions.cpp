@@ -9,17 +9,22 @@
  * - std::async allows heavy work to run in background threads
  * - Main thread remains responsive for user interaction
  * - Results are collected when all tasks complete
- * - Exception handling in async tasks
+ * - Futures propagate task exceptions through get()
+ *
+ * Requires POSIX poll/read for interruptible console input (Linux/macOS).
  *
  * This pattern is essential for GUI applications or services
  * that must remain responsive during long computations.
  */
 
-#include <atomic>
+#include <cerrno>
 #include <chrono>
 #include <future>
 #include <iostream>
+#include <poll.h>
+#include <string>
 #include <thread>
+#include <unistd.h>
 #include <vector>
 
 int blocking_computation(int id) {
@@ -29,15 +34,32 @@ int blocking_computation(int id) {
     return id * 10;
 }
 
-void handle_user_input(std::atomic<bool>& running) {
-    std::cout << "Type 'quit' to exit once tasks complete\n";
-    std::string input;
-    while (running && std::getline(std::cin, input)) {
-        if (input == "quit") {
-            running = false;
-            break;
+// Poll stdin on the main thread so unfinished input cannot block shutdown.
+// POSIX poll/read are used because std::getline cannot be cancelled.
+void handle_user_input(bool& accepting_input, std::string& input) {
+    pollfd stdin_poll{STDIN_FILENO, POLLIN, 0};
+    int ready = poll(&stdin_poll, 1, 100);
+    if (ready < 0) {
+        if (errno != EINTR) accepting_input = false;
+        return;
+    }
+    if (ready == 0) return;
+    if (stdin_poll.revents & (POLLIN | POLLHUP)) {
+        char ch;
+        ssize_t bytes = read(STDIN_FILENO, &ch, 1);
+        if (bytes == 0 || (bytes < 0 && errno != EINTR)) {
+            accepting_input = false;
+        } else if (bytes > 0) {
+            if (ch == '\n') {
+                if (input == "quit") accepting_input = false;
+                else std::cout << "You typed: " << input << "\n";
+                input.clear();
+            } else {
+                input += ch;
+            }
         }
-        std::cout << "You typed: " << input << "\n";
+    } else if (stdin_poll.revents & (POLLERR | POLLNVAL)) {
+        accepting_input = false;
     }
 }
 
@@ -48,9 +70,19 @@ int main() {
         tasks.push_back(std::async(std::launch::async, blocking_computation, i));
     }
 
-    // Keep main thread responsive
-    std::atomic<bool> running{true};
-    std::thread input_thread(handle_user_input, std::ref(running));
+    std::cout << "Type 'quit' to stop input; all tasks will finish before exit\n";
+    bool accepting_input = true;
+    std::string input;
+    while (true) {
+        bool all_ready = true;
+        for (auto& task : tasks) {
+            if (task.wait_for(std::chrono::milliseconds(0)) !=
+                std::future_status::ready) all_ready = false;
+        }
+        if (all_ready) break;
+        if (accepting_input) handle_user_input(accepting_input, input);
+        else std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
 
     // Collect results
     std::vector<int> results;
@@ -63,11 +95,6 @@ int main() {
         std::cout << r << " ";
     }
     std::cout << "\n";
-
-    running = false;
-    if (input_thread.joinable()) {
-        input_thread.join();
-    }
 
     return 0;
 }

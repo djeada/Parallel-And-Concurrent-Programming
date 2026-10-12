@@ -21,6 +21,7 @@
 #include <unistd.h>
 
 int main() {
+    std::cout.flush();
     pid_t pid = fork();
 
     if (pid < 0) {

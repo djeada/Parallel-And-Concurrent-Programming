@@ -30,7 +30,7 @@ if (isMainThread) {
   console.log("Multiple threads using semaphore for synchronization\n");
 
   const NUM_WORKERS = 5;
-  const ITERATIONS = 5;
+  const ITERATIONS = 4; // Keep 120^iterations within signed Int32 range
 
   // Shared memory buffers
   const sharedCounter = new SharedArrayBuffer(4);
@@ -62,7 +62,7 @@ if (isMainThread) {
         if (Atomics.load(doneCounterView, 0) === NUM_WORKERS) {
           console.log(`\n=== Results ===`);
           console.log(`Final counter value: ${counterView[0]}`);
-          workers.forEach((w) => w.terminate());
+          console.log(`Expected counter value: ${120 ** ITERATIONS}`);
         }
       }
     });
@@ -130,6 +130,7 @@ if (isMainThread) {
         }
 
         parentPort.postMessage({ type: "done" });
+        parentPort.close();
       };
 
       processIterations();

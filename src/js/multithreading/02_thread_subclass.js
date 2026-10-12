@@ -84,12 +84,11 @@ const main = () => {
 };
 
 if (isMainThread) {
-  main();
+  if (require.main === module) main();
 } else {
-  try {
-    const func = eval(`(${workerData.func})`);
-    func(...workerData.args);
-  } catch (error) {
-    parentPort.postMessage(`Error: ${error.message}`);
-  }
+  // Let exceptions reach Worker.on("error") and produce a nonzero exit code.
+  const func = eval(`(${workerData.func})`);
+  func(...workerData.args);
 }
+
+module.exports = { MyThread };

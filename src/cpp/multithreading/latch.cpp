@@ -27,7 +27,8 @@ std::mutex counter_mutex;
 // Latch implementation
 std::mutex latch_mutex;
 std::condition_variable latch_cv;
-int latch_count = 10;
+constexpr int num_pairs = 5;
+int latch_count = num_pairs;
 
 void simulate_work() {
     volatile unsigned long x = 0;
@@ -74,10 +75,10 @@ void worker_b(int id) {
 
 int main() {
     std::vector<std::thread> workers;
-    workers.reserve(10);
+    workers.reserve(2 * num_pairs);
 
     // Launch alternating workers
-    for (int i = 0; i < 10; i += 2) {
+    for (int i = 0; i < 2 * num_pairs; i += 2) {
         workers.emplace_back(worker_a, i);
         workers.emplace_back(worker_b, i + 1);
     }

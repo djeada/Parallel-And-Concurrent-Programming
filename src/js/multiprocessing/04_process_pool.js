@@ -19,7 +19,7 @@
 const { fork } = require("child_process");
 const os = require("os");
 
-const POOL_SIZE = Math.min(os.availableParallelism?.() ?? os.cpus().length, 4);
+const POOL_SIZE = Math.max(1, Math.min(os.availableParallelism?.() ?? os.cpus().length, 4));
 const NUM_TASKS = 10;
 const WORK_N = 1_500_000; // iterations per task
 
@@ -58,20 +58,29 @@ if (process.argv[2] === "worker") {
 
   // Fork the pool once — workers stay alive across all tasks
   const pool = Array.from({ length: POOL_SIZE }, () => fork(__filename, ["worker"]));
+  let stopping = false;
+  const fail = (error) => {
+    if (stopping) return;
+    stopping = true;
+    process.exitCode = 1;
+    console.error("Process pool failed:", error.message);
+    pool.forEach((worker) => worker.kill());
+  };
   const idle = [...pool]; // all workers start idle
 
   const dispatch = () => {
+    if (stopping) return;
     while (idle.length > 0 && pending.length > 0) {
       const worker = idle.shift();
       const task = pending.shift();
       console.log(`  [Pool] Task ${task.taskId} → worker ${worker.pid}`);
-      worker.send({ type: "task", ...task });
+      worker.send({ type: "task", ...task }, (error) => { if (error) fail(error); });
     }
   };
 
   pool.forEach((worker) => {
     worker.on("message", (msg) => {
-      if (msg.type !== "result") return;
+      if (stopping || msg.type !== "result") return;
       console.log(`  [Task ${msg.taskId}] done in ${msg.elapsed}ms  result: ${msg.result}`);
       results.push(msg);
       idle.push(worker); // return worker to idle pool
@@ -81,15 +90,17 @@ if (process.argv[2] === "worker") {
         console.log("\n=== Results ===");
         console.log(`All ${NUM_TASKS} tasks completed in ${elapsed}ms`);
         console.log(`Pool reused ${POOL_SIZE} workers — no re-fork overhead`);
+        stopping = true;
         pool.forEach((w) => w.send({ type: "shutdown" }));
         return;
       }
       dispatch(); // next task for this now-idle worker
     });
 
-    worker.on("error", (err) =>
-      console.error(`Worker ${worker.pid} error: ${err.message}`)
-    );
+    worker.on("error", fail);
+    worker.on("exit", (code) => {
+      if (!stopping) fail(new Error(`Worker ${worker.pid} exited unexpectedly (code ${code})`));
+    });
   });
 
   dispatch(); // initial dispatch fills all idle workers

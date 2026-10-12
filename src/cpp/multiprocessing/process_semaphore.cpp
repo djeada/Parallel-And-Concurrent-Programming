@@ -50,9 +50,11 @@ int main() {
     std::vector<pid_t> children;
 
     for (int i = 0; i < num_processes; ++i) {
+        std::cout.flush();
         pid_t pid = fork();
         if (pid == 0) {
             access_resource(sem, i);
+            std::cout.flush();
             _exit(0);
         }
         children.push_back(pid);

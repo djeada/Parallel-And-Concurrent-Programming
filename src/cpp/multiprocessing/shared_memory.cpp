@@ -70,11 +70,14 @@ int main() {
         return 1;
     }
 
+    std::cout.flush();
+
     pid_t pid = fork();
 
     if (pid == 0) {
         // Child process
         incrementer(shared_value, sem);
+        std::cout.flush();
         _exit(0);
     } else {
         // Parent process

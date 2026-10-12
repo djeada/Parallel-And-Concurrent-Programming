@@ -22,7 +22,7 @@
  * See shared_memory.cpp for the synchronized version with a semaphore.
  *
  * Compile:
- *   g++ -std=c++17 -o shared_array shared_array.cpp
+ *   g++ -std=c++17 -o shared_array shared_array_antipattern.cpp
  */
 
 #include <iostream>
@@ -73,17 +73,23 @@ int main() {
 
     print_array("Initial", shared_array);
 
+    std::cout.flush();
+
     pid_t pid1 = fork();
     if (pid1 == 0) {
         increment_array(shared_array, 3);
         print_array("After increment", shared_array);
+        std::cout.flush();
         _exit(0);
     }
+
+    std::cout.flush();
 
     pid_t pid2 = fork();
     if (pid2 == 0) {
         decrement_array(shared_array, 3);
         print_array("After decrement", shared_array);
+        std::cout.flush();
         _exit(0);
     }
 

@@ -124,14 +124,15 @@ src/
 │   └── processes/     # Multiprocessing examples
 │
 ├── ⚙️ cpp/             # C++ implementations
-│   ├── threads/       # POSIX threads, std::thread
-│   ├── parallel/      # OpenMP, TBB examples
-│   └── cuda/          # GPU programming
+│   ├── multithreading/ # std::thread, atomics, synchronization
+│   ├── multiprocessing/ # POSIX processes and IPC
+│   ├── asynchrony/    # Futures, async tasks, C++20 coroutines
+│   └── mpi/           # Distributed communication with MPI
 │
 └── 🟨 js/              # JavaScript/Node.js
-    ├── async/         # Promises, async/await
-    ├── workers/       # Web Workers
-    └── cluster/       # Node.js clustering
+    ├── asynchrony/    # Promises, async/await
+    ├── multithreading/ # Node.js worker threads
+    └── multiprocessing/ # Child processes, cluster
 ```
 
 ### 🔥 Featured Examples
@@ -177,12 +178,19 @@ cd Parallel-And-Concurrent-Programming
 python src/python/asynchrony/async_generator.py
 
 # Run C++ examples (requires compilation)
-g++ -pthread src/cpp/threads/basic_thread.cpp -o thread_demo
+g++ -std=c++20 -pthread src/cpp/multithreading/simple_mutex.cpp -o thread_demo
 ./thread_demo
 
 # Run JavaScript examples
-node src/js/async/promises_example.js
+node src/js/asynchrony/03_future_callback.js
 ```
+
+C++ and Node.js examples that deliberately demonstrate unsafe or inefficient
+patterns use `_antipattern` (or `_antipatterns` for multiple pitfalls) before their
+filename extension.
+Their comments explain the intentional problem and point to safer alternatives.
+C++ MPI examples require an MPI toolchain; C++ HTTP examples require libcurl development
+headers and linking with `-lcurl`.
 
 ## 🎯 Interactive Quizzes
 
@@ -418,11 +426,11 @@ We welcome contributions from developers at all skill levels! Here's how you can
    # Python
    python -m pytest tests/
    
-   # C++
-   make test
+   # C++ regression checks (POSIX, g++, and AddressSanitizer required)
+   python3 -m unittest discover -s tests -v
    
-   # JavaScript
-   npm test
+   # Node.js regression checks (Node.js 20.6+)
+   node --test tests/test_node_examples.cjs
    ```
 
 5. **📝 Commit with Clear Messages**

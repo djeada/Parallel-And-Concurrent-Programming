@@ -29,6 +29,8 @@ void child_work() {
 int main() {
     std::cout << "Main process started (PID: " << getpid() << ")\n";
 
+    std::cout.flush();
+
     pid_t pid = fork();
 
     if (pid < 0) {

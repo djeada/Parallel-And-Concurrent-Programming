@@ -26,9 +26,9 @@ const URLS = [
   "https://jsonplaceholder.typicode.com/posts/4",
 ];
 
-const fetchUrl = async (url) => {
+const fetchUrl = async (url, timeoutMs = 5000) => {
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
@@ -66,8 +66,10 @@ const parallelFetchWithWorkers = async (urls) => {
   const workerPromises = urls.map((url) => {
     return new Promise((resolve) => {
       const worker = new Worker(__filename, { workerData: url });
+      let received = false;
       
       worker.on("message", (result) => {
+        received = true;
         if (result.success) {
           console.log(`  Fetched ${result.url} (${result.contentLength} chars)`);
         } else {
@@ -76,6 +78,9 @@ const parallelFetchWithWorkers = async (urls) => {
         resolve(result);
       });
       
+      worker.once("exit", (code) => {
+        if (!received) resolve({ url, error: `Worker exited before returning data (code ${code})`, success: false });
+      });
       worker.on("error", (error) => {
         resolve({ url, error: error.message, success: false });
       });
@@ -110,10 +115,12 @@ const main = async () => {
 };
 
 if (isMainThread) {
-  main();
+  if (require.main === module) main();
 } else {
   (async () => {
     const result = await fetchUrl(workerData);
     parentPort.postMessage(result);
   })();
 }
+
+module.exports = { fetchUrl, parallelFetchWithWorkers };

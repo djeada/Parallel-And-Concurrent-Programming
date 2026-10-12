@@ -52,9 +52,11 @@ int main() {
 
     // Spawn worker processes
     for (int i = 0; i < num_workers; ++i) {
+        std::cout.flush();
         pid_t pid = fork();
         if (pid == 0) {
             worker(data, i);
+            std::cout.flush();
             _exit(0);
         }
     }

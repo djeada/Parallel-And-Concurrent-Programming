@@ -64,9 +64,11 @@ int main() {
 
     // Spawn workers
     for (int i = 0; i < num_workers; ++i) {
+        std::cout.flush();
         pid_t pid = fork();
         if (pid == 0) {
             worker(i, counter, mutex, barrier, num_workers);
+            std::cout.flush();
             _exit(0);
         }
     }

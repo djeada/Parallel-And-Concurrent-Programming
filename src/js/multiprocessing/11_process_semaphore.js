@@ -36,8 +36,7 @@ if (process.argv[2] === "worker") {
       await sleep(workTime);
       
       console.log(`  [Worker ${workerId}] Work completed (${workTime}ms), releasing semaphore`);
-      process.send({ type: "release", workerId });
-      process.exit(0);
+      process.send({ type: "release", workerId }, () => process.disconnect());
     }
   });
 

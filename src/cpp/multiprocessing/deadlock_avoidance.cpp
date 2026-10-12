@@ -1,9 +1,9 @@
 /**
  * Deadlock Avoidance — Lock Ordering
  *
- * This is the FIX for deadlock.cpp.
+ * This is the FIX for deadlock_antipattern.cpp.
  *
- * Root cause of the deadlock in deadlock.cpp:
+ * Root cause of the deadlock in deadlock_antipattern.cpp:
  *   Process A acquires lock_a then tries lock_b.
  *   Process B acquires lock_b then tries lock_a.
  *   → Circular wait: neither can proceed.
@@ -66,11 +66,14 @@ int main() {
     sem_t* lock_a = open_sem("/avoid_lock_a");
     sem_t* lock_b = open_sem("/avoid_lock_b");
 
+    std::cout.flush();
+
     pid_t pid = fork();
     if (pid < 0) { perror("fork"); return 1; }
 
     if (pid == 0) {
         process_fn("Process A", lock_a, lock_b);
+        std::cout.flush();
         _exit(0);
     } else {
         process_fn("Process B", lock_a, lock_b);

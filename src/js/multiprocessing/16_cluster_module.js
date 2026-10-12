@@ -22,8 +22,8 @@ const cluster = require("cluster");
 const http = require("http");
 const os = require("os");
 
-const PORT = 3141;
-const POOL_SIZE = Math.min(os.availableParallelism?.() ?? os.cpus().length, 4);
+const PORT = Number(process.env.PORT || 3141);
+const POOL_SIZE = Math.max(1, Math.min(os.availableParallelism?.() ?? os.cpus().length, 4));
 
 // ---------------------------------------------------------------------------
 // Worker: HTTP server sharing the port with all other workers
@@ -52,6 +52,8 @@ if (cluster.isWorker) {
 // ---------------------------------------------------------------------------
 } else {
   let shuttingDown = false;
+  let actualPort = PORT;
+  let restartCount = 0;
 
   console.log("=== Cluster Module Demo ===\n");
   console.log(`Forking ${POOL_SIZE} workers (port ${PORT})...\n`);
@@ -64,7 +66,13 @@ if (cluster.isWorker) {
       console.log(`[Primary] Worker ${worker.process.pid} exited (shutdown)`);
     } else {
       console.log(`[Primary] Worker ${worker.process.pid} crashed (code=${code} signal=${signal}) — restarting`);
-      cluster.fork();
+      if (++restartCount > 5) {
+        console.error("Too many worker crashes; stopping cluster.");
+        process.exitCode = 1;
+        gracefulShutdown();
+      } else {
+        cluster.fork();
+      }
     }
   });
 
@@ -73,7 +81,7 @@ if (cluster.isWorker) {
     return new Promise((resolve) => {
       let completed = 0;
       for (let i = 0; i < n; i++) {
-        http.get(`http://localhost:${PORT}`, (res) => {
+        http.get(`http://localhost:${actualPort}`, (res) => {
           let body = "";
           res.on("data", (chunk) => { body += chunk; });
           res.on("end", () => {
@@ -98,31 +106,45 @@ if (cluster.isWorker) {
   };
 
   const gracefulShutdown = () => {
+    if (shuttingDown) return;
     console.log("\n[Primary] Initiating graceful shutdown...");
     shuttingDown = true;
     for (const worker of Object.values(cluster.workers)) {
       worker.process.kill("SIGTERM");
     }
+    if (Object.keys(cluster.workers).length === 0) return;
     // Exit after all workers have exited.
     cluster.on("exit", () => {
       if (Object.keys(cluster.workers).length === 0) {
         console.log("[Primary] All workers exited — done.");
-        process.exit(0);
+        // Exit naturally after child handles and output have drained.
       }
     });
   };
 
-  // Sequence: wait for startup → requests → crash demo → more requests → shutdown
-  setTimeout(async () => {
+  process.on("SIGINT", gracefulShutdown);
+  process.on("SIGTERM", gracefulShutdown);
+
+  // Start requests only after every initial worker is listening.
+  const listening = new Set();
+  let demoStarted = false;
+  cluster.on("listening", async (worker, address) => {
+    actualPort = address.port;
+    listening.add(worker.id);
+    if (demoStarted || shuttingDown || listening.size < POOL_SIZE) return;
+    demoStarted = true;
     console.log("[Primary] Sending initial requests (observe load balancing)...");
     await sendRequests(POOL_SIZE + 2);
+    if (shuttingDown) return;
 
+    // Register before the crash so even a quick restart cannot be missed.
+    const restarted = new Promise((resolve) => cluster.once("listening", resolve));
     killOneWorker();
-    await new Promise((r) => setTimeout(r, 800)); // let restart happen
-
+    await restarted;
+    if (shuttingDown) return;
     console.log("\n[Primary] Sending more requests (one worker was restarted)...");
     await sendRequests(POOL_SIZE);
-
     gracefulShutdown();
-  }, 1200);
+  });
+  cluster.on("exit", (worker) => listening.delete(worker.id));
 }

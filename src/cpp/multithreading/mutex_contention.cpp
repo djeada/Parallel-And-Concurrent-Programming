@@ -8,7 +8,7 @@
  * - Use while(true) + check-and-break inside the lock to avoid reading
  *   shared state outside the critical section (prevents data races)
  * - When many threads compete for one mutex, some will starve while others
- *   repeatedly win (see starvation.cpp for a dedicated example)
+ *   repeatedly win (see starvation_antipattern.cpp for a dedicated example)
  * - A thread may exit early without processing all remaining tasks
  *
  * Compile: g++ -std=c++11 -pthread mutex_contention.cpp

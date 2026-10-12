@@ -26,10 +26,14 @@ const abortableSleep = (ms, signal) =>
   new Promise((resolve, reject) => {
     signal?.throwIfAborted(); // reject immediately if already aborted
 
-    const timer = setTimeout(resolve, ms);
+    const timer = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
 
     const onAbort = () => {
       clearTimeout(timer);
+      signal.removeEventListener("abort", onAbort);
       reject(signal.reason); // reason is the value passed to controller.abort(reason)
     };
 
@@ -170,4 +174,5 @@ const main = async () => {
   console.log("3. Aborting fetch() does NOT guarantee the request never reached the server");
 };
 
-main().catch(console.error);
+if (require.main === module) main().catch(console.error);
+module.exports = { abortableSleep };

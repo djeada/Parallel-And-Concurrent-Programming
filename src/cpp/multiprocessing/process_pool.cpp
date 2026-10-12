@@ -35,6 +35,8 @@ public:
             wait_for_one();
         }
 
+        std::cout.flush();
+
         pid_t pid = fork();
         if (pid < 0) {
             std::cerr << "fork() failed\n";
@@ -43,6 +45,7 @@ public:
         if (pid == 0) {
             // Child: execute task and exit with result
             execute_task(task_id);
+            std::cout.flush();
             _exit(task_id * 2);  // Return result via exit code
         } else {
             workers_.push_back(pid);

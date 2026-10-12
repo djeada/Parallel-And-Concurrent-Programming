@@ -11,9 +11,9 @@
  *   and overwrite A's result (or vice-versa).
  *
  * Note on SharedArrayBuffer:
- *   SharedArrayBuffer lets workers share raw memory.  Without Atomics,
- *   plain reads/writes are non-atomic and subject to data races even for
- *   a single 32-bit integer.
+ *   SharedArrayBuffer lets workers share raw memory. Individual Int32
+ *   accesses do not make a compound load/compute/store operation atomic.
+ *   That operation needs a lock or an atomic read-modify-write operation.
  *
  * Fix: see 05_mutex.js, which protects the critical section with an
  * Atomics-based mutex so only one thread updates the counter at a time.
@@ -30,7 +30,7 @@ if (isMainThread) {
   console.log("Multiple threads modifying shared counter WITHOUT synchronization\n");
 
   const NUM_THREADS = 5;
-  const ITERATIONS = 10;
+  const ITERATIONS = 4; // Match 05_mutex.js without Int32 overflow
   
   // Shared memory layout: [counter (4 bytes), doneCount (4 bytes)]
   const sharedBuffer = new SharedArrayBuffer(8);
@@ -62,7 +62,7 @@ if (isMainThread) {
     });
     
     worker.on("error", (error) => console.error(`Worker ${i} error:`, error));
-    worker.postMessage({ type: "init", id: i, sharedBuffer });
+    worker.postMessage({ type: "init", id: i, sharedBuffer, iterations: ITERATIONS });
     workers.push(worker);
   }
 } else {
@@ -74,7 +74,7 @@ if (isMainThread) {
       id = message.id;
       counterView = new Int32Array(message.sharedBuffer, 0, 1);
 
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < message.iterations; i++) {
         // Read current value (RACE: value may change before we write)
         const localCounter = counterView[0];
         const multipliedCounter = localCounter * (id + 1);

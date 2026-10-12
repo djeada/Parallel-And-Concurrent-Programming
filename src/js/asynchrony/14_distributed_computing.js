@@ -28,7 +28,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const CONFIG = {
   host: "127.0.0.1",
-  port: 8888,
+  port: Number(process.env.PORT || 8888),
   taskIntervalMs: 1000,
 };
 
@@ -49,10 +49,13 @@ class TaskServer {
       const clientInfo = {
         socket,
         intervalId: null,
+        role: null,
+        activeTask: null,
       };
 
-      // Start dispatching tasks to this client
+      // Dispatch only to registered workers, at most one task per worker.
       clientInfo.intervalId = setInterval(() => {
+        if (clientInfo.role !== "worker" || clientInfo.activeTask !== null) return;
         const task = {
           id: ++this.taskId,
           data: Math.floor(Math.random() * 100) + 1,
@@ -61,6 +64,7 @@ class TaskServer {
         };
         
         try {
+          clientInfo.activeTask = task.id;
           socket.write(JSON.stringify(task) + "\n");
           console.log(`  Dispatched task ${task.id} (data: ${task.data}) to ${clientId}`);
         } catch (err) {
@@ -75,7 +79,25 @@ class TaskServer {
       rl.on("line", (line) => {
         try {
           const result = JSON.parse(line);
+          if (clientInfo.role === null) {
+            if (result.type !== "register" || !["worker", "client"].includes(result.role)) {
+              socket.destroy();
+              return;
+            }
+            clientInfo.role = result.role;
+            console.log(`  Registered ${result.role}: ${clientId}`);
+            return;
+          }
+          if (clientInfo.role !== "worker" || clientInfo.activeTask === null ||
+              result.taskId !== clientInfo.activeTask) return;
+          clientInfo.activeTask = null;
           console.log(`  Received result from ${clientId}:`, result);
+          // Result clients subscribe to computations, not incoming tasks.
+          for (const info of this.clients.values()) {
+            if (info.role === "client" && !info.socket.destroyed) {
+              info.socket.write(JSON.stringify(result) + "\n");
+            }
+          }
         } catch (err) {
           console.log(`  Received non-JSON message from ${clientId}: ${line}`);
           console.log(`  Parse error: ${err.message}`);
@@ -97,12 +119,13 @@ class TaskServer {
 
     this.server.listen(this.port, this.host, () => {
       console.log("=== Task Server ===");
-      console.log(`Listening on ${this.host}:${this.port}`);
+      console.log(`Listening on ${this.host}:${this.server.address().port}`);
       console.log("Waiting for workers to connect...\n");
     });
 
     this.server.on("error", (err) => {
       console.error("Server error:", err.message);
+      process.exitCode = 1;
     });
   }
 
@@ -126,6 +149,7 @@ class Worker {
   async connect() {
     return new Promise((resolve, reject) => {
       this.client = net.createConnection({ host: this.host, port: this.port }, () => {
+        this.client.write(JSON.stringify({ type: "register", role: "worker" }) + "\n");
         console.log("=== Worker ===");
         console.log(`Connected to server at ${this.host}:${this.port}`);
         console.log("Waiting for tasks...\n");
@@ -171,7 +195,7 @@ class Worker {
     console.log(`  Completed task ${task.id}: ${task.data} * 2 = ${result.result}`);
     
     // Send result back to server
-    this.client.write(JSON.stringify(result) + "\n");
+    if (!this.client.destroyed) this.client.write(JSON.stringify(result) + "\n");
   }
 }
 
@@ -185,6 +209,7 @@ class Client {
   async connect() {
     return new Promise((resolve, reject) => {
       this.client = net.createConnection({ host: this.host, port: this.port }, () => {
+        this.client.write(JSON.stringify({ type: "register", role: "client" }) + "\n");
         console.log("=== Result Client ===");
         console.log(`Connected to server at ${this.host}:${this.port}`);
         console.log("Receiving tasks/results...\n");
@@ -235,11 +260,12 @@ const main = async () => {
 
   // Graceful shutdown handler
   const setupShutdown = (cleanup) => {
-    process.on("SIGINT", () => {
+    const shutdown = () => {
       console.log("\nShutting down...");
       cleanup();
-      process.exit(0);
-    });
+    };
+    process.once("SIGINT", shutdown);
+    process.once("SIGTERM", shutdown);
   };
 
   if (role === "server") {
@@ -257,7 +283,9 @@ const main = async () => {
   }
 };
 
-main().catch((err) => {
+if (require.main === module) main().catch((err) => {
   console.error("Fatal error:", err.message);
   process.exit(1);
 });
+
+module.exports = { TaskServer, Worker, Client };

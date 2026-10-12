@@ -1,5 +1,5 @@
 /**
- * Zombie Process
+ * ANTIPATTERN — Zombie Process
  *
  * This example demonstrates zombie processes - child processes that
  * have terminated but whose exit status hasn't been collected.
@@ -25,6 +25,7 @@
 #include <unistd.h>
 
 int main() {
+    std::cout.flush();
     pid_t pid = fork();
 
     if (pid < 0) {
@@ -38,6 +39,7 @@ int main() {
         std::cout << "Child: Exiting immediately\n";
         // Use _exit() instead of exit() to avoid calling atexit handlers
         // and flushing stdio buffers that were inherited from parent
+        std::cout.flush();
         _exit(42);
     } else {
         // Parent process

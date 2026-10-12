@@ -2,9 +2,8 @@
  * Atomics.waitAsync — Non-Blocking Coordination
  *
  * Atomics.wait() blocks the entire worker thread until the condition is met.
- * That is fine inside a worker (where blocking is acceptable), but it cannot
- * be used on the main thread and breaks async code that needs to keep the
- * event loop alive.
+ * That is fine inside a worker, but using it on Node's main thread
+ * blocks the event loop. Use waitAsync when the event loop must stay responsive.
  *
  * Atomics.waitAsync() solves this: it returns a Promise-like result object
  * so the calling code can await it without blocking the thread.
@@ -22,7 +21,7 @@
  * "timed-out"  means the timeout expired before notification.
  *
  * Key concepts:
- * - Atomics.wait    — synchronous / blocking; worker threads only
+ * - Atomics.wait    — synchronous / blocking; use in worker threads
  * - Atomics.waitAsync — async / non-blocking; safe on main thread
  * - Atomics.notify  — wakes one or more waiters (both sync and async)
  */
@@ -84,7 +83,11 @@ if (isMainThread) {
   // Nobody will notify this — it should time out
   const timedWait = Atomics.waitAsync(shortView, 0, 0, 500); // 500 ms
   if (timedWait.async) {
+    // An unresolved Promise (including waitAsync) does not keep Node alive.
+    // Keep a referenced handle until this timeout demonstration finishes.
+    const keepAlive = setInterval(() => {}, 1000);
     timedWait.value.then((outcome) => {
+      clearInterval(keepAlive);
       console.log(`[main] Short wait resolved: "${outcome}"`); // "timed-out"
       console.log("\n=== Demo complete ===");
     });

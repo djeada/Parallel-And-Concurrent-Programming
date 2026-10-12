@@ -29,7 +29,7 @@ if (process.argv.length === 2) {
   console.log("=== Deadlock Demonstration ===\n");
   console.log("This demo shows how deadlocks occur when processes");
   console.log("try to acquire locks in different orders.\n");
-  console.log("Press Ctrl+C to exit (the program will hang due to deadlock)\n");
+  console.log("The timeout will stop both deadlocked workers after 5 seconds\n");
 
   const workerA = fork(__filename, ["workerA"]);
   const workerB = fork(__filename, ["workerB"]);
