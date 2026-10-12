@@ -1,6 +1,10 @@
 ## Multithreading
 
-**Multithreading** is the use of multiple threads within a process so that work can proceed concurrently. A thread is a unit of execution that the operating system can schedule. Threads in the same process share an address space and many process resources, while each thread has its own execution state, such as a stack and registers. Depending on the hardware and runtime, threads may run in parallel on different cores or take turns on the same core. Multithreading is especially useful for I/O-bound work because one thread can make progress while another waits for I/O. Because threads can access shared memory, shared state must be synchronized carefully to avoid data races and other concurrency bugs.
+**Multithreading** lets several threads make progress within one process. Threads share its address space and resources such as open files, while each thread has its own stack, registers, and execution position.
+
+Threads may run in parallel on different cores or take turns on one core. They can also overlap blocking I/O: one thread continues while another waits. Whether CPU work becomes faster depends on the runtime, available cores, and coordination costs.
+
+The main correctness question is who may read or change each shared value. Establish that rule before choosing a synchronization primitive.
 
 ### Thread Pool vs On-Demand Thread
 
@@ -46,6 +50,19 @@ For example, a web server may place incoming requests in a work queue and let th
 * Switching between threads in the same process is often cheaper than switching between processes, although the exact cost depends on the operating system and workload.
 * Threads also make sharing in-process data and resources straightforward because they use the same address space.
 
+### Choosing a Synchronization Primitive
+
+| Requirement | Usual starting point | Detail to check |
+|---|---|---|
+| Update several related values together | Mutex | Every conflicting access must follow the same locking rule. |
+| Increment one shared counter | Atomic read-modify-write operation | Separate atomic loads and stores do not make their combination atomic. |
+| Limit concurrent access to a pool of resources | Counting semaphore | A count greater than one allows simultaneous access; it does not protect a shared mutable object by itself. |
+| Wait until shared state satisfies a condition | Condition variable and mutex | Check the predicate while holding the mutex, including after waking. |
+| Wait for one batch of work to finish | Latch | A latch is used once. |
+| Meet at the end of repeated phases | Barrier | All required participants must reach each phase. |
+
+Ownership, ordering, and lifetime still matter when a primitive is used correctly. A lock protects the chosen critical section; it does not automatically protect every access to the same data.
+
 ### Challenges with Multithreading
 
 - Threads can share state directly, which makes communication efficient but requires care when that state is mutable.
@@ -86,6 +103,8 @@ The execution order is no longer guaranteed. If `funB()` runs before `funA()` co
 Analogy:  
 
 *Imagine several chefs working on the same dish. Sharing the kitchen is fine, but if two chefs change the same ingredient at the same time without coordinating, the result becomes unpredictable. Threads have the same problem when they perform conflicting accesses to shared state without synchronization.*
+
+The following example deliberately contains a data race. In C++, this is undefined behavior: a low final count is one possible observation, but even the expected count would not show that the program is correct. The interleaving diagram below illustrates a lost update, rather than defining every behavior the program may exhibit. See the [C++ memory model](https://eel.is/c++draft/intro.races).
 
 Example:
 
@@ -331,7 +350,7 @@ What do we gain by using atomics?
 What do we lose by using atomics?
 
 - Atomics require careful reasoning about memory ordering when synchronization extends beyond the atomic variable itself.
-- A single atomic variable is easy to use, but coordinating multi-step invariants or complex data structures is much harder.
+- Atomic accesses protect individual operations. For example, `counter.store(counter.load() + 1)` can lose updates because another thread may change the counter between the load and store. Use `counter.fetch_add(1)` for a single atomic increment, and a mutex when several values must change together.
 - Lock-free algorithms can introduce subtle problems such as livelock and the ABA problem.
 - Under heavy contention, atomics may perform no better than lock-based approaches and can sometimes perform worse.
 
@@ -552,7 +571,7 @@ Analogy:
 
 *Think of a parking garage with a limited number of spaces. Each car (thread) must check if a space is available before entering (acquire). If no space is free, the car must wait. When a car leaves (release), a space opens up for the next waiting car.*
 
-Example (using C++20 counting semaphore):
+Example (using a C++20 counting semaphore): two threads may enter the limited-capacity region at once. Shared mutable data inside that region would still need its own synchronization.
 
 ```cpp
 #include <iostream>
@@ -645,47 +664,24 @@ Multithreaded Code Is Always Harder to Write and Maintain
 
 While concurrency introduces challenges—such as synchronization, potential race conditions, and timing-related bugs—multithreaded code is not necessarily more difficult to manage than single-threaded code. Modern languages and frameworks provide abstractions (e.g., thread pools, futures, async/await mechanisms) that simplify parallelism. With proper design, testing strategies, and usage of these tools, writing reliable and maintainable multithreaded applications becomes more approachable.
 
-#### Problems for which multithreading is the answer
+#### When Multithreading Helps
 
-- CPU-intensive computations that can be divided into independent work and can actually run in parallel in the chosen language/runtime.
-- Servers that must handle many independent client requests or connections concurrently.
-- Tasks that can be intuitively split into independent processing steps, allowing different threads to handle separate parts of a workflow concurrently.
-- Continuous access to a large read-only data set, where multiple threads can efficiently read and process the data without needing to modify it.
-- Tasks whose performance would be unacceptable as a single thread, necessitating parallel execution to meet performance requirements.
-- Managing concurrent access to multiple resources, such as an operating system coordinating access to hardware components, memory, and peripherals.
-- Processing a stream of large data files, enabling different threads to handle different segments of the data simultaneously for faster processing.
-- Problems where each step has a clear input and output, facilitating parallel processing of sequential steps in a pipeline.
-- Processes where the workload cannot be anticipated, allowing the system to dynamically allocate threads to handle varying loads effectively.
-- Real-time data processing tasks, such as financial trading systems that require immediate handling of incoming market data to execute trades without delay.
-- Blocking I/O workloads where multiple threads can overlap waits for files, networks, or other external resources.
-- Maintaining user interface responsiveness in applications by offloading long-running tasks to background threads, ensuring the UI remains interactive.
-- Parallel data processing pipelines, like ETL (Extract, Transform, Load) processes in data warehousing, where different stages run concurrently to enhance throughput.
-- Simulation and modeling applications, such as climate models or physics simulations, that divide the environment into regions processed in parallel to speed up computations.
-- Network servers and web services that handle multiple client connections simultaneously, with each thread managing a separate client session to ensure efficient request handling.
-- Machine learning model training, where large neural networks are trained by parallelizing computations across multiple threads or cores to accelerate the learning process.
-- Multimedia processing tasks, including audio and video encoding or decoding, where different streams or segments are processed in parallel to reduce latency and improve performance.
-- Automated testing and continuous integration systems that run multiple test suites or build processes in parallel to speed up the development and deployment pipeline.
+- Independent CPU work can run across cores when the runtime permits parallel execution.
+- Blocking I/O can overlap without requiring every library to expose an async API.
+- Background work can keep a UI or request-handling thread responsive.
+- A pipeline can process different inputs in different stages at the same time.
+- A bounded pool can distribute irregular tasks among reusable workers.
 
-#### Problems for which multithreading is not the answer
+#### When to Try Another Approach
 
-- Tasks with sequential dependencies require operations to be performed in a strict order without the possibility of parallel execution, making multithreading ineffective.
-- Minimal processing tasks involve simple or quick operations where the overhead of creating and managing threads outweighs any potential performance gains.
-- High contention for shared resources occurs when multiple threads frequently compete for the same resources, leading to excessive locking and reduced performance.
-- Applications relying on single-threaded libraries or APIs are not designed to be thread-safe, making multithreading difficult or error-prone.
-- Limited hardware resources mean environments have insufficient CPU cores or memory, where adding more threads could degrade overall system performance.
-- Systems with strict timing guarantees may not benefit from ordinary, unmanaged multithreading because general-purpose scheduling can introduce unpredictable delays. Real-time systems can still use threads when paired with appropriate real-time scheduling and design.
-- Applications requiring high synchronization involve tasks that need extensive coordination between threads, resulting in bottlenecks and diminishing returns from parallelism.
-- Debugging and maintenance complexity arises in projects where the added complexity of multithreading introduces significant challenges in debugging, testing, and maintaining the codebase.
-- Deterministic execution needs are present in applications that require consistent and repeatable behavior for debugging, security, or compliance reasons, which can be disrupted by the non-deterministic nature of multithreading.
-- Environments with poor multithreading support have programming languages or runtime environments that lack robust multithreading capabilities, making implementation difficult or inefficient.
-- Tasks better suited for asynchronous programming benefit from asynchronous, non-blocking approaches that provide better performance and scalability without the complexities of multithreading.
-- Problems better addressed by multiprocessing or distributed computing involve situations where using multiple processes or distributing tasks across different machines is more effective than using multiple threads within a single process.
-- Memory-constrained applications need to minimize memory usage, as each thread consumes additional memory for its stack and management overhead.
-- Simple, single-user applications operate with a single user or do not require concurrent processing, where multithreading offers no tangible benefits.
-- Tasks with high initialization costs involve operations where the cost of starting and stopping threads is prohibitively high compared to the task's execution time.
-- Security-sensitive applications could introduce vulnerabilities through race conditions or improper handling of shared data when using multithreading.
-- Legacy codebases are existing applications that were not designed with multithreading in mind, where retrofitting multithreading could be risky or impractical.
-- Energy-constrained devices are battery-powered or low-energy devices where the additional power consumption from managing multiple threads is a concern.
+- For tiny tasks, thread and queue overhead may exceed the useful work.
+- A long dependency chain leaves little work that can run in parallel.
+- Heavy contention on one shared resource may serialize most of the program.
+- A library may require calls from one specific thread, such as a UI thread.
+- CPU-bound Python code in a GIL-enabled CPython build may benefit more from processes or native code.
+- Many waiting network connections may fit an event loop well.
+
+Choose using measurements and the library's concurrency requirements. More threads can improve throughput, reduce it, or leave it unchanged.
 
 #### Typical Applications
 
@@ -1018,7 +1014,7 @@ In this example, `std::atomic<int>` ensures that the increment operation is atom
 
 When using atomic operations in C++, we not only specify *which* operations should be atomic, but also *how* they synchronize with other memory operations in the program. This “how” is controlled by **memory orderings**—a set of rules that govern visibility and ordering of reads and writes.
 
-C++ provides six memory order enumerations in `std::memory_order`:
+The C++20 examples use the following `std::memory_order` enumerators:
 
 1. **`std::memory_order_relaxed`**  
 2. **`std::memory_order_consume`** (mostly unimplemented in mainstream compilers)  
@@ -1031,14 +1027,16 @@ Each ordering provides different guarantees about how an atomic operation relate
 
 Below is a comparison table of the main C++ memory orderings, their guarantees, common uses, and common pitfalls.
 
-| **Memory Order**               | **Brief Description**                                                          | **Guarantees**                                                                                                                                                                                          | **Common Use Cases**                                                                                                                    | **Pitfalls & Advice**                                                                                                                                        |
-|--------------------------------|-------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
-| **`std::memory_order_relaxed`** | Provides atomicity without synchronization ordering for other memory accesses | - The atomic operation itself is indivisible <br/> - Operations on the same atomic still follow its modification order, but there is no cross-thread synchronization for unrelated memory | - Counters or statistics where only the atomic value matters <br/> - Flags that do not publish other data | - Easy to choose incorrectly when other state depends on the atomic update <br/> - Use only when no ordering relationship is required |
-| **`std::memory_order_consume`** | Intended to enforce data dependency ordering (rarely implemented properly)   | - Theoretically only dependent reads are ordered  <br/> - In practice, compilers often treat it like `acquire`                                                                                              | - Very specialized, mostly replaced by `acquire` in real-world code                                                                                                           | - Not well supported by most compilers <br/> - Avoid in portable or production code                                                                                              |
-| **`std::memory_order_acquire`** | Prevents later operations from being reordered before the acquire             | - When an acquire reads a value from a matching release sequence, earlier writes from the releasing thread become visible to the acquiring thread <br/> - Acts as a one-way ordering barrier after the acquire | - Loading a “ready” flag before reading published data <br/> - Consumer-side synchronization | - An acquire only synchronizes when it observes the relevant release/release sequence <br/> - Usually paired with `release` in producer-consumer patterns |
-| **`std::memory_order_release`** | Prevents earlier operations from being reordered after the release             | - Publishes prior writes to a thread whose matching acquire observes this release (or its release sequence) <br/> - Acts as a one-way ordering barrier before the release | - Setting a “ready” flag after preparing shared data <br/> - Producer-side synchronization | - A release alone does not make another thread observe the data <br/> - It must participate in a matching synchronization relationship |
-| **`std::memory_order_acq_rel`** | Acquire + Release in one read-modify-write operation                          | - Combines the effects of `acquire` and `release` for RMW ops (e.g., `fetch_add`, `compare_exchange`) <br/> - Ensures no reorder before or after the operation                                              | - Updating shared state in a single atomic step where you must see previous writes and publish new writes (e.g., lock-free structures)                                     | - Can be stronger (thus slower) than needed if you only require a one-way barrier <br/> - Must be used carefully in highly concurrent scenarios              |
-| **`std::memory_order_seq_cst`** | Enforces total sequential consistency across all threads                     | - Provides a single, global order of all sequentially consistent operations <br/> - Easiest model to reason about, strongest ordering guarantee                                                             | - When correctness is paramount and performance concerns are secondary <br/> - Prototyping concurrency code before optimizing                                               | - Highest potential performance cost <br/> - May introduce unnecessary fences on weaker architectures                                                        |
+| Ordering | Applies to | Main guarantee | Typical use |
+|---|---|---|---|
+| `relaxed` | Loads, stores, read-modify-write operations | The operation is atomic; it does not publish other data. | A counter whose value is the only shared result. |
+| `consume` | Loads and the read part of read-modify-write operations | Legacy dependency-based ordering; compiler support is problematic. | Avoid in these examples; use acquire when publishing data. |
+| `acquire` | Loads and read-modify-write operations | Reading from a matching release orders its published data before later accesses. | Read a ready flag, then use the published data. |
+| `release` | Stores and read-modify-write operations | Earlier accesses are published to a matching acquire. | Prepare data, then set its ready flag. |
+| `acq_rel` | Read-modify-write operations | Combines acquire and release effects. | Observe published state while publishing an update. |
+| `seq_cst` | Loads, stores, read-modify-write operations | Appropriate acquire/release effects plus a common total order for sequentially consistent operations. | The default starting point for reasoning about atomic state. |
+
+Choose an ordering that is valid for the operation: an acquire store or a release load is not valid. The table concerns ordering between accesses, not an instruction to insert a physical fence at every operation. A weaker ordering must preserve the required synchronization; it is not automatically faster. See [C++ atomic ordering](https://eel.is/c++draft/atomics.order).
 
 What Do We Gain By Careful Use of Memory Orderings?
 
@@ -1104,8 +1102,9 @@ int main() {
 }
 ```
 
-- The **producer** writes `data.value = 42` and then calls `ready.store(true, std::memory_order_release)`, ensuring that any subsequent acquire operation on `ready` will see the updated `data.value`.
-- The **consumer** spins until `ready.load(std::memory_order_acquire)` becomes true, and because it’s an acquire load, once it returns true, the consumer also sees `data.value = 42`.
+- The producer writes `data.value` before publishing `true` with a release store.
+- The consumer may initially read `false`. When its acquire load reads the `true` written by that release store, the earlier write to `data.value` is ordered before the consumer reads the data.
+- This is one-time publication: the producer does not modify `data.value` again. Repeated updates would need an additional protocol. See [acquire and release ordering](https://eel.is/c++draft/atomics.order).
 
 What is happening:
 
@@ -1117,7 +1116,7 @@ What is happening:
  ready.store(true, release)     ready.load(acquire) --> sees true
          |                              |
          v                              |
-    [ memory fence ]                    v
+    [ release store ]                    v
                                  sees data.value = 42
 ```
 
@@ -1131,24 +1130,28 @@ What is happening:
 - Protect shared mutable data with synchronization appropriate to the access pattern. That may mean a mutex, an atomic, a reader-writer lock, a concurrent data structure, or another mechanism that establishes safe access and ordering.
 - Utilizing modern features introduced in C++11 and later, such as `std::thread`, `std::mutex`, `std::lock_guard`, and `std::future`, can greatly simplify thread management and help avoid common pitfalls. These features provide robust and standardized ways to handle concurrency, making the code more maintainable and less error-prone.
 
-Here are some example code snippets demonstrating various aspects of multithreading in C++:
+The following examples use the files in [the C++ multithreading directory](../src/cpp/multithreading). Most need a C++20 compiler and `-pthread`; the download example also requires libcurl. Examples marked **antipattern** deliberately demonstrate a problem.
 
-| #  | Example                  | Description                                                                   |
-|----|--------------------------|-------------------------------------------------------------------------------|
-| 1  | [single_worker_thread](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/01_single_worker_thread.cpp)  | Introduce the concept of threads by creating a single worker thread using `std::thread`.         |
-| 2  |  [thread_subclass](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/02_thread_subclass.cpp)        | Demonstrate a custom thread wrapper built around `std::thread`.     |
-| 3  |  [multiple_worker_threads](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/03_multiple_worker_threads.cpp)  | Show how to create and manage multiple worker threads using `std::thread`.                      |
-| 4  |  [race_condition](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/04_race_condition.cpp)        | Explain race conditions and their impact on multi-threaded applications using C++ examples.      |
-| 5  |  [mutex](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/05_mutex.cpp)    | Illustrate the use of `std::mutex` to protect shared resources and avoid race conditions in C++ applications. |
-| 6  |  [semaphore](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/06_semaphore.cpp)           | Demonstrate the use of `std::counting_semaphore` to limit the number of concurrent threads accessing a shared resource in C++ applications. |
-| 7  |  [producer_consumer](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/07_producer_consumer.cpp)    | Present a classic multi-threading problem (Producer-Consumer) and its solution using C++ synchronization mechanisms like `std::mutex` and `std::condition_variable`. |
-| 8  |  [fetch_parallel](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/08_fetch_parallel.cpp)        | Showcase a practical application of multi-threading for parallel fetching of data from multiple sources using C++ threads. |
-| 9  |  [merge_sort](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/09_merge_sort.cpp)           | Use multi-threading in C++ to parallelize a merge sort algorithm, demonstrating the potential for performance improvements. |
-| 10 |  [schedule_every_n_sec](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/10_schedule_every_n_sec.cpp)   | Show how to schedule tasks to run periodically at fixed intervals using C++ threads. |
-| 11 |  [barrier](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/11_barrier.cpp)          | Demonstrate the use of `std::barrier` to synchronize multiple threads at a specific point in the execution. |
-| 12 |  [thread_local_storage](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/12_thread_local_storage.cpp)   | Illustrate the concept of Thread Local Storage (TLS) and how it can be used to store thread-specific data. |
-| 13 |  [thread_pool](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/13_thread_pool.cpp)          | Show how to create and use a thread pool to efficiently manage a fixed number of worker threads for executing multiple tasks. |
-| 14 |  [reader_writer_lock](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/14_reader_writer_lock.cpp)   | Explain the concept of Reader-Writer Locks and their use for efficient access to shared resources with multiple readers and a single writer. |
+| Example | What to look for |
+|---|---|
+| [thread_life_cycle.cpp](../src/cpp/multithreading/thread_life_cycle.cpp) | Start workers, signal them to stop, and join them. |
+| [thread_wrapper.cpp](../src/cpp/multithreading/thread_wrapper.cpp) | Wrap `std::thread` and manage its lifetime. |
+| [is_joinable.cpp](../src/cpp/multithreading/is_joinable.cpp) | Check whether a thread object still needs joining or detaching. |
+| [simple_data_race_antipattern.cpp](../src/cpp/multithreading/simple_data_race_antipattern.cpp) | **Antipattern:** conflicting updates to an ordinary counter. |
+| [race_condition.cpp](../src/cpp/multithreading/race_condition.cpp) | A mutex prevents data races; the final result can still depend on operation order. |
+| [simple_mutex.cpp](../src/cpp/multithreading/simple_mutex.cpp) | Protect a shared counter with a mutex. |
+| [atomic.cpp](../src/cpp/multithreading/atomic.cpp) | Increment a shared counter with atomic operations. |
+| [std_semaphore.cpp](../src/cpp/multithreading/std_semaphore.cpp) | Limit concurrent resource use with a C++20 semaphore. |
+| [producer_consumer.cpp](../src/cpp/multithreading/producer_consumer.cpp) | Coordinate a queue with a mutex and condition variable. |
+| [download_images.cpp](../src/cpp/multithreading/download_images.cpp) | Overlap HTTP downloads; requires libcurl and reachable URLs. |
+| [merge_sort.cpp](../src/cpp/multithreading/merge_sort.cpp) | Split sorting work and compare sequential and parallel timing. |
+| [scheduler.cpp](../src/cpp/multithreading/scheduler.cpp) | Run periodic work in a background thread. |
+| [std_barrier.cpp](../src/cpp/multithreading/std_barrier.cpp) | Synchronize repeated phases with a C++20 barrier. |
+| [std_latch.cpp](../src/cpp/multithreading/std_latch.cpp) | Wait for a one-time batch of work. |
+| [thread_local_storage.cpp](../src/cpp/multithreading/thread_local_storage.cpp) | Give each thread its own copy of a variable. |
+| [thread_pool.cpp](../src/cpp/multithreading/thread_pool.cpp) | Reuse a fixed group of workers. |
+| [shared_mutex.cpp](../src/cpp/multithreading/shared_mutex.cpp) | Allow concurrent readers while writers hold exclusive access. |
+| [memory_order.cpp](../src/cpp/multithreading/memory_order.cpp) | Explore ordering between atomic and ordinary memory accesses. |
 
 #### Examples in Python
 
@@ -1417,21 +1420,21 @@ Here are some example code snippets demonstrating various aspects of multithread
 
 | #  | Example                  | Description                                                                   |
 |----|--------------------------|-------------------------------------------------------------------------------|
-| 1  | [single_worker_thread](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/single_worker_thread.py)  | Introduce the concept of threads by creating a single worker thread.         |
-| 2  |  [thread_subclass](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/thread_subclass.py)        | Demonstrate how to create a custom thread class by subclassing `Thread`.     |
-| 3  |  [multiple_worker_threads](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/multiple_worker_threads.py)  | Show how to create and manage multiple worker threads.                      |
-| 4  |  [race_condition](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/race_condition.py)        | Explain race conditions and their impact on multi-threaded applications.      |
-| 5  |  [mutex](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/mutex.py)    | Illustrate the use of mutexes to protect shared resources and avoid race conditions. |
-| 6  |  [semaphore](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/semaphore.py)           | Demonstrate the use of semaphores to limit the number of concurrent threads accessing a shared resource. |
-| 7  |  [producer_consumer](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/producer_consumer.py)    | Present a classic multi-threading problem (Producer-Consumer) and its solution using synchronization mechanisms like mutexes and condition variables. |
-| 8  |  [fetch_parallel](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/fetch_parallel.py)        | Showcase a practical application of multi-threading for parallel fetching of data from multiple sources. |
-| 9  |  [merge_sort](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/merge_sort.py)           | Demonstrate a threaded merge sort and the limits or potential benefits of parallel work depending on the Python runtime and workload. |
-| 10 |  [schedule_every_n_sec](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/schedule_every_n_sec.py)   | Show how to schedule tasks to run periodically at fixed intervals using threads. |
-| 11 |  [barrier](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/barrier.py)          | Demonstrate the use of barriers to synchronize multiple threads at a specific point in the execution. |
-| 12 |  [thread_local_storage](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/thread_local_storage.py)   | Illustrate the concept of Thread Local Storage (TLS) and how it can be used to store thread-specific data. |
-| 13 |  [thread_pool](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/thread_pool.py)          | Show how to create and use a thread pool to efficiently manage a fixed number of worker threads for executing multiple tasks. |
-| 14 |  [reader_writer_lock](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/reader_writer_lock.py)   | Explain the concept of Reader-Writer Locks and their use for efficient access to shared resources with multiple readers and a single writer. |
-| 15 |  [daemon_demo](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/daemon_demo.py)   | Demonstrate daemon threads, which do not keep the Python process alive and may be stopped during interpreter shutdown. |
+| 1  | [single_worker_thread](../src/python/multithreading/single_worker_thread.py)  | Introduce the concept of threads by creating a single worker thread.         |
+| 2  |  [thread_subclass](../src/python/multithreading/thread_subclass.py)        | Demonstrate how to create a custom thread class by subclassing `Thread`.     |
+| 3  |  [multiple_worker_threads](../src/python/multithreading/multiple_worker_threads.py)  | Show how to create and manage multiple worker threads.                      |
+| 4  |  [race_condition](../src/python/multithreading/race_condition.py)        | Explain race conditions and their impact on multi-threaded applications.      |
+| 5  |  [mutex](../src/python/multithreading/mutex.py)    | Illustrate the use of mutexes to protect shared resources and avoid race conditions. |
+| 6  |  [semaphore](../src/python/multithreading/semaphore.py)           | Demonstrate the use of semaphores to limit the number of concurrent threads accessing a shared resource. |
+| 7  |  [producer_consumer](../src/python/multithreading/producer_consumer.py)    | Present a classic multi-threading problem (Producer-Consumer) and its solution using synchronization mechanisms like mutexes and condition variables. |
+| 8  |  [fetch_parallel](../src/python/multithreading/fetch_parallel.py)        | Showcase a practical application of multi-threading for parallel fetching of data from multiple sources. |
+| 9  |  [merge_sort](../src/python/multithreading/merge_sort.py)           | Demonstrate a threaded merge sort and the limits or potential benefits of parallel work depending on the Python runtime and workload. |
+| 10 |  [schedule_every_n_sec](../src/python/multithreading/schedule_every_n_sec.py)   | Show how to schedule tasks to run periodically at fixed intervals using threads. |
+| 11 |  [barrier](../src/python/multithreading/barrier.py)          | Demonstrate the use of barriers to synchronize multiple threads at a specific point in the execution. |
+| 12 |  [thread_local_storage](../src/python/multithreading/thread_local_storage.py)   | Illustrate the concept of Thread Local Storage (TLS) and how it can be used to store thread-specific data. |
+| 13 |  [thread_pool](../src/python/multithreading/thread_pool.py)          | Show how to create and use a thread pool to efficiently manage a fixed number of worker threads for executing multiple tasks. |
+| 14 |  [reader_writer_lock](../src/python/multithreading/reader_writer_lock.py)   | Explain the concept of Reader-Writer Locks and their use for efficient access to shared resources with multiple readers and a single writer. |
+| 15 |  [daemon_demo](../src/python/multithreading/daemon_demo.py)   | Demonstrate daemon threads, which do not keep the Python process alive and may be stopped during interpreter shutdown. |
 
 #### Examples in JavaScript (Node.js)
 
@@ -1688,23 +1691,23 @@ Here are some example code snippets demonstrating various aspects of multithread
 
 | #  | Example                  | Description                                                                   |
 |----|--------------------------|-------------------------------------------------------------------------------|
-| 1  | [single_worker_thread](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/01_single_worker_thread.js)  | Introduce Worker Threads: `isMainThread`, `parentPort`, two-way messaging.         |
-| 2  | [thread_subclass](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/02_thread_subclass.js)        | Worker wrapper class; uses `eval()` for function serialization (note: antipattern for production).     |
-| 3  | [multiple_worker_threads](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/03_multiple_worker_threads.js)  | Spawn multiple workers dispatched by `workerData.functionName`; track completion.  |
-| 4  | [race_condition](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/04_race_condition_antipattern.js)        | ⚠️ ANTIPATTERN — unsynchronised SharedArrayBuffer counter; result is unpredictable.      |
-| 5  | [mutex](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/05_mutex.js)    | Mutex via `Atomics.compareExchange` + `Atomics.wait/notify`; fix for #4. |
-| 6  | [semaphore](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/06_semaphore.js)           | Counting semaphore with CAS acquire loop; explains why load+sub is a TOCTOU race. |
-| 7  | [producer_consumer](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/07_producer_consumer_antipattern.js)    | ⚠️ ANTIPATTERN — circular buffer with TOCTOU races on writeIdx/readIdx when using multiple producers/consumers. |
-| 8  | [fetch_parallel](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/08_fetch_parallel.js)        | Parallel HTTP fetching with workers; sequential vs. concurrent performance comparison. |
-| 9  | [merge_sort](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/09_merge_sort.js)           | Divide-and-conquer parallel merge sort; single-threaded vs. multi-threaded timing. |
-| 10 | [schedule_every_n_sec](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/10_schedule_every_n_sec.js)   | Periodic tasks in a worker; two-way message control (`start`/`stop` commands). |
-| 11 | [barrier](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/11_barrier.js)          | One-shot barrier: all threads wait at a sync point before any can continue. |
-| 12 | [thread_local_storage](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/12_thread_local_storage.js)   | Workers have isolated module scope — global variables are thread-local by default. |
-| 13 | [thread_pool](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/13_thread_pool.js)          | Fixed worker pool processing a task queue; worker reuse without re-spawning. |
-| 14 | [reader_writer_lock](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/14_reader_writer_lock_antipattern.js)   | ⚠️ ANTIPATTERN — naive polling reader-writer lock with TOCTOU races on both reader and writer paths. |
-| 15 | [message_channel](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/15_message_channel.js)   | `MessageChannel` for direct worker-to-worker communication; `transferList` for ports. |
-| 16 | [transferable](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/16_transferable.js)   | Structured clone vs. `ArrayBuffer` transfer (zero-copy, sender detached) vs. `SharedArrayBuffer`. |
-| 17 | [atomics_waitasync](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/17_atomics_waitasync.js)   | `Atomics.waitAsync` — non-blocking Promise-based coordination safe on the main thread; contrast with blocking `Atomics.wait`. |
-| 18 | [deadlock_antipattern](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/18_deadlock_antipattern.js)   | ⚠️ ANTIPATTERN — two workers each `Atomics.wait` for the other; exits via 3 s timeout. |
-| 19 | [worker_error_handling](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/19_worker_error_handling.js)   | `worker.on('error/exit')`; unhandled rejections; `uncaughtException` in worker; cooperative error propagation. |
-| 20 | [worker_lifecycle](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/20_worker_lifecycle.js)   | `worker.terminate()` (abrupt); cooperative cancellation via SAB flag; `worker.ref/unref`. |
+| 1  | [single_worker_thread](../src/js/multithreading/01_single_worker_thread.js)  | Introduce Worker Threads: `isMainThread`, `parentPort`, two-way messaging.         |
+| 2  | [thread_subclass](../src/js/multithreading/02_thread_subclass.js)        | Worker wrapper class; uses `eval()` for function serialization (note: antipattern for production).     |
+| 3  | [multiple_worker_threads](../src/js/multithreading/03_multiple_worker_threads.js)  | Spawn multiple workers dispatched by `workerData.functionName`; track completion.  |
+| 4  | [race_condition](../src/js/multithreading/04_race_condition_antipattern.js)        | ⚠️ ANTIPATTERN — unsynchronised SharedArrayBuffer counter; result is unpredictable.      |
+| 5  | [mutex](../src/js/multithreading/05_mutex.js)    | Mutex via `Atomics.compareExchange` + `Atomics.wait/notify`; fix for #4. |
+| 6  | [semaphore](../src/js/multithreading/06_semaphore.js)           | Counting semaphore with CAS acquire loop; explains why load+sub is a TOCTOU race. |
+| 7  | [producer_consumer](../src/js/multithreading/07_producer_consumer_antipattern.js)    | ⚠️ ANTIPATTERN — circular buffer with TOCTOU races on writeIdx/readIdx when using multiple producers/consumers. |
+| 8  | [fetch_parallel](../src/js/multithreading/08_fetch_parallel.js)        | Parallel HTTP fetching with workers; sequential vs. concurrent performance comparison. |
+| 9  | [merge_sort](../src/js/multithreading/09_merge_sort.js)           | Divide-and-conquer parallel merge sort; single-threaded vs. multi-threaded timing. |
+| 10 | [schedule_every_n_sec](../src/js/multithreading/10_schedule_every_n_sec.js)   | Periodic tasks in a worker; two-way message control (`start`/`stop` commands). |
+| 11 | [barrier](../src/js/multithreading/11_barrier.js)          | One-shot barrier: all threads wait at a sync point before any can continue. |
+| 12 | [thread_local_storage](../src/js/multithreading/12_thread_local_storage.js)   | Workers have isolated module scope — global variables are thread-local by default. |
+| 13 | [thread_pool](../src/js/multithreading/13_thread_pool.js)          | Fixed worker pool processing a task queue; worker reuse without re-spawning. |
+| 14 | [reader_writer_lock](../src/js/multithreading/14_reader_writer_lock_antipattern.js)   | ⚠️ ANTIPATTERN — naive polling reader-writer lock with TOCTOU races on both reader and writer paths. |
+| 15 | [message_channel](../src/js/multithreading/15_message_channel.js)   | `MessageChannel` for direct worker-to-worker communication; `transferList` for ports. |
+| 16 | [transferable](../src/js/multithreading/16_transferable.js)   | Structured clone vs. `ArrayBuffer` transfer (zero-copy, sender detached) vs. `SharedArrayBuffer`. |
+| 17 | [atomics_waitasync](../src/js/multithreading/17_atomics_waitasync.js)   | `Atomics.waitAsync` — non-blocking Promise-based coordination safe on the main thread; contrast with blocking `Atomics.wait`. |
+| 18 | [deadlock_antipattern](../src/js/multithreading/18_deadlock_antipattern.js)   | ⚠️ ANTIPATTERN — two workers each `Atomics.wait` for the other; exits via 3 s timeout. |
+| 19 | [worker_error_handling](../src/js/multithreading/19_worker_error_handling.js)   | `worker.on('error/exit')`; unhandled rejections; `uncaughtException` in worker; cooperative error propagation. |
+| 20 | [worker_lifecycle](../src/js/multithreading/20_worker_lifecycle.js)   | `worker.terminate()` (abrupt); cooperative cancellation via SAB flag; `worker.ref/unref`. |

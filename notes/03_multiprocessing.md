@@ -1,6 +1,8 @@
 ## Multiprocessing
 
-**Multiprocessing** runs work across multiple processes. Each process normally has its own virtual address space, so processes are more isolated from one another than threads, which typically share a process's memory. This isolation reduces accidental shared-state interference and improves fault isolation. Multiprocessing is often used to take advantage of multiple CPU cores for CPU-bound work. Processes communicate through inter-process communication (IPC) mechanisms such as pipes, sockets, message queues, or explicitly shared memory. The trade-off is higher creation, memory, and communication overhead than with threads.
+**Multiprocessing** runs work in several processes, each normally with its own virtual address space. Separate address spaces help contain accidental memory changes and failures. CPU-bound work can run across multiple cores when enough independent work is available.
+
+Processes exchange data through inter-process communication (IPC), such as pipes, sockets, message queues, or explicitly shared memory. Compared with threads, they usually cost more to start and require more memory and communication work. Isolation does not remove the need to coordinate access to shared resources.
 
 ### Introduction to Processes
 
@@ -33,67 +35,50 @@ The relationship between parent and child processes is hierarchical. Here are th
 - Runs independently but can communicate with the parent or other processes through IPC.
 - Terminates when its work finishes, when it exits explicitly, or when it is terminated externally.
 
-**Diagram of Parent and Child Process Relationship**:
+**Process Tree**
 
+```text
+                 Parent process
+                 /            \
+                /              \
+       Child process 1    Child process 2
+       own address space  own address space
 ```
-+-------------------+
-|  Parent Process   |
-|                   |
-|  +-------------+  |
-|  | Child Proc  |  |
-|  | (Process 1) |  |
-|  +-------------+  |
-|                   |
-|  +-------------+  |
-|  | Child Proc  |  |
-|  | (Process 2) |  |
-|  +-------------+  |
-|                   |
-+-------------------+
-```
+
+The tree describes who created each process. Children are separate processes, rather than memory regions inside their parent.
 
 **Creating Child Processes**
 
-Creating child processes involves spawning new processes from an existing parent process. Different programming languages and operating systems provide methods and APIs for process creation. Here are the common approaches:
+Process creation and starting a new program are related but distinct operations:
 
-- In UNIX-based systems, forking involves the parent process creating a child process by duplicating itself, allowing both processes to continue execution independently from the point of the fork.  
-- On both Windows and UNIX systems, spawning allows the parent process to start a new child process, with the child initializing independently rather than inheriting the exact state of the parent.  
-- High-level libraries in programming languages, such as Python's `multiprocessing.Process`, offer simplified abstractions for process creation, reducing the complexity of manually handling system calls.  
-- After `fork()`, the child has a separate virtual address space that initially mirrors the parent's. Operating systems commonly use copy-on-write so unchanged pages can share the same physical memory until either process writes to them.  
-- Spawning generally involves starting a completely new process that does not share memory or state with the parent, making it more isolated but potentially slower to initialize.  
-- On UNIX systems, the `fork()` system call is commonly used for process creation, whereas on Windows, functions like `CreateProcess()` handle similar tasks.  
-- Libraries like Python's `multiprocessing` module provide a consistent interface for process management across different operating systems, abstracting away platform-specific details.  
-- Forking can be efficient when a child needs much of the parent's initial state because copy-on-write delays physical memory duplication until pages are modified.  
-- Spawning is more suitable for processes that require distinct and isolated environments to avoid accidental data interference.  
-- High-level abstractions also handle inter-process communication (IPC) and synchronization mechanisms, such as pipes and queues, making it easier for developers to manage complex workflows.  
-- The choice between forking and spawning often depends on the operating system, programming language, and specific application requirements.  
-- A common UNIX pattern is `fork()` followed by an `exec` family call, which replaces the child's process image with a new program.  
-- Both techniques require careful consideration of process termination and resource cleanup to prevent issues like zombie processes or memory leaks.  
-- High-level libraries often include utilities to manage process lifecycles, allowing developers to terminate or join processes without directly handling low-level details.
+| Operation | What happens? | What to remember |
+|---|---|---|
+| POSIX `fork()` | Creates a child that continues after the same call. The parent receives the child's PID; the child receives `0`. | Ordinary memory is logically separate. Copy-on-write may delay physical copying. Open file descriptors are inherited. |
+| POSIX `exec` family | Replaces the calling process's program image. | It does not create another process. A common pattern is `fork()` followed by `exec()` in the child. |
+| Spawn APIs / Windows `CreateProcess()` | Start a child running a chosen program. | Arguments, environment, and inherited handles must be supplied according to the API. |
+| Python `multiprocessing.Process` | Starts a Python target function using the selected start method. | Startup and serialization rules depend on the method and Python version. |
+
+After `fork()`, changing an ordinary variable in the child does not update the parent's variable. Use IPC or explicitly shared memory to exchange changes. The inherited file descriptors can still refer to the same underlying open files or pipes, so closing unused endpoints is part of process setup.
 
 **Managing Child Processes**
 
-Parent processes have several mechanisms to manage child processes effectively:
+A parent should manage a child's whole lifetime:
 
-- Waiting for a child process to finish execution can be achieved by the parent using system calls like `wait` or `waitpid`, which also allow the parent to collect the child’s exit status to assess if it terminated successfully.  
-- Monitoring the state of a child process enables the parent to identify conditions such as running (actively executing), sleeping (waiting for a resource), stopped (suspended), or zombie (completed but not reaped).  
-- Inter-process communication (IPC) facilitates data or signal exchange between parent and child processes, with mechanisms including pipes, sockets, message queues, and shared memory providing flexible options for different use cases.  
-- Terminating a child process can be necessary when it misbehaves or exceeds a time limit, and this is commonly achieved using system calls like `kill`, which send signals to the target process.  
-- Using the `wait` system call ensures that zombie processes are avoided by allowing the parent to properly reap the terminated child process and free its resources.  
-- Shared memory is a high-speed IPC mechanism that allows parent and child processes to directly access a common memory segment, but it requires careful synchronization to avoid race conditions.  
-- Pipes are commonly used for unidirectional data transfer between processes, while sockets provide bidirectional communication and can work across network boundaries.  
-- The `kill` system call sends specific signals to processes, which can either terminate the process or trigger custom signal handlers, depending on the signal type and the process setup.  
-- Monitoring tools like `/proc` on UNIX systems provide real-time information about the state and resources of running or stopped processes, aiding in diagnostics.  
-- Synchronization primitives like semaphores and mutexes can be used alongside IPC mechanisms to ensure orderly communication and prevent issues like deadlocks.
-  
-Different Process States:
+1. Create the child and set up the IPC channels it needs.
+2. Close unused pipe ends or file descriptors in both processes.
+3. Exchange work and results, with a clear rule for completion and errors.
+4. Request shutdown through a message or signal when appropriate.
+5. Wait for termination, inspect the exit status, and release remaining resources.
 
-| **State**  | **Description**                                         |
-|------------|---------------------------------------------------------|
-| Running    | The process is actively executing.                     |
-| Sleeping   | The process is waiting for a resource.                 |
-| Stopped    | The process is suspended.                              |
-| Zombie     | The process has completed but has not been reaped by the parent. |
+On POSIX systems, `kill()` sends a signal; it does not wait for the target to terminate. `wait()` or `waitpid()` collects a child's termination status and reaps it. Logs should include process identifiers so events from different children can be correlated.
+
+| State | Meaning |
+|---|---|
+| Ready | Able to run, waiting for CPU time. |
+| Running | Executing on a CPU. |
+| Sleeping / blocked | Waiting for an event or resource. |
+| Stopped | Suspended, for example by a signal or debugger. |
+| Zombie | Execution has ended, but termination status has not been collected. |
 
 #### Zombie Process
 
@@ -213,6 +198,16 @@ After Parent Terminates:
 ```
 
 ### Communication Between Processes
+
+Choose an IPC mechanism by what it transfers and how the receiver knows that a complete item has arrived.
+
+| Mechanism | Transfers | Typical coordination requirement |
+|---|---|---|
+| Pipe or TCP socket | A stream of bytes | Define message boundaries and handle short reads and writes. |
+| Message queue | Individual messages | Bound queue capacity and define a shutdown message. |
+| Shared memory | Data in a common memory region | Protect updates and signal when data is ready. |
+
+For a byte stream, one write is not guaranteed to correspond to one read. A receiver might get half a message or several messages together. Use a fixed size, a length prefix, or a delimiter with an escaping rule. A pipe reader sees EOF only after every write endpoint is closed; an inherited endpoint left open can make it wait forever.
 
 Effective multiprocessing often requires processes to communicate with each other to share data, synchronize actions, or coordinate tasks. There are several methods to facilitate this communication, each with its own advantages and limitations. Choosing the appropriate method depends on factors like the amount of data being transferred, the need for synchronization, and whether the processes are running on the same or different machines.
 
@@ -814,7 +809,7 @@ With suitable alignment and layout, `a` and `b` are less likely to share a cache
 | PDF rendering/sanitization sandbox | Render in low-privilege process; return raster | Sandboxed child (seccomp/AppArmor); monitor | Spawn Process; drop privileges; time limits | Mitigate exploit risk from hostile inputs | Timeout -> terminate; clean temp files |
 | Geo-spatial tiling/rasterization | Partition space into tiles; process tiles in parallel | Process pool; memory-mapped files for tiles | ProcessPoolExecutor; chunked tile jobs | Compute & memory intensive; isolation helps | Flush tile cache; join and verify coverage |
 
-### Alternatives to Multiprocessing
+### Related Deployment and Architecture Choices
 
 Multiprocessing is one way to gain parallelism and isolation, but broader architectural approaches can address some of the same goals. The following options are not direct replacements for operating-system processes—in fact, many use processes internally—but they provide different ways to structure, deploy, isolate, or scale work:
 
@@ -1134,28 +1129,32 @@ Here, the semaphore provides ordering: the parent blocks until the child has wri
 
 | No. | Filename                                          | Description                                           |
 |-----|---------------------------------------------------|-------------------------------------------------------|
-| 1   | [basic_process.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/basic_process.cpp) | Create and start a basic process                      |
-| 2   | [multiple_processes.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/multiple_processes.cpp) | Integrate multiple processes for a complex task       |
-| 3   | [exec_process.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/exec_process.cpp) | fork+exec family (execvp/execl/execve), FD_CLOEXEC, pipe+dup2+exec pipeline |
-| 4   | [signals.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/signals.cpp) | POSIX signals: sigaction, sig_atomic_t, SIGCHLD reaping, kill()+SIGUSR1 |
-| 5   | [named_pipe.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/named_pipe.cpp) | Named pipes (FIFOs): mkfifo, unrelated-process IPC, EPIPE handling |
-| 6   | [deadlock_antipattern.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/deadlock_antipattern.cpp) | ⚠️ ANTIPATTERN — circular-wait deadlock; exits via sem_timedwait timeout |
-| 7   | [deadlock_avoidance.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/deadlock_avoidance.cpp) | Lock-ordering fix for deadlock_antipattern.cpp; both processes acquire locks in same order |
-| 8   | [process_pool.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/process_pool.cpp) | Use a process pool to manage concurrent tasks         |
-| 9   | [message_queue.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/message_queue.cpp) | Communicate between processes using a message queue   |
-| 10  | [pipe_communication.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/pipe_communication.cpp) | Communicate between processes using a Pipe            |
-| 11  | [shared_memory.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/shared_memory.cpp) | Use shared memory to store data between processes     |
-| 12  | [shared_array_antipattern.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/shared_array_antipattern.cpp) | ⚠️ ANTIPATTERN — mmap shared array without synchronization (torn reads/writes) |
-| 13  | [process_manager.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/process_manager.cpp) | Manager/worker pattern with fcntl file locking for safe concurrent appends |
-| 14  | [process_mutex.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/process_mutex.cpp) | Use a mutex to synchronize access to shared resources |
-| 15  | [process_semaphore.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/process_semaphore.cpp) | Use a semaphore to control access to shared resources |
-| 16  | [process_barrier.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/process_barrier.cpp) | Use a barrier to synchronize multiple processes       |
-| 17  | [orphan_process.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/orphan_process.cpp) | Demonstrate an orphan process scenario                |
-| 18  | [zombie_process_antipattern.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/zombie_process_antipattern.cpp) | Demonstrate a zombie process scenario                 |
+| 1   | [basic_process.cpp](../src/cpp/multiprocessing/basic_process.cpp) | Create and start a basic process                      |
+| 2   | [multiple_processes.cpp](../src/cpp/multiprocessing/multiple_processes.cpp) | Integrate multiple processes for a complex task       |
+| 3   | [exec_process.cpp](../src/cpp/multiprocessing/exec_process.cpp) | fork+exec family (execvp/execl/execve), FD_CLOEXEC, pipe+dup2+exec pipeline |
+| 4   | [signals.cpp](../src/cpp/multiprocessing/signals.cpp) | POSIX signals: sigaction, sig_atomic_t, SIGCHLD reaping, kill()+SIGUSR1 |
+| 5   | [named_pipe.cpp](../src/cpp/multiprocessing/named_pipe.cpp) | Named pipes (FIFOs): mkfifo, unrelated-process IPC, EPIPE handling |
+| 6   | [deadlock_antipattern.cpp](../src/cpp/multiprocessing/deadlock_antipattern.cpp) | ⚠️ ANTIPATTERN — circular-wait deadlock; exits via sem_timedwait timeout |
+| 7   | [deadlock_avoidance.cpp](../src/cpp/multiprocessing/deadlock_avoidance.cpp) | Lock-ordering fix for deadlock_antipattern.cpp; both processes acquire locks in same order |
+| 8   | [process_pool.cpp](../src/cpp/multiprocessing/process_pool.cpp) | Use a process pool to manage concurrent tasks         |
+| 9   | [message_queue.cpp](../src/cpp/multiprocessing/message_queue.cpp) | Communicate between processes using a message queue   |
+| 10  | [pipe_communication.cpp](../src/cpp/multiprocessing/pipe_communication.cpp) | Communicate between processes using a Pipe            |
+| 11  | [shared_memory.cpp](../src/cpp/multiprocessing/shared_memory.cpp) | Use shared memory to store data between processes     |
+| 12  | [shared_array_antipattern.cpp](../src/cpp/multiprocessing/shared_array_antipattern.cpp) | ⚠️ ANTIPATTERN — mmap shared array without synchronization (torn reads/writes) |
+| 13  | [process_manager.cpp](../src/cpp/multiprocessing/process_manager.cpp) | Manager/worker pattern with fcntl file locking for safe concurrent appends |
+| 14  | [process_mutex.cpp](../src/cpp/multiprocessing/process_mutex.cpp) | Use a mutex to synchronize access to shared resources |
+| 15  | [process_semaphore.cpp](../src/cpp/multiprocessing/process_semaphore.cpp) | Use a semaphore to control access to shared resources |
+| 16  | [process_barrier.cpp](../src/cpp/multiprocessing/process_barrier.cpp) | Use a barrier to synchronize multiple processes       |
+| 17  | [orphan_process.cpp](../src/cpp/multiprocessing/orphan_process.cpp) | Demonstrate an orphan process scenario                |
+| 18  | [zombie_process_antipattern.cpp](../src/cpp/multiprocessing/zombie_process_antipattern.cpp) | Demonstrate a zombie process scenario                 |
 
 #### Examples in Python
 
-In Python, the `multiprocessing` module creates and manages separate processes. Each process has its own interpreter and ordinary memory space, which provides stronger isolation than threads and allows CPU-bound Python code to run in parallel across cores in CPython.
+In Python, the `multiprocessing` module runs work in separate interpreters and address spaces, allowing CPU-bound Python code to use multiple cores.
+
+**Start methods matter.** `spawn` starts a fresh interpreter; `fork` inherits a snapshot of the parent; `forkserver` asks a separate server to fork children. In Python 3.14, `fork` is no longer the default anywhere. Windows and macOS use `spawn`; supported POSIX platforms such as Linux use `forkserver` by default.
+
+For portable examples, define worker functions at module scope, use picklable arguments, and protect process startup with `if __name__ == '__main__':`. Libraries should accept an appropriate multiprocessing context rather than silently changing the application's global start method. See the [Python start-method documentation](https://docs.python.org/3.14/library/multiprocessing.html#contexts-and-start-methods).
 
 ##### Creating Processes
 
@@ -1307,20 +1306,20 @@ Python's `multiprocessing` module provides process-based parallelism and isolati
 
 | No. | Filename                                          | Description                                           |
 |-----|---------------------------------------------------|-------------------------------------------------------|
-| 1   | [basic_process.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/basic_process.py) | Create and start a basic process                      |
-| 2   | [multiple_processes.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/multiple_processes.py) | Integrate multiple processes for a complex task       |
-| 3   | [deadlock.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/deadlock.py) | Demonstrate a deadlock scenario in multiprocessing    |
-| 4   | [process_pool.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/process_pool.py) | Use a process pool to manage concurrent tasks         |
-| 5   | [queue_communication.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/queue_communication.py) | Communicate between processes using a Queue           |
-| 6   | [pipe_communication.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/pipe_communication.py) | Communicate between processes using a Pipe            |
-| 7   | [shared_value.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/shared_value.py) | Use a shared value to store data between processes    |
-| 8   | [shared_array.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/shared_array.py) | Use a shared array to store data between processes    |
-| 9   | [manager.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/manager.py) | Use a manager to share complex data structures        |
-| 10  | [process_lock.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/process_lock.py) | Use a lock to synchronize access to shared resources  |
-| 11  | [process_semaphore.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/process_semaphore.py) | Use a semaphore to control access to shared resources |
-| 12  | [process_barrier.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/process_barrier.py) | Use a barrier to synchronize multiple processes       |
-| 13  | [orphan.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/orphan.py) | Demonstrate an orphan process scenario                |
-| 14  | [zombie.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multiprocessing/zombie.py) | Demonstrate a zombie process scenario                 |
+| 1   | [basic_process.py](../src/python/multiprocessing/basic_process.py) | Create and start a basic process                      |
+| 2   | [multiple_processes.py](../src/python/multiprocessing/multiple_processes.py) | Integrate multiple processes for a complex task       |
+| 3   | [deadlock.py](../src/python/multiprocessing/deadlock.py) | Demonstrate a deadlock scenario in multiprocessing    |
+| 4   | [process_pool.py](../src/python/multiprocessing/process_pool.py) | Use a process pool to manage concurrent tasks         |
+| 5   | [queue_communication.py](../src/python/multiprocessing/queue_communication.py) | Communicate between processes using a Queue           |
+| 6   | [pipe_communication.py](../src/python/multiprocessing/pipe_communication.py) | Communicate between processes using a Pipe            |
+| 7   | [shared_value.py](../src/python/multiprocessing/shared_value.py) | Use a shared value to store data between processes    |
+| 8   | [shared_array.py](../src/python/multiprocessing/shared_array.py) | Use a shared array to store data between processes    |
+| 9   | [manager.py](../src/python/multiprocessing/manager.py) | Use a manager to share complex data structures        |
+| 10  | [process_lock.py](../src/python/multiprocessing/process_lock.py) | Use a lock to synchronize access to shared resources  |
+| 11  | [process_semaphore.py](../src/python/multiprocessing/process_semaphore.py) | Use a semaphore to control access to shared resources |
+| 12  | [process_barrier.py](../src/python/multiprocessing/process_barrier.py) | Use a barrier to synchronize multiple processes       |
+| 13  | [orphan.py](../src/python/multiprocessing/orphan.py) | Demonstrate an orphan process scenario                |
+| 14  | [zombie.py](../src/python/multiprocessing/zombie.py) | Demonstrate a zombie process scenario                 |
 
 #### Examples in JavaScript
 
@@ -1453,21 +1452,21 @@ Node.js's `child_process` module is useful for running external programs, isolat
 
 | No. | Filename                                          | Description                                           |
 |-----|---------------------------------------------------|-------------------------------------------------------|
-| 1   | [basic_process.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/01_basic_process.js) | Create a child process with fork(); show PID and parent PID hierarchy |
-| 2   | [multiple_processes.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/02_multiple_processes.js) | Integrate multiple processes for a complex task       |
-| 3   | [deadlock.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/03_deadlock_antipattern.js) | ⚠️ ANTIPATTERN: circular lock acquisition causing deadlock; auto-detected after timeout |
-| 4   | [process_pool.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/04_process_pool.js) | True process pool: persistent workers receive multiple CPU-bound tasks over IPC |
-| 5   | [queue_communication.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/05_queue_communication.js) | Communicate between processes using a Queue           |
-| 6   | [pipe_communication.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/06_pipe_communication.js) | Communicate between processes using a Pipe            |
-| 7   | [shared_value.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/07_shared_value.js) | Shared counter via parent-managed IPC state proxy     |
-| 8   | [shared_array.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/08_shared_array.js) | Shared array via parent-managed IPC state proxy       |
-| 9   | [manager.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/09_manager.js) | ProcessManager: spawn workers, collect output into a shared file |
-| 10  | [process_lock.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/10_process_lock.js) | File-based mutex (wx flag) for cross-process critical sections |
-| 11  | [process_semaphore.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/11_process_semaphore.js) | IPC-managed counting semaphore to limit concurrent workers |
-| 12  | [process_barrier.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/12_process_barrier.js) | IPC-managed barrier: all workers complete phase 1 before any start phase 2 |
-| 13  | [orphan.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/13_orphan_antipattern.js) | ⚠️ ANTIPATTERN: parent exits before child; child becomes orphan (adopted by init/subreaper) |
-| 14  | [zombie.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/14_zombie.js) | How Node.js/libuv prevents zombie processes via automatic waitpid() on child exit |
-| 15  | [run_commands.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/15_run_commands.js) | exec() vs execFile() vs execSync(); maxBuffer; timeout; ⚠️ shell injection antipattern |
-| 16  | [cluster_module.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/16_cluster_module.js) | cluster module: shared TCP port, load balancing, crash restart, graceful shutdown |
-| 17  | [process_signals.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/17_process_signals.js) | SIGTERM/SIGINT graceful shutdown; forwarding signals from parent to forked children |
-| 18  | [process_restart.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/18_process_restart.js) | Supervisor pattern: automatic restart with exponential backoff and max-restart limit |
+| 1   | [basic_process.js](../src/js/multiprocessing/01_basic_process.js) | Create a child process with fork(); show PID and parent PID hierarchy |
+| 2   | [multiple_processes.js](../src/js/multiprocessing/02_multiple_processes.js) | Integrate multiple processes for a complex task       |
+| 3   | [deadlock.js](../src/js/multiprocessing/03_deadlock_antipattern.js) | ⚠️ ANTIPATTERN: circular lock acquisition causing deadlock; auto-detected after timeout |
+| 4   | [process_pool.js](../src/js/multiprocessing/04_process_pool.js) | True process pool: persistent workers receive multiple CPU-bound tasks over IPC |
+| 5   | [queue_communication.js](../src/js/multiprocessing/05_queue_communication.js) | Communicate between processes using a Queue           |
+| 6   | [pipe_communication.js](../src/js/multiprocessing/06_pipe_communication.js) | Communicate between processes using a Pipe            |
+| 7   | [shared_value.js](../src/js/multiprocessing/07_shared_value.js) | Shared counter via parent-managed IPC state proxy     |
+| 8   | [shared_array.js](../src/js/multiprocessing/08_shared_array.js) | Shared array via parent-managed IPC state proxy       |
+| 9   | [manager.js](../src/js/multiprocessing/09_manager.js) | ProcessManager: spawn workers, collect output into a shared file |
+| 10  | [process_lock.js](../src/js/multiprocessing/10_process_lock.js) | File-based mutex (wx flag) for cross-process critical sections |
+| 11  | [process_semaphore.js](../src/js/multiprocessing/11_process_semaphore.js) | IPC-managed counting semaphore to limit concurrent workers |
+| 12  | [process_barrier.js](../src/js/multiprocessing/12_process_barrier.js) | IPC-managed barrier: all workers complete phase 1 before any start phase 2 |
+| 13  | [orphan.js](../src/js/multiprocessing/13_orphan_antipattern.js) | ⚠️ ANTIPATTERN: parent exits before child; child becomes orphan (adopted by init/subreaper) |
+| 14  | [zombie.js](../src/js/multiprocessing/14_zombie.js) | How Node.js/libuv prevents zombie processes via automatic waitpid() on child exit |
+| 15  | [run_commands.js](../src/js/multiprocessing/15_run_commands.js) | exec() vs execFile() vs execSync(); maxBuffer; timeout; ⚠️ shell injection antipattern |
+| 16  | [cluster_module.js](../src/js/multiprocessing/16_cluster_module.js) | cluster module: shared TCP port, load balancing, crash restart, graceful shutdown |
+| 17  | [process_signals.js](../src/js/multiprocessing/17_process_signals.js) | SIGTERM/SIGINT graceful shutdown; forwarding signals from parent to forked children |
+| 18  | [process_restart.js](../src/js/multiprocessing/18_process_restart.js) | Supervisor pattern: automatic restart with exponential backoff and max-restart limit |
