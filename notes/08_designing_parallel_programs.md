@@ -11,6 +11,8 @@ A useful design framework is **PCAM**, which has four steps.
 
 PCAM is best treated as an **iterative design process**, not a one-way checklist. A mapping decision may reveal that communication is too expensive; agglomeration may then need to change, which can in turn require a different partitioning. The final design should be validated with measurements rather than assumed to be optimal from the decomposition alone.
 
+For example, in an image pipeline, partitioning creates work per image or tile; communication transfers inputs and results; agglomeration batches small tiles; mapping assigns batches to workers. An image may contain many tiles without requiring one permanent thread per tile. Keep the distinction between a **task** (a unit of work) and a **worker** (an execution context) explicit.
+
 Three questions are useful throughout the process:
 
 - **Where is the parallelism?** Identify independent work and the critical dependencies that limit concurrency.
@@ -500,7 +502,9 @@ Graph partitioning is particularly useful for irregular meshes, sparse matrix co
 
 ### 2-D Heat Diffusion
 
-The worked example simulates heat diffusion on a 4096 × 4096 grid for 5,000 time steps using a 5-point stencil in double precision.
+This section is a design exercise for a 4096 × 4096 grid and 5,000 updates using a 5-point stencil in double precision. The repository does not include a complete `heat2d.c` implementation; the commands later in the section illustrate how such a solver could be built and launched.
+
+To turn the exercise into a numerical experiment, also specify initial values, boundary conditions, grid spacing, diffusivity, and a stable time step. The neighbor-average update below illustrates the communication pattern; it is not a general parameterized heat-equation solver.
 
 The program uses two row-major arrays, `A[nx][ny]` and `B[nx][ny]`, which alternate roles each step. This is often called a **ping-pong buffer** pattern.
 
@@ -741,7 +745,7 @@ NUMA placement matters as well. With **first-touch allocation**, each rank initi
 
 ### Runbook
 
-The example implementation is assumed to live in `heat2d.c`.
+The commands below assume you have implemented `heat2d.c` with the listed options. They are illustrative, not commands that work on a fresh clone. The mapping flags shown are Open MPI syntax; adapt placement options to your MPI launcher and allocated hardware.
 
 Expected implementation features:
 
@@ -754,6 +758,8 @@ Expected implementation features:
 - Optional HDF5 checkpoint output.
 
 #### Build and Quick Check
+
+This minimal build command assumes checkpoint support is disabled. Enabling HDF5 also requires the appropriate headers and link flags for a parallel HDF5 installation.
 
 ```bash
 mpicc -O3 -march=native -fopenmp heat2d.c -o heat2d

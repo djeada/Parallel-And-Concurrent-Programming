@@ -542,6 +542,10 @@ A block is a group of threads that can cooperate.
 - Threads in the same block can synchronize with `__syncthreads()`.
 - Blocks are normally scheduled independently, so a conventional kernel should not rely on execution order or direct synchronization between blocks.
 
+A block barrier has block scope. In a conventional kernel, `__syncthreads()` cannot make another block finish first. If one phase needs results from every block, a separate kernel in the same stream is a common way to order the next phase after the first completes.
+
+All participating threads must reach a block barrier consistently. In a reduction, threads whose input index is out of bounds can contribute zero and still take part in the barrier; placing the barrier only inside `if (i < n)` can leave threads following different synchronization paths. See [CUDA block synchronization](https://docs.nvidia.com/cuda/cuda-programming-guide/02-basics/intro-to-cuda-cpp.html).
+
 #### Thread
 
 A thread is the basic programming unit. Each thread has:
@@ -711,6 +715,14 @@ This version addresses two common issues:
 - It uses dynamically sized shared memory so the buffer matches the block size.
 
 The halving reduction shown here assumes a power-of-two block size, such as the `256` threads used in the launch example.
+
+### Occupancy, Utilization, and Performance
+
+**Occupancy** is the number of resident warps on an SM relative to its supported maximum. Registers, shared memory, block size, and hardware limits determine how much work can reside there at once.
+
+Resident warps are not necessarily executing useful instructions every cycle. **Utilization** describes how actively resources are used, while achieved throughput measures useful work per unit of time. Raising occupancy may help hide latency, but can also require reducing per-thread resources or data reuse. A lower-occupancy kernel can be faster. Compare measured runtime and memory traffic rather than optimizing occupancy alone. See [CUDA occupancy guidance](https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#occupancy).
+
+A launch with 1,024 blocks of 256 threads creates 262,144 logical threads. Blocks run as resources become available; that launch does not require all 262,144 threads to be resident simultaneously.
 
 ### Common CUDA Concepts
 

@@ -87,7 +87,9 @@ $$
 E_4 = \frac{3.57}{4} \approx 0.893 = 89.3\%
 $$
 
-An efficiency near $1$ indicates that the additional processors are being used effectively. Efficiency usually decreases as the processor count grows because communication, synchronization, and serial work become more significant.
+An efficiency near $1$ means speedup is close to linear relative to the chosen baseline. It is not the percentage of time each CPU is busy: a processor can be fully occupied by spinning or redundant work and still contribute little useful speedup. Efficiency usually decreases as communication, synchronization, and serial work become more significant.
+
+State what $p$ counts: physical cores, software threads, MPI ranks, or GPUs. For hybrid runs, report ranks and threads per rank separately. Keep the problem size and timed boundaries consistent, and distinguish speedup over the one-worker parallel implementation from speedup over the best sequential implementation.
 
 V. Scalability
 
@@ -298,6 +300,16 @@ where $\alpha$ is the measured serial fraction of the scaled workload. Amdahl's 
 
 Performance measurement should be systematic and reproducible. A single timing result is rarely sufficient because parallel execution is affected by scheduling, cache state, network traffic, frequency scaling, operating-system activity, and input-dependent behavior.
 
+Before collecting timings, decide what is inside the measured region. The following boundaries answer different questions:
+
+| Measurement | Include | Question answered |
+|---|---|---|
+| End-to-end latency | Startup, input, computation, transfers, required waits, and output | How long does the user wait for a completed result? |
+| Computation phase | The selected work and all waits needed to finish it | How well does this phase scale? |
+| Steady-state throughput | Completed items during a stated interval after warm-up | How much work can the running system sustain? |
+
+Do not compare a sequential end-to-end time with a parallel compute-only time. If startup or transfers are excluded, report them separately so the reader can reconstruct the total cost.
+
 Before profiling or monitoring, establish a reliable measurement procedure:
 
 - Use a representative workload and realistic input size.
@@ -393,6 +405,8 @@ MPI_Reduce(
 Taking the **maximum** process time reflects the fact that the parallel phase is not complete until its slowest participating process finishes.
 
 The barrier in this example is appropriate only when the measurement intentionally requires aligned start times. Adding barriers that are not present in the actual algorithm can change behavior and produce an unrealistic measurement.
+
+For asynchronous GPU work, timing just the host's kernel-launch call measures submission overhead. Use GPU events for a device interval, or wait for the relevant work to finish before stopping an end-to-end host timer. Report whether transfers and allocation are included. See [CUDA timing guidance](https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#timing).
 
 #### Strong-Scaling Experiment
 

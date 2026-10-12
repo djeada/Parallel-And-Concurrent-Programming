@@ -19,8 +19,8 @@ MPI follows a **message-passing programming model** in which independent process
 #### Process Model
 
 - In a typical MPI program, the number of processes is chosen when the job starts. Each process runs independently and may be placed on a separate core, share a node with other processes, or run on another node. MPI also supports dynamic process management, though it is less common.
-- Each process has a unique identifier called a **rank**, which ranges from `0` to `N-1`, where `N` is the total number of processes.
-- A communicator defines a group of processes that can communicate with each other. The default communicator, `MPI_COMM_WORLD`, includes all processes.
+- A **rank** identifies a process within a communicator, from `0` to that communicator's size minus one. It is not an operating-system PID. The same process can have different ranks in different communicators.
+- A **communicator** combines a process group with a communication context, which separates its messages from those in other communicators. In the usual `MPI_Init` model, `MPI_COMM_WORLD` contains the processes in the initial job.
 
 #### Communication Types
 
@@ -292,6 +292,19 @@ Non-blocking communication lets a process initiate an operation and continue bef
 | **MPI_Isend**         | Initiates a non-blocking send.                                                  | `void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request`|
 | **MPI_Irecv**         | Initiates a non-blocking receive.                                               | `void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Request *request`|
 | **MPI_Wait**          | Waits for a non-blocking operation to complete.                                 | `MPI_Request *request, MPI_Status *status`                                                          |
+
+#### Buffer Lifetime and Completion
+
+Starting an operation and completing it are separate events:
+
+| Operation | Before completion | After completion |
+|---|---|---|
+| `MPI_Isend` | Keep the send buffer alive and unchanged. | The buffer may be reused; this does not establish that the receiving application has processed the message. |
+| `MPI_Irecv` | Keep the receive buffer alive and do not access it. | The received data may be read. |
+| `MPI_Test` | A false completion flag means the operation is still pending. | A true flag establishes completion. |
+| `MPI_Wait` | The calling thread waits. | The request has completed. |
+
+Compute only on data that does not conflict with pending communication buffers. Nonblocking calls create an opportunity for overlap; they do not guarantee background progress or remove the need to complete requests. See [nonblocking send semantics](https://docs.open-mpi.org/en/main/man-openmpi/man3/MPI_Isend.3.html).
 
 #### Example: Non-Blocking Communication
 
@@ -958,9 +971,9 @@ Use Cases:
 3. Prefer collective operations when the communication pattern is naturally collective; MPI implementations can optimize them for the platform.
 4. Balance work across processes so that some ranks do not remain idle while others become bottlenecks.
 5. Check MPI return codes when using an error handler that returns errors, and handle failures deliberately.
-6. Make sure point-to-point sends and receives are matched consistently by communicator, source/destination, tag, datatype, and count.
+6. Match point-to-point messages by communicator, source/destination, and tag. Use compatible datatype signatures and a receive buffer large enough for the message. The receive count is a capacity, so it can exceed the send count; inspect the actual count with `MPI_Get_count`. See [receive semantics](https://docs.open-mpi.org/en/main/man-openmpi/man3/MPI_Recv.3.html).
 7. Use patterns such as `MPI_Sendrecv` or carefully completed non-blocking operations to avoid common cyclic-wait deadlocks; non-blocking calls alone do not guarantee deadlock freedom.
-8. Free communicators, derived datatypes, requests, and other resources when they are no longer needed.
+8. Complete outstanding communication before reusing its buffers or shutting down. Ordinary nonpersistent requests are released by successful completion through `MPI_Wait` or `MPI_Test`; manage other MPI resources according to their lifetimes.
 9. Design algorithms to reduce communication frequency and volume as process counts grow.
 10. Measure scalability rather than assuming that adding processes will improve performance.
 
@@ -980,22 +993,22 @@ The following C/C++ examples demonstrate different aspects of MPI:
 
 | #  | Example                  | Description                                                                   |
 |----|--------------------------|-------------------------------------------------------------------------------|
-| 1  | [hello_world_mpi.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/mpi/hello_world_mpi.cpp) | Basic MPI program demonstrating initialization, rank identification, and finalization |
-| 2  | [point_to_point_communication.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/mpi/point_to_point_communication.cpp) | Demonstrate point-to-point communication using MPI_Send and MPI_Recv |
-| 3  | [broadcast_communication.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/mpi/broadcast_communication.cpp) | Demonstrate broadcasting data from one process to all processes |
-| 4  | [scatter_gather.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/mpi/scatter_gather.cpp) | Demonstrate scattering and gathering data among processes |
-| 5  | [reduce_operation.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/mpi/reduce_operation.cpp) | Demonstrate reduction operations to combine data from all processes |
-| 6  | [allreduce_operation.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/mpi/allreduce_operation.cpp) | Demonstrate allreduce operation combining reduce and broadcast |
-| 7  | [barrier_synchronization.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/mpi/barrier_synchronization.cpp) | Synchronize all processes using MPI_Barrier |
-| 8  | [non_blocking_communication.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/mpi/non_blocking_communication.cpp) | Demonstrate non-blocking communication with MPI_Isend and MPI_Irecv |
-| 9  | [asynchronous_communication.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/mpi/asynchronous_communication.cpp) | Demonstrate asynchronous communication patterns in MPI |
-| 10 | [sendrecv_operation.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/mpi/sendrecv_operation.cpp) | Demonstrate simultaneous send and receive with MPI_Sendrecv |
-| 11 | [communicators_and_groups.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/mpi/communicators_and_groups.cpp) | Create and manage custom communicators and process groups |
-| 12 | [cartesian_topology.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/mpi/cartesian_topology.cpp) | Create and use Cartesian topology for structured process communication |
-| 13 | [ring_topology.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/mpi/ring_topology.cpp) | Implement ring topology communication pattern |
-| 14 | [derived_data_types.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/mpi/derived_data_types.cpp) | Create and use derived data types for complex data structures |
-| 15 | [parallel_computation_of_pi.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/mpi/parallel_computation_of_pi.cpp) | Compute Pi in parallel using numerical integration |
-| 16 | [parallel_matrix_multiplication.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/mpi/parallel_matrix_multiplication.cpp) | Perform parallel matrix multiplication using MPI |
+| 1  | [hello_world_mpi.cpp](../src/cpp/mpi/hello_world_mpi.cpp) | Basic MPI program demonstrating initialization, rank identification, and finalization |
+| 2  | [point_to_point_communication.cpp](../src/cpp/mpi/point_to_point_communication.cpp) | Demonstrate point-to-point communication using MPI_Send and MPI_Recv |
+| 3  | [broadcast_communication.cpp](../src/cpp/mpi/broadcast_communication.cpp) | Demonstrate broadcasting data from one process to all processes |
+| 4  | [scatter_gather.cpp](../src/cpp/mpi/scatter_gather.cpp) | Demonstrate scattering and gathering data among processes |
+| 5  | [reduce_operation.cpp](../src/cpp/mpi/reduce_operation.cpp) | Demonstrate reduction operations to combine data from all processes |
+| 6  | [allreduce_operation.cpp](../src/cpp/mpi/allreduce_operation.cpp) | Demonstrate allreduce operation combining reduce and broadcast |
+| 7  | [barrier_synchronization.cpp](../src/cpp/mpi/barrier_synchronization.cpp) | Synchronize all processes using MPI_Barrier |
+| 8  | [non_blocking_communication.cpp](../src/cpp/mpi/non_blocking_communication.cpp) | Demonstrate non-blocking communication with MPI_Isend and MPI_Irecv |
+| 9  | [asynchronous_communication.cpp](../src/cpp/mpi/asynchronous_communication.cpp) | Demonstrate asynchronous communication patterns in MPI |
+| 10 | [sendrecv_operation.cpp](../src/cpp/mpi/sendrecv_operation.cpp) | Demonstrate simultaneous send and receive with MPI_Sendrecv |
+| 11 | [communicators_and_groups.cpp](../src/cpp/mpi/communicators_and_groups.cpp) | Create and manage custom communicators and process groups |
+| 12 | [cartesian_topology.cpp](../src/cpp/mpi/cartesian_topology.cpp) | Create and use Cartesian topology for structured process communication |
+| 13 | [ring_topology.cpp](../src/cpp/mpi/ring_topology.cpp) | Implement ring topology communication pattern |
+| 14 | [derived_data_types.cpp](../src/cpp/mpi/derived_data_types.cpp) | Create and use derived data types for complex data structures |
+| 15 | [parallel_computation_of_pi.cpp](../src/cpp/mpi/parallel_computation_of_pi.cpp) | Compute Pi in parallel using numerical integration |
+| 16 | [parallel_matrix_multiplication.cpp](../src/cpp/mpi/parallel_matrix_multiplication.cpp) | Perform parallel matrix multiplication using MPI |
 
 #### Python MPI
 
@@ -1008,17 +1021,17 @@ The following Python examples demonstrate different aspects of MPI:
 
 | #  | Example                  | Description                                                                   |
 |----|--------------------------|-------------------------------------------------------------------------------|
-| 1  | [hello_world_mpi.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/mpi/hello_world_mpi.py) | Basic MPI program demonstrating initialization, rank identification, and finalization |
-| 2  | [point_to_point_communication.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/mpi/point_to_point_communication.py) | Demonstrate point-to-point communication using send and recv |
-| 3  | [broadcast.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/mpi/broadcast.py) | Demonstrate broadcasting data from one process to all processes |
-| 4  | [scatter_and_gather.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/mpi/scatter_and_gather.py) | Demonstrate scattering and gathering data among processes |
-| 5  | [reduce.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/mpi/reduce.py) | Demonstrate reduction operations to combine data from all processes |
-| 6  | [allreduce.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/mpi/allreduce.py) | Demonstrate allreduce operation combining reduce and broadcast |
-| 7  | [barrier_synchronization.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/mpi/barrier_synchronization.py) | Synchronize all processes using barrier |
-| 8  | [non_blocking_communication.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/mpi/non_blocking_communication.py) | Demonstrate non-blocking communication with isend and irecv |
-| 9  | [sendrecv.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/mpi/sendrecv.py) | Demonstrate simultaneous send and receive with sendrecv |
-| 10 | [communicators_and_groups.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/mpi/communicators_and_groups.py) | Create and manage custom communicators and process groups |
-| 11 | [cartesian_topology.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/mpi/cartesian_topology.py) | Create and use Cartesian topology for structured process communication |
-| 12 | [ring_topology.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/mpi/ring_topology.py) | Implement ring topology communication pattern |
-| 13 | [parallel_computation_of_pi.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/mpi/parallel_computation_of_pi.py) | Compute Pi in parallel using numerical integration |
-| 14 | [parallel_matrix_multiplication.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/mpi/parallel_matrix_multiplication.py) | Perform parallel matrix multiplication using MPI |
+| 1  | [hello_world_mpi.py](../src/python/mpi/hello_world_mpi.py) | Basic MPI program demonstrating initialization, rank identification, and finalization |
+| 2  | [point_to_point_communication.py](../src/python/mpi/point_to_point_communication.py) | Demonstrate point-to-point communication using send and recv |
+| 3  | [broadcast.py](../src/python/mpi/broadcast.py) | Demonstrate broadcasting data from one process to all processes |
+| 4  | [scatter_and_gather.py](../src/python/mpi/scatter_and_gather.py) | Demonstrate scattering and gathering data among processes |
+| 5  | [reduce.py](../src/python/mpi/reduce.py) | Demonstrate reduction operations to combine data from all processes |
+| 6  | [allreduce.py](../src/python/mpi/allreduce.py) | Demonstrate allreduce operation combining reduce and broadcast |
+| 7  | [barrier_synchronization.py](../src/python/mpi/barrier_synchronization.py) | Synchronize all processes using barrier |
+| 8  | [non_blocking_communication.py](../src/python/mpi/non_blocking_communication.py) | Demonstrate non-blocking communication with isend and irecv |
+| 9  | [sendrecv.py](../src/python/mpi/sendrecv.py) | Demonstrate simultaneous send and receive with sendrecv |
+| 10 | [communicators_and_groups.py](../src/python/mpi/communicators_and_groups.py) | Create and manage custom communicators and process groups |
+| 11 | [cartesian_topology.py](../src/python/mpi/cartesian_topology.py) | Create and use Cartesian topology for structured process communication |
+| 12 | [ring_topology.py](../src/python/mpi/ring_topology.py) | Implement ring topology communication pattern |
+| 13 | [parallel_computation_of_pi.py](../src/python/mpi/parallel_computation_of_pi.py) | Compute Pi in parallel using numerical integration |
+| 14 | [parallel_matrix_multiplication.py](../src/python/mpi/parallel_matrix_multiplication.py) | Perform parallel matrix multiplication using MPI |

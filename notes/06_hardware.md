@@ -2,6 +2,20 @@
 
 Parallel computing uses multiple hardware execution resources to make progress on more than one operation at a time. Those resources may exist inside one CPU core, across several cores or processor sockets, on a GPU, or across multiple networked machines. The useful performance gain depends not only on how much work can run in parallel, but also on memory bandwidth, communication cost, synchronization, and how well the workload matches the hardware.
 
+### Hardware and Software Vocabulary
+
+A software thread is work to schedule; a hardware execution resource is where that work runs.
+
+| Term | Meaning | What it does not imply |
+|---|---|---|
+| Physical CPU core | An execution engine with its own architectural state. | Unlimited memory bandwidth for every core. |
+| Hardware thread / logical CPU | An execution context exposed by a core, for example through SMT. | A separate physical core. |
+| Software thread | A path of execution managed by an OS or runtime. | A dedicated core for its whole lifetime. |
+| SIMD lane | One data element's position in a vector operation. | An independently scheduled OS thread. |
+| GPU thread | A logical instance of kernel code. | A dedicated execution lane that is always running. |
+
+For example, eight physical cores with two SMT contexts each expose sixteen logical CPUs. Sixteen busy software threads can use those contexts, but still share eight cores' execution resources. A GPU can launch more logical threads than it has resources to execute simultaneously.
+
 ### Ways of Achieving Parallelism
 
 Hardware and software expose parallelism at several levels:
@@ -65,6 +79,8 @@ Coherence has a performance cost:
 - A cache line may move repeatedly between cores when different cores write it.
 - **False sharing** occurs when cores update different variables that happen to occupy the same cache line.
 - Read-mostly data is generally easier to scale than heavily shared writable data.
+
+False sharing can slow down a program even when it has no data race. Two threads may safely update separate atomic counters, yet repeatedly transfer ownership of the same cache line if those counters are adjacent. Separating frequently written per-worker data can reduce that traffic; measure before adding padding.
 
 Cache coherence is not the same as a programming-language memory model. Correct concurrent programs still need appropriate synchronization such as atomics, locks, barriers, or message passing.
 

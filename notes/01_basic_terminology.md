@@ -82,16 +82,18 @@ Characteristics of Asynchronous Execution:
 
 ### Comparison of Execution Paradigms
 
-These descriptions can apply together. A program can use synchronous calls in several parallel threads, or handle asynchronous operations concurrently on a single thread.
+These terms answer different questions. Describe a program along each axis rather than treating the terms as six competing designs.
 
-| Characteristic              | Sequential                                                                                                                                         | Non-Sequential                                                                                                                      | Concurrent                                                                                                                        | Parallel                                                                                                                           | Asynchronous                                                                                                                       | Synchronous                                                                                                                         |
-|---------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| Definition                  | Tasks are executed one after another in a specific order.                                                                                               | Tasks may overlap or change order where dependencies allow.                                                                                       | Multiple tasks make progress within overlapping time periods.                                                                         | Multiple tasks are executed simultaneously on multiple processors.                                                                     | Tasks are initiated and proceed independently of other tasks, often with callbacks or promises to handle completion.                    | The caller waits for an operation to complete before continuing.                                           |
-| Order of Execution          | Strict and predictable order.                                                                                                                           | Flexible order.                                                                                                                         | Overlapping time periods, but not necessarily simultaneous.                                                                           | Simultaneously on different processors.                                                                                                | Initiated independently, can complete at any time.                                                                                      | Calls complete before the caller continues; other threads may still run.                                                |
-| Task Scheduling             | Simple and straightforward.                                                                                                                             | Flexible, can change dynamically.                                                                                                       | Managed by the scheduler to ensure progress of all tasks.                                                                             | Managed by the system, often requires multiple processors.                                                                             | Can be scheduled to run at any time, often managed by event-driven programming models.                                                  | The calling thread waits; other threads may be scheduled.                                                                               |
-| Complexity                  | Low complexity, easy to design and debug.                                                                                                               | More complex due to flexibility.                                                                                                        | Moderate complexity, requires careful management of resources.                                                                        | High complexity, requires handling of synchronization and resource sharing.                                                            | Moderate to high complexity, requires handling of callbacks, promises, or other mechanisms to manage independent tasks.                 | Low complexity, but can lead to inefficiencies if tasks have to wait for long periods.                                                   |
-| Performance                 | Can be slower due to waiting for each task to complete before starting the next.                                                                         | Can be efficient if tasks are independent and do not need a specific order.                                                            | Can improve performance by overlapping tasks, but may involve context switching overhead.                                              | Can significantly improve performance for CPU-bound tasks by using multiple processors.                                                 | Can improve responsiveness and resource utilization, especially in I/O-bound tasks.                                                     | Can lead to inefficiencies if tasks involve a lot of waiting, as each task has to wait for the previous one to complete.                  |
-| Use Cases                   | Simple scripts, batch processing where order is crucial.                                                                                                | Event-driven systems, where tasks can be handled as they come.                                                                         | Multithreading applications, GUI applications where multiple tasks need to be handled concurrently.                                   | High-performance computing, data processing tasks that can be divided into smaller, independent tasks.                                  | Web servers handling multiple requests, applications with I/O operations where waiting for responses would be inefficient.              | Systems where order of operations is crucial and tasks are dependent on the completion of previous tasks, such as transaction systems. |
+| Question | Terms | Example |
+|---|---|---|
+| Must one task finish before the next starts? | Sequential / non-sequential | Read two independent files in either order, then combine their contents. |
+| Can several tasks be in progress? | Concurrent | One event loop manages several pending downloads. |
+| Is work executing at the same instant? | Parallel | Two CPU cores each sort a different part of an array. |
+| When does the caller receive the result? | Synchronous / asynchronous | A call returns the result directly, or returns a handle whose result arrives later. |
+
+For example, two threads can make synchronous network calls while their waits overlap. That program is concurrent even though each call is synchronous. Conversely, an async program that starts and awaits one download before starting the next still downloads sequentially.
+
+**Blocking** describes what happens to the executing thread. A blocking read may put that thread to sleep until data arrives. A nonblocking read returns immediately if data is unavailable; the program must retry later or arrange a readiness notification. Nonblocking I/O and asynchronous completion are related mechanisms, but the terms do not describe exactly the same API behavior.
 
 ## Process
 
@@ -126,7 +128,7 @@ A process can be in one of several states during its lifecycle. The three primar
 
 - A process is running when one of its threads is executing on a CPU. A process with several threads may use more than one core at once.
 - When a process is in the ready state, it is waiting for permission from the OS to use the CPU. It is ready to run but must wait for the CPU to become available. Multiple processes can be in the ready state simultaneously, queued up and waiting their turn.
-- The waiting (or blocked) state occurs when a process is waiting for an external event to occur, such as user input, disk access, or a network response. In this state, the process is not using the CPU, allowing other processes to be executed in the meantime.
+- A thread is waiting (or blocked) when it cannot continue until an event occurs, such as input arriving or a lock becoming available. Other ready threads can use the CPU during that wait. In a multithreaded process, one thread can be blocked while another is running.
 
 ## Thread
 
@@ -186,18 +188,16 @@ Differences Between Processes and Threads:
 | Creation Overhead   | Process creation has higher overhead because it involves allocating a separate memory space and other resources. | Thread creation has lower overhead since threads share resources and memory with the parent process. |
 | Context Switching   | Context switching between processes involves more overhead due to switching separate memory spaces and state information. | Context switching between threads is faster and involves less overhead because they share the same memory space and resources. |
 
-Here's a table comparing common life cycle stages of threads and processes. The exact names vary by OS or runtime; suspended states appear in some models that include moving processes out of main memory.
+The following states form a useful scheduling model. Operating systems and language runtimes may use different names or expose additional states.
 
-| Life Cycle Stage       | Thread Life Cycle                        | Process Life Cycle                     |
-|------------------------|------------------------------------------|----------------------------------------|
-| New                | Thread is in the process of being created. | Process is in the process of being created. |
-| Ready              | Thread is ready to run when CPU is available. | Process is ready to execute when CPU is available. |
-| Running            | Thread is actively executing instructions. | Process is actively executing instructions. |
-| Waiting/Blocked    | Thread is waiting for resources or I/O.  | Process is waiting for resources or I/O. |
-| Timed Waiting      | Thread is waiting for a specified time.  | (Not typically a separate state, but can be considered under waiting) |
-| Terminated         | Thread has completed execution or is aborted. | Process has completed execution or is terminated. |
-| Ready Suspended    | (Not typically a separate state, but can be inferred from 'Ready' and 'Blocked') | Process is in secondary storage and ready to execute when moved to main memory. |
-| Blocked Suspended  | (Not typically a separate state, but can be inferred from 'Blocked') | Process is in secondary storage and waiting for an event before moving to main memory. |
+| State | Meaning | What allows progress? |
+|---|---|---|
+| Ready | Able to execute, but not currently on a CPU. | The scheduler assigns CPU time. |
+| Running | Currently executing instructions. | Execution continues until a wait, preemption, or exit. |
+| Waiting / blocked | Unable to continue yet. | An event occurs, a timer expires, or a resource becomes available. |
+| Terminated | Execution has ended. | No further execution; owners still collect results and release resources. |
+
+A stopped process, such as one suspended by a debugger or a signal, is distinct from a process waiting for I/O. A POSIX zombie has already terminated: only its exit information remains for the parent to collect. See [process lifetimes](03_multiprocessing.md#zombie-process) for the distinction between zombies and orphans.
 
 Practical Implications:
 
