@@ -17,15 +17,38 @@
  */
 
 #include <arpa/inet.h>
-#include <cstring>
+#include <algorithm>
+#include <cerrno>
+#include <csignal>
 #include <iostream>
 #include <netinet/in.h>
 #include <string>
+#include <stdexcept>
 #include <sys/socket.h>
 #include <thread>
 #include <unistd.h>
 
 constexpr int BUFFER_SIZE = 1024;
+
+// TCP is a byte stream: a successful send may write only part of the buffer.
+bool send_all(int fd, const char* data, size_t size) {
+    while (size > 0) {
+        ssize_t bytes = send(fd, data, size, 0);
+        if (bytes < 0 && errno == EINTR) continue;
+        if (bytes <= 0) return false;
+        data += bytes;
+        size -= bytes;
+    }
+    return true;
+}
+
+ssize_t receive(int fd, char* data, size_t size) {
+    ssize_t bytes;
+    do {
+        bytes = recv(fd, data, size, 0);
+    } while (bytes < 0 && errno == EINTR);
+    return bytes;
+}
 
 class Server {
 public:
@@ -67,14 +90,13 @@ private:
     void handle_client(int client_fd) {
         char buffer[BUFFER_SIZE];
         while (true) {
-            memset(buffer, 0, BUFFER_SIZE);
-            int bytes = recv(client_fd, buffer, BUFFER_SIZE, 0);
+            ssize_t bytes = receive(client_fd, buffer, sizeof(buffer));
             if (bytes <= 0) break;
 
             std::cout << "Received: ";
             std::cout.write(buffer, bytes);
             std::cout << "\n";
-            send(client_fd, buffer, bytes, 0);  // Echo back
+            if (!send_all(client_fd, buffer, bytes)) break;  // Echo back
         }
         close(client_fd);
     }
@@ -102,14 +124,13 @@ public:
     void run() {
         char buffer[BUFFER_SIZE];
         while (true) {
-            memset(buffer, 0, BUFFER_SIZE);
-            int bytes = recv(socket_fd_, buffer, BUFFER_SIZE, 0);
+            ssize_t bytes = receive(socket_fd_, buffer, sizeof(buffer));
             if (bytes <= 0) break;
 
             std::cout << "Task: ";
             std::cout.write(buffer, bytes);
             std::cout << "\n";
-            send(socket_fd_, buffer, bytes, 0);
+            if (!send_all(socket_fd_, buffer, bytes)) break;
         }
     }
 
@@ -141,16 +162,25 @@ public:
         while (true) {
             std::cout << "Enter task: ";
             if (!std::getline(std::cin, input)) break;
+            // An empty send produces no bytes and therefore no echo response.
+            if (input.empty()) continue;
 
-            send(socket_fd_, input.c_str(), input.length(), 0);
+            if (!send_all(socket_fd_, input.data(), input.size())) {
+                throw std::runtime_error("Sending task failed");
+            }
 
-            memset(buffer, 0, BUFFER_SIZE);
-            int bytes = recv(socket_fd_, buffer, BUFFER_SIZE, 0);
-            if (bytes <= 0) break;
+            // The echo has exactly the task's length, possibly across many reads.
+            std::string result;
+            while (result.size() < input.size()) {
+                ssize_t bytes = receive(socket_fd_, buffer,
+                    std::min(sizeof(buffer), input.size() - result.size()));
+                if (bytes <= 0) {
+                    throw std::runtime_error("Connection closed before the full reply");
+                }
+                result.append(buffer, bytes);
+            }
 
-            std::cout << "Result: ";
-            std::cout.write(buffer, bytes);
-            std::cout << "\n";
+            std::cout << "Result: " << result << "\n";
         }
     }
 
@@ -159,6 +189,9 @@ private:
 };
 
 int main(int argc, char* argv[]) {
+    // Report failed sends through their return value instead of terminating
+    // every connection when a single peer disconnects during a write.
+    std::signal(SIGPIPE, SIG_IGN);
     if (argc < 3) {
         std::cerr << "Usage: " << argv[0] << " [server|worker|client] port\n";
         return 1;

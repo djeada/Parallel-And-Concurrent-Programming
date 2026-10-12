@@ -145,6 +145,63 @@ class CppRegressions(unittest.TestCase):
             _, stderr = process.communicate(timeout=3)
         self.assertNotIn(b"ERROR: AddressSanitizer", stderr)
 
+    def test_socket_client_handles_empty_tasks_and_fragmented_replies(self):
+        task = "A" * 4096
+        with socket.socket() as listener:
+            listener.bind(("127.0.0.1", 0))
+            listener.listen()
+            listener.settimeout(3)
+            port = listener.getsockname()[1]
+
+            def echo():
+                with listener.accept()[0] as connection:
+                    connection.settimeout(3)
+                    # A blank input line must not block waiting for an echo.
+                    received = b""
+                    while len(received) < len(task):
+                        chunk = connection.recv(4096)
+                        if not chunk:
+                            return
+                        received += chunk
+                    self.assertEqual(received, task.encode())
+                    # Force multiple reads rather than relying on TCP timing.
+                    for offset in range(0, len(received), 256):
+                        connection.sendall(received[offset:offset + 256])
+                        time.sleep(0.002)
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                server = executor.submit(echo)
+                result = subprocess.run(
+                    [str(self.binaries["distributed"]), "client", str(port)],
+                    input="\n" + task + "\n", capture_output=True, text=True, timeout=5,
+                )
+                server.result(timeout=4)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Result: " + task + "\n", result.stdout)
+
+    def test_socket_client_reports_a_truncated_reply(self):
+        with socket.socket() as listener:
+            listener.bind(("127.0.0.1", 0))
+            listener.listen()
+            listener.settimeout(3)
+            port = listener.getsockname()[1]
+
+            def echo_part():
+                with listener.accept()[0] as connection:
+                    connection.settimeout(3)
+                    self.assertTrue(connection.recv(1024))
+                    connection.sendall(b"ta")
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                server = executor.submit(echo_part)
+                result = subprocess.run(
+                    [str(self.binaries["distributed"]), "client", str(port)],
+                    input="task\n", capture_output=True, text=True, timeout=5,
+                )
+                server.result(timeout=4)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("Connection closed before the full reply", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
