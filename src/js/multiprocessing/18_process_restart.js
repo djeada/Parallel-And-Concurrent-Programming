@@ -50,8 +50,7 @@ if (process.argv[2] === "worker") {
     console.log(`  [Worker ${workerId}] Running stably on run #${runNum}...`);
     setTimeout(() => {
       console.log(`  [Worker ${workerId}] Completing cleanly on run #${runNum}`);
-      process.send({ type: "done" });
-      process.exit(0);
+      process.send({ type: "done" }, () => process.disconnect());
     }, 1500);
   }
 
@@ -60,89 +59,66 @@ if (process.argv[2] === "worker") {
 // ---------------------------------------------------------------------------
 } else {
   let shuttingDown = false;
+  let currentWorker = null;
+  let restartTimer = null;
+  let consecutiveCrashes = 0;
+  let runNum = 0;
 
   console.log("=== Supervisor / Auto-restart with Backoff Demo ===\n");
-  console.log(`Max consecutive restarts : ${MAX_RESTARTS}`);
-  console.log(`Backoff range            : ${BACKOFF_BASE_MS}ms – ${BACKOFF_CAP_MS}ms`);
-  console.log(`Healthy run threshold    : ${HEALTHY_RUN_MS}ms\n`);
+  console.log(`Max consecutive restarts: ${MAX_RESTARTS}`);
+  console.log(`Healthy run threshold: ${HEALTHY_RUN_MS}ms\n`);
 
-  // Backoff delay: min(cap, base * 2^attempt) — exponential with a ceiling.
-  const backoffMs = (attempt) =>
-    Math.min(BACKOFF_CAP_MS, BACKOFF_BASE_MS * Math.pow(2, attempt));
+  const spawnWorker = () => {
+    if (shuttingDown) return;
+    runNum++;
+    const startedAt = Date.now();
+    console.log(`[Supervisor] Spawning worker 0 (run #${runNum})...`);
+    const worker = fork(__filename, ["worker", "0", runNum.toString()]);
+    currentWorker = worker;
 
-  const supervise = (workerId) => {
-    let consecutiveCrashes = 0;
-    let runNum = 0;
-    let startedAt = 0;
-
-    const spawn = () => {
-      runNum++;
-      startedAt = Date.now();
-      console.log(`[Supervisor] Spawning worker ${workerId} (run #${runNum})...`);
-
-      const worker = fork(__filename, [
-        "worker",
-        workerId.toString(),
-        runNum.toString(),
-      ]);
-
-      worker.on("message", (msg) => {
-        if (msg.type === "done") {
-          console.log(`[Supervisor] Worker ${workerId} completed successfully.`);
-          console.log("=== Demo Complete ===");
-          shuttingDown = true;
-          process.exit(0);
-        }
-      });
-
-      worker.on("exit", async (code) => {
-        if (shuttingDown) return;
-
-        const elapsed = Date.now() - startedAt;
-
-        if (code === 0) {
-          consecutiveCrashes = 0; // clean exit — reset crash counter
-          return;
-        }
-
-        // It was a crash (non-zero exit code).
-        if (elapsed >= HEALTHY_RUN_MS) {
-          // Ran long enough to be considered healthy; reset crash counter.
-          console.log(
-            `[Supervisor] Worker ${workerId} crashed after ${elapsed}ms — ` +
-            `resetting crash counter (was healthy)`
-          );
-          consecutiveCrashes = 0;
-        } else {
-          consecutiveCrashes++;
-        }
-
-        if (consecutiveCrashes > MAX_RESTARTS) {
-          console.error(
-            `[Supervisor] Worker ${workerId} exceeded max restarts ` +
-            `(${MAX_RESTARTS}). Giving up.`
-          );
-          process.exit(1);
-        }
-
-        const delay = backoffMs(consecutiveCrashes - 1);
-        console.log(
-          `[Supervisor] Worker ${workerId} crashed (code=${code}, crash #${consecutiveCrashes}). ` +
-          `Restarting in ${delay}ms...`
-        );
-        await sleep(delay);
-        spawn();
-      });
-    };
-
-    spawn();
+    worker.on("message", (msg) => {
+      if (msg.type === "done") {
+        console.log("[Supervisor] Worker 0 reported completion; waiting for exit.");
+      }
+    });
+    worker.on("error", (error) => {
+      console.error("Worker error:", error.message);
+      shuttingDown = true;
+      process.exitCode = 1;
+      worker.kill("SIGTERM");
+    });
+    worker.on("exit", (code) => {
+      currentWorker = null;
+      if (shuttingDown) return;
+      if (code === 0) {
+        shuttingDown = true;
+        console.log("[Supervisor] Worker completed successfully.\n=== Demo Complete ===");
+        return;
+      }
+      const elapsed = Date.now() - startedAt;
+      consecutiveCrashes = elapsed >= HEALTHY_RUN_MS ? 0 : consecutiveCrashes + 1;
+      if (consecutiveCrashes > MAX_RESTARTS) {
+        console.error("Worker exceeded max restarts. Giving up.");
+        shuttingDown = true;
+        process.exitCode = 1;
+        return;
+      }
+      const delay = Math.min(BACKOFF_CAP_MS,
+        BACKOFF_BASE_MS * 2 ** Math.max(0, consecutiveCrashes - 1));
+      console.log(`[Supervisor] Worker crashed (code=${code}); restarting in ${delay}ms...`);
+      restartTimer = setTimeout(spawnWorker, delay);
+    });
   };
 
-  supervise(0);
-
-  process.on("SIGTERM", () => {
-    console.log("[Supervisor] SIGTERM — shutting down");
+  const shutdown = () => {
+    if (shuttingDown) return;
+    console.log("[Supervisor] Shutting down worker and cancelling restarts");
     shuttingDown = true;
-    process.exit(0);
-  });
+    clearTimeout(restartTimer);
+    // Let Node exit naturally after the child has actually exited.
+    currentWorker?.kill("SIGTERM");
+  };
+  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", shutdown);
+  spawnWorker();
 }

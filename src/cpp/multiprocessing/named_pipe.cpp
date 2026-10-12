@@ -49,6 +49,7 @@ static void run_writer() {
     int fd = open(FIFO_PATH, O_WRONLY);
     if (fd < 0) {
         perror("open(FIFO_PATH, O_WRONLY)");
+        std::cout.flush();
         _exit(1);
     }
 
@@ -81,6 +82,7 @@ static void run_reader() {
     int fd = open(FIFO_PATH, O_RDONLY);
     if (fd < 0) {
         perror("open(FIFO_PATH, O_RDONLY)");
+        std::cout.flush();
         _exit(1);
     }
 
@@ -111,18 +113,22 @@ static void run_demo() {
     std::cout << "Created FIFO at " << FIFO_PATH << "\n\n";
 
     // Fork writer first; it will block on open() until reader appears
+    std::cout.flush();
     pid_t writer_pid = fork();
     if (writer_pid < 0) { perror("fork"); return; }
     if (writer_pid == 0) {
         run_writer();
+        std::cout.flush();
         _exit(0);
     }
 
     // Fork reader; once both ends open, data flows
+    std::cout.flush();
     pid_t reader_pid = fork();
     if (reader_pid < 0) { perror("fork"); return; }
     if (reader_pid == 0) {
         run_reader();
+        std::cout.flush();
         _exit(0);
     }
 

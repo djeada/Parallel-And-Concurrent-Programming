@@ -18,6 +18,9 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 class AsyncQueue {
   constructor(maxSize = Infinity) {
+    if (maxSize !== Infinity && (!Number.isInteger(maxSize) || maxSize < 1)) {
+      throw new RangeError("Queue capacity must be a positive integer or Infinity");
+    }
     this.maxSize = maxSize;
     this.items = [];
     this.waitingConsumers = [];
@@ -25,17 +28,14 @@ class AsyncQueue {
   }
 
   async put(item) {
-    // If queue is full, wait for space
-    while (this.items.length >= this.maxSize) {
-      await new Promise((resolve) => this.waitingProducers.push(resolve));
-    }
-
     // If consumers are waiting, give directly to consumer
     if (this.waitingConsumers.length > 0) {
       const resolve = this.waitingConsumers.shift();
       resolve(item);
-    } else {
+    } else if (this.items.length < this.maxSize) {
       this.items.push(item);
+    } else {
+      return new Promise((resolve) => this.waitingProducers.push({ item, resolve }));
     }
   }
 
@@ -45,8 +45,12 @@ class AsyncQueue {
       const item = this.items.shift();
       // Notify one waiting producer if any
       if (this.waitingProducers.length > 0) {
-        const resolve = this.waitingProducers.shift();
-        resolve();
+        // Reserve the freed slot immediately for the oldest producer.
+        // Merely waking it lets another producer steal the slot, or leaves
+        // other producers asleep when a consumer arrives before it resumes.
+        const producer = this.waitingProducers.shift();
+        this.items.push(producer.item);
+        producer.resolve();
       }
       return item;
     }
@@ -123,4 +127,5 @@ const main = async () => {
   console.log("\n=== All producers and consumers finished ===");
 };
 
-main().catch(console.error);
+if (require.main === module) main().catch(console.error);
+module.exports = { AsyncQueue };

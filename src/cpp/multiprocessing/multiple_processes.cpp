@@ -39,6 +39,7 @@ int main() {
     std::vector<pid_t> children;
 
     // Create first child
+    std::cout.flush();
     pid_t pid1 = fork();
     if (pid1 == 0) {
         task_a();
@@ -47,6 +48,7 @@ int main() {
     children.push_back(pid1);
 
     // Create second child
+    std::cout.flush();
     pid_t pid2 = fork();
     if (pid2 == 0) {
         task_b();

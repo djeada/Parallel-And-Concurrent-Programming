@@ -16,7 +16,7 @@
 const { Worker, isMainThread, parentPort } = require("worker_threads");
 const os = require("os");
 
-const NUM_CPUS = os.cpus().length;
+const NUM_CPUS = Math.max(1, Math.min(os.availableParallelism?.() ?? os.cpus().length, 4));
 
 const merge = (left, right) => {
   const result = new Array(left.length + right.length);
@@ -56,6 +56,7 @@ const mergeSort = (arr) => {
 };
 
 const parallelMergeSort = async (arr) => {
+  if (arr.length <= 1) return [...arr];
   const chunkSize = Math.ceil(arr.length / NUM_CPUS);
   const chunks = [];
 
@@ -71,8 +72,13 @@ const parallelMergeSort = async (arr) => {
       
       worker.postMessage(chunk);
       
-      worker.on("message", (sortedChunk) => {
+      let received = false;
+      worker.once("message", (sortedChunk) => {
+        received = true;
         resolve(sortedChunk);
+      });
+      worker.once("exit", (code) => {
+        if (!received) reject(new Error(`Sort worker exited before returning a result (code ${code})`));
       });
       
       worker.on("error", reject);
@@ -134,10 +140,16 @@ const main = async () => {
 };
 
 if (isMainThread) {
-  main();
+  if (require.main === module) main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
 } else {
   parentPort.once("message", (arr) => {
     const sorted = mergeSort(arr);
     parentPort.postMessage(sorted);
+    parentPort.close();
   });
 }
+
+module.exports = { mergeSort, parallelMergeSort };

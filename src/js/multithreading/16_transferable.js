@@ -82,18 +82,21 @@ if (isMainThread) {
     const sab = new SharedArrayBuffer(BUFFER_SIZE);
     const view = new Int32Array(sab);
     view.fill(0);
+    Atomics.store(view, 0, 7);
 
     const w = new Worker(__filename, { workerData: { demo: "shared", sab } });
     const t = Date.now();
-    // No postMessage needed for the SAB — it was in workerData
-    // Write a value; the worker will see it
-    view[0] = 7;
+    // The initial value is published before the worker starts.
 
-    w.on("message", ({ workerRead }) => {
-      console.log(`[shared]   main wrote view[0]=7, worker read view[0]=${workerRead}`);
-      view[0] = 100;
-      console.log(`[shared]   main updated view[0]=100, worker will see it too`);
-      check();
+    w.on("message", ({ workerRead, phase }) => {
+      if (phase === "initial") {
+        console.log(`[shared]   main wrote view[0]=7, worker read view[0]=${workerRead}`);
+        Atomics.store(view, 0, 100);
+        w.postMessage("read updated value");
+      } else {
+        console.log(`[shared]   main updated view[0]=100, worker read view[0]=${workerRead}`);
+        check();
+      }
     });
     w.on("error", (e) => console.error("shared worker error:", e.message));
   }
@@ -111,6 +114,10 @@ if (isMainThread) {
     const view = new Int32Array(sab);
     // Read value the main thread wrote before sending the ready signal
     const workerRead = Atomics.load(view, 0);
-    parentPort.postMessage({ workerRead });
+    parentPort.postMessage({ workerRead, phase: "initial" });
+    parentPort.once("message", () => {
+      parentPort.postMessage({ workerRead: Atomics.load(view, 0), phase: "updated" });
+      parentPort.close();
+    });
   }
 }

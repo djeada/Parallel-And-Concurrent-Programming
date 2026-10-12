@@ -85,7 +85,7 @@ if (process.argv[2] === "child") {
     console.error(`Child process error: ${error.message}`);
   });
 
-  childProcess.on("exit", (code) => {
+  childProcess.on("close", (code) => {
     console.log(`\n=== Summary ===`);
     console.log(`Child exited with code: ${code}`);
     console.log(`Items received: ${receivedItems.length}`);

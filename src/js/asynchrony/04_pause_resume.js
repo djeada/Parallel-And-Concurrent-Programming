@@ -2,7 +2,7 @@
  * Pause and Resume Asynchronous Operations
  * 
  * This script demonstrates how to pause and resume function execution using
- * setInterval, clearInterval, and AbortController in Node.js.
+ * setInterval and clearInterval in Node.js.
  * 
  * Key concepts:
  * - setInterval/clearInterval for periodic tasks
@@ -25,6 +25,7 @@ class PausableTask {
 
   start() {
     if (!this.intervalId) {
+      this.isPaused = false;
       console.log("Task started");
       this.intervalId = setInterval(() => {
         this.taskFn(this.step);
@@ -66,6 +67,7 @@ class PausableTask {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
+    this.isPaused = false;
     console.log(`Task stopped at step ${this.step}`);
   }
 }
@@ -89,13 +91,18 @@ const main = () => {
     task.toggle();
   });
 
-  // Graceful shutdown
+  // EOF must stop the timer just like an explicit shutdown.
+  let stopped = false;
   const cleanup = () => {
+    if (stopped) return;
+    stopped = true;
     task.stop();
     rl.close();
-    process.exit(0);
+    process.removeListener("SIGINT", cleanup);
+    process.removeListener("SIGTERM", cleanup);
   };
 
+  rl.on("close", cleanup);
   process.on("SIGINT", cleanup);
   process.on("SIGTERM", cleanup);
 };

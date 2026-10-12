@@ -103,16 +103,20 @@ const demoForgotAwait = async () => {
 
   // ❌ BAD: try/catch around sync code doesn't catch async errors
   let caughtAnything = false;
+  // Wait for the actual unhandled rejection before removing the demo handler.
+  // A fixed sleep can expire before the failing operation rejects.
+  const unhandled = new Promise((resolve) => {
+    process.once("unhandledRejection", (reason) => {
+      console.log(`  Async rejection escaped try/catch: ${reason.message}`);
+      resolve();
+    });
+  });
   try {
-    flakyOp("will-throw-but-not-caught"); // no await — rejection escapes catch block
+    flakyOp("will-throw-but-not-caught", 1); // deterministic rejection, no await
   } catch (_) {
     caughtAnything = true;
   }
-  // Install temporary handler to catch the escapee
-  const onUnhandled2 = () => {};
-  process.once("unhandledRejection", onUnhandled2);
-  await sleep(10);
-  process.removeListener("unhandledRejection", onUnhandled2);
+  await unhandled;
   console.log(`  BAD: try/catch caught synchronous throw? ${caughtAnything} (always false)`);
 
   // ✅ GOOD: await inside try/catch

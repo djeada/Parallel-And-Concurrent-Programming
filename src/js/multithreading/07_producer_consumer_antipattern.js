@@ -54,6 +54,12 @@ if (isMainThread) {
   let consumedCount = 0;
   const totalItems = NUM_PRODUCERS * ITEMS_PER_PRODUCER;
 
+  // Bound the demonstration even if the intentional races strand a consumer.
+  const demoTimeout = setTimeout(() => {
+    console.log(`\nRace demo timed out: produced ${producedCount}, consumed ${consumedCount}`);
+    workers.forEach((worker) => worker.terminate());
+  }, 8000);
+
   // Create producers
   for (let i = 0; i < NUM_PRODUCERS; i++) {
     const worker = new Worker(__filename, {
@@ -98,6 +104,7 @@ if (isMainThread) {
         
         if (consumedCount >= totalItems) {
           console.log(`\n=== All ${totalItems} items produced and consumed ===`);
+          clearTimeout(demoTimeout);
           workers.forEach((w) => w.terminate());
         }
       }

@@ -10,7 +10,7 @@
  * - Operations like ++, --, +=, load(), store() are atomic
  * - Prevents data races when multiple threads access the same variable
  *
- * Compare this with simple_data_race.cpp to see the difference between
+ * Compare this with simple_data_race_antipattern.cpp to see the difference between
  * unprotected and atomic access to shared data.
  */
 
@@ -35,7 +35,7 @@ int main() {
     alice.join();
     bob.join();
 
-    // Expected result: exactly 20,000,000 (unlike simple_data_race.cpp)
+    // Expected result: exactly 20,000,000 (unlike simple_data_race_antipattern.cpp)
     std::cout << "Completed " << task_count.load() << " tasks.\n";
     std::cout << "Expected:  20000000 tasks.\n";
 

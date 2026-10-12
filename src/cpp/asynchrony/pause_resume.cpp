@@ -2,10 +2,10 @@
  * Pausable Asynchronous Tasks
  *
  * This example demonstrates how to pause and resume async tasks
- * using condition variables and atomic flags.
+ * using a condition variable and mutex-protected flags.
  *
  * Key concepts:
- * - std::atomic<bool> for thread-safe flag communication
+ * - Mutex-protected flags for task control
  * - std::condition_variable to block until a condition is met
  * - std::promise/std::future for signaling task completion
  * - Combining these primitives enables cooperative task control
@@ -14,7 +14,6 @@
  * or controllable by external events.
  */
 
-#include <atomic>
 #include <chrono>
 #include <condition_variable>
 #include <future>
@@ -24,22 +23,23 @@
 
 std::mutex mtx;
 std::condition_variable cv;
-std::atomic<bool> paused{false};
-std::atomic<bool> running{true};
+bool paused = false;  // Protected by mtx
+bool running = true;  // Protected by mtx
 
 void pausable_task(std::promise<void>&& done_signal) {
     int step = 0;
+    std::unique_lock<std::mutex> lock(mtx);
     while (running) {
-        std::unique_lock<std::mutex> lock(mtx);
         cv.wait(lock, [] { return !paused || !running; });
 
         if (!running) break;
 
         std::cout << "Executing step " << step++ << "\n";
-        lock.unlock();
-
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        cv.wait_for(lock, std::chrono::seconds(1), [] {
+            return paused || !running;
+        });
     }
+    lock.unlock();
     done_signal.set_value();
 }
 
@@ -55,18 +55,28 @@ int main() {
     char cmd;
     while (std::cin >> cmd) {
         if (cmd == 'p') {
-            paused = !paused;
+            bool is_paused;
+            {
+                std::lock_guard<std::mutex> lock(mtx);
+                paused = !paused;
+                is_paused = paused;
+            }
             cv.notify_all();
-            std::cout << (paused ? "Paused" : "Resumed") << "\n";
+            std::cout << (is_paused ? "Paused" : "Resumed") << "\n";
         } else if (cmd == 'q') {
-            running = false;
-            paused = false;
-            cv.notify_all();
             break;
         }
     }
 
-    done_future.wait();
+    // EOF and 'q' both stop the worker, including while it is paused.
+    {
+        std::lock_guard<std::mutex> lock(mtx);
+        running = false;
+    }
+    cv.notify_all();
+
+    done_future.get();
+    task.get();
     std::cout << "Task completed\n";
 
     return 0;

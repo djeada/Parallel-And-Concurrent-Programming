@@ -17,7 +17,7 @@
  * WARNING: This code intentionally demonstrates the false sharing antipattern
  * in the first benchmark. The second benchmark shows the corrected version.
  *
- * Compile: g++ -std=c++17 -O2 -pthread false_sharing.cpp
+ * Compile: g++ -std=c++17 -O2 -pthread false_sharing_antipattern.cpp
  */
 
 #include <atomic>

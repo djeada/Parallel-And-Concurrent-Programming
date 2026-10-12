@@ -2,7 +2,7 @@
  * Race Condition with Mutex Solution
  *
  * This example demonstrates how to use a mutex to prevent race conditions.
- * Compare with simple_data_race.cpp to see the problem this solves.
+ * Compare with simple_data_race_antipattern.cpp to see the problem this solves.
  *
  * Key concepts:
  * - std::mutex provides mutual exclusion

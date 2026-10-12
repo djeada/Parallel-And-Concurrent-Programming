@@ -37,6 +37,15 @@ if (isMainThread) {
   }));
 
   const results = [];
+  const workers = [];
+  let failed = false;
+  const fail = (error) => {
+    if (failed) return;
+    failed = true;
+    process.exitCode = 1;
+    console.error("Thread pool failed:", error.message);
+    workers.forEach((worker) => worker.terminate());
+  };
   let activeTasks = 0;
   const startTime = Date.now();
 
@@ -55,9 +64,12 @@ if (isMainThread) {
   // Create worker pool
   for (let i = 0; i < NUM_WORKERS; i++) {
     const worker = new Worker(__filename);
+    workers.push(worker);
+    let expectedExit = false;
     const workerId = i;
 
     worker.on("message", (result) => {
+      if (failed) return;
       activeTasks--;
       console.log(`  [Worker ${workerId}] Completed task ${result.taskId} (result: ${result.result})`);
       results.push(result);
@@ -73,14 +85,17 @@ if (isMainThread) {
         console.log(`Total tasks completed: ${results.length}`);
         console.log(`Total wall time: ${elapsed}ms`);
         console.log(`Avg processing time per task: ${(totalProcessingTime / NUM_TASKS).toFixed(0)}ms`);
+        expectedExit = true;
         worker.terminate();
       } else {
+        expectedExit = true;
         worker.terminate();
       }
     });
 
-    worker.on("error", (error) => {
-      console.error(`Worker ${workerId} error:`, error.message);
+    worker.on("error", fail);
+    worker.on("exit", (code) => {
+      if (!expectedExit && !failed) fail(new Error(`Worker ${workerId} exited unexpectedly (code ${code})`));
     });
 
     // Start processing

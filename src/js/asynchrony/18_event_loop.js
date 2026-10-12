@@ -57,7 +57,7 @@ const demoMicrotaskOrder = () => {
 const demoInsideIO = () => {
   console.log("\n--- Demo 2: Inside I/O callback — setImmediate before setTimeout ---");
 
-  const tmpFile = path.join(os.tmpdir(), "event_loop_demo.txt");
+  const tmpFile = path.join(os.tmpdir(), `event_loop_demo_${process.pid}.txt`);
   fs.writeFileSync(tmpFile, "x");
 
   fs.readFile(tmpFile, () => {

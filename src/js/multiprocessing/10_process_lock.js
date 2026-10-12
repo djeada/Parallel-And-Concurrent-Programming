@@ -35,7 +35,7 @@ const sleepSync = (ms) => {
   }
 };
 
-const acquireLock = () => {
+const acquireLock = async () => {
   const maxAttempts = 100;
   let attempts = 0;
   
@@ -46,8 +46,8 @@ const acquireLock = () => {
       return true;
     } catch (error) {
       if (error.code === "EEXIST") {
-        // Lock is held, wait and retry using synchronous sleep
-        sleepSync(50);
+        // Lock is held; yield to the event loop before retrying
+        await sleep(50);
         attempts++;
       } else {
         throw error;
@@ -68,11 +68,12 @@ const releaseLock = () => {
   }
 };
 
-const workerTask = () => {
+const workerTask = async () => {
   console.log(`  [Process ${process.pid}] Starting, waiting for lock...`);
   
+  // Only an owner may release the lock. Acquisition failure leaves it intact.
+  await acquireLock();
   try {
-    acquireLock();
     console.log(`  [Process ${process.pid}] Lock acquired`);
     
     // Critical section - read, modify, write
@@ -94,7 +95,10 @@ const workerTask = () => {
 };
 
 if (process.argv[2] === "worker") {
-  workerTask();
+  workerTask().catch((error) => {
+    console.error(error.message);
+    process.exitCode = 1;
+  });
 } else {
   console.log("=== Process Lock (Mutex) Demo ===\n");
   console.log(`Number of processes: ${NUM_PROCESSES}`);

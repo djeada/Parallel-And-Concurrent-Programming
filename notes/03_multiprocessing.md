@@ -1139,19 +1139,19 @@ Here, the semaphore provides ordering: the parent blocks until the child has wri
 | 3   | [exec_process.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/exec_process.cpp) | fork+exec family (execvp/execl/execve), FD_CLOEXEC, pipe+dup2+exec pipeline |
 | 4   | [signals.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/signals.cpp) | POSIX signals: sigaction, sig_atomic_t, SIGCHLD reaping, kill()+SIGUSR1 |
 | 5   | [named_pipe.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/named_pipe.cpp) | Named pipes (FIFOs): mkfifo, unrelated-process IPC, EPIPE handling |
-| 6   | [deadlock.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/deadlock.cpp) | ⚠️ ANTIPATTERN — circular-wait deadlock; exits via sem_timedwait timeout |
-| 7   | [deadlock_avoidance.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/deadlock_avoidance.cpp) | Lock-ordering fix for deadlock.cpp; both processes acquire locks in same order |
+| 6   | [deadlock_antipattern.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/deadlock_antipattern.cpp) | ⚠️ ANTIPATTERN — circular-wait deadlock; exits via sem_timedwait timeout |
+| 7   | [deadlock_avoidance.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/deadlock_avoidance.cpp) | Lock-ordering fix for deadlock_antipattern.cpp; both processes acquire locks in same order |
 | 8   | [process_pool.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/process_pool.cpp) | Use a process pool to manage concurrent tasks         |
 | 9   | [message_queue.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/message_queue.cpp) | Communicate between processes using a message queue   |
 | 10  | [pipe_communication.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/pipe_communication.cpp) | Communicate between processes using a Pipe            |
 | 11  | [shared_memory.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/shared_memory.cpp) | Use shared memory to store data between processes     |
-| 12  | [shared_array.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/shared_array.cpp) | ⚠️ ANTIPATTERN — mmap shared array without synchronization (torn reads/writes) |
+| 12  | [shared_array_antipattern.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/shared_array_antipattern.cpp) | ⚠️ ANTIPATTERN — mmap shared array without synchronization (torn reads/writes) |
 | 13  | [process_manager.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/process_manager.cpp) | Manager/worker pattern with fcntl file locking for safe concurrent appends |
 | 14  | [process_mutex.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/process_mutex.cpp) | Use a mutex to synchronize access to shared resources |
 | 15  | [process_semaphore.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/process_semaphore.cpp) | Use a semaphore to control access to shared resources |
 | 16  | [process_barrier.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/process_barrier.cpp) | Use a barrier to synchronize multiple processes       |
 | 17  | [orphan_process.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/orphan_process.cpp) | Demonstrate an orphan process scenario                |
-| 18  | [zombie_process.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/zombie_process.cpp) | Demonstrate a zombie process scenario                 |
+| 18  | [zombie_process_antipattern.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multiprocessing/zombie_process_antipattern.cpp) | Demonstrate a zombie process scenario                 |
 
 #### Examples in Python
 
@@ -1455,7 +1455,7 @@ Node.js's `child_process` module is useful for running external programs, isolat
 |-----|---------------------------------------------------|-------------------------------------------------------|
 | 1   | [basic_process.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/01_basic_process.js) | Create a child process with fork(); show PID and parent PID hierarchy |
 | 2   | [multiple_processes.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/02_multiple_processes.js) | Integrate multiple processes for a complex task       |
-| 3   | [deadlock.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/03_deadlock.js) | ⚠️ ANTIPATTERN: circular lock acquisition causing deadlock; auto-detected after timeout |
+| 3   | [deadlock.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/03_deadlock_antipattern.js) | ⚠️ ANTIPATTERN: circular lock acquisition causing deadlock; auto-detected after timeout |
 | 4   | [process_pool.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/04_process_pool.js) | True process pool: persistent workers receive multiple CPU-bound tasks over IPC |
 | 5   | [queue_communication.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/05_queue_communication.js) | Communicate between processes using a Queue           |
 | 6   | [pipe_communication.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/06_pipe_communication.js) | Communicate between processes using a Pipe            |
@@ -1465,7 +1465,7 @@ Node.js's `child_process` module is useful for running external programs, isolat
 | 10  | [process_lock.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/10_process_lock.js) | File-based mutex (wx flag) for cross-process critical sections |
 | 11  | [process_semaphore.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/11_process_semaphore.js) | IPC-managed counting semaphore to limit concurrent workers |
 | 12  | [process_barrier.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/12_process_barrier.js) | IPC-managed barrier: all workers complete phase 1 before any start phase 2 |
-| 13  | [orphan.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/13_orphan.js) | ⚠️ ANTIPATTERN: parent exits before child; child becomes orphan (adopted by init/subreaper) |
+| 13  | [orphan.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/13_orphan_antipattern.js) | ⚠️ ANTIPATTERN: parent exits before child; child becomes orphan (adopted by init/subreaper) |
 | 14  | [zombie.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/14_zombie.js) | How Node.js/libuv prevents zombie processes via automatic waitpid() on child exit |
 | 15  | [run_commands.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/15_run_commands.js) | exec() vs execFile() vs execSync(); maxBuffer; timeout; ⚠️ shell injection antipattern |
 | 16  | [cluster_module.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multiprocessing/16_cluster_module.js) | cluster module: shared TCP port, load balancing, crash restart, graceful shutdown |

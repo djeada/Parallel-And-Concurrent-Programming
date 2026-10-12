@@ -71,7 +71,9 @@ private:
             int bytes = recv(client_fd, buffer, BUFFER_SIZE, 0);
             if (bytes <= 0) break;
 
-            std::cout << "Received: " << buffer << "\n";
+            std::cout << "Received: ";
+            std::cout.write(buffer, bytes);
+            std::cout << "\n";
             send(client_fd, buffer, bytes, 0);  // Echo back
         }
         close(client_fd);
@@ -104,7 +106,9 @@ public:
             int bytes = recv(socket_fd_, buffer, BUFFER_SIZE, 0);
             if (bytes <= 0) break;
 
-            std::cout << "Task: " << buffer << "\n";
+            std::cout << "Task: ";
+            std::cout.write(buffer, bytes);
+            std::cout << "\n";
             send(socket_fd_, buffer, bytes, 0);
         }
     }
@@ -144,7 +148,9 @@ public:
             int bytes = recv(socket_fd_, buffer, BUFFER_SIZE, 0);
             if (bytes <= 0) break;
 
-            std::cout << "Result: " << buffer << "\n";
+            std::cout << "Result: ";
+            std::cout.write(buffer, bytes);
+            std::cout << "\n";
         }
     }
 

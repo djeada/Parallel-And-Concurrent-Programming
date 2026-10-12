@@ -1,5 +1,5 @@
 /**
- * Livelock
+ * ANTIPATTERN — Livelock
  *
  * This example demonstrates livelock - a situation where threads are
  * actively running but making no progress. Unlike deadlock where threads

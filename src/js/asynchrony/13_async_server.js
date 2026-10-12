@@ -85,7 +85,7 @@ const handleRequest = async (req, res) => {
   // Match routes
   if (path === "/" || path === "") {
     await routes["/"]?.(req, res);
-  } else if (path.startsWith("/user")) {
+  } else if (/^\/user(?:\/[^/]+)?\/?$/.test(path)) {
     const userId = path.split("/")[2] || "1";
     await routes["/user"]?.(req, res, userId);
   } else if (path === "/data") {
@@ -99,7 +99,7 @@ const handleRequest = async (req, res) => {
 };
 
 const main = () => {
-  const PORT = process.env.PORT || 3000;
+  const PORT = Number(process.env.PORT || 3000);
   const HOST = "127.0.0.1";
 
   const server = http.createServer(async (req, res) => {
@@ -126,6 +126,11 @@ const main = () => {
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
 
+  server.on("error", (error) => {
+    console.error("Server error:", error.message);
+    process.exitCode = 1;
+  });
+
   server.listen(PORT, HOST, () => {
     console.log("=== Async HTTP Server ===");
     console.log(`Server running at http://${HOST}:${PORT}/`);
@@ -138,4 +143,5 @@ const main = () => {
   });
 };
 
-main();
+if (require.main === module) main();
+module.exports = { handleRequest };

@@ -18,7 +18,7 @@
  * The correct approach is a thread pool (see thread_pool_futures.cpp)
  * or an event-loop framework such as Boost.Asio.
  *
- * Note: Run with:  ./async_server
+ * Note: Run with:  ./async_server_antipattern
  *       Test with: curl http://localhost:8080
  */
 

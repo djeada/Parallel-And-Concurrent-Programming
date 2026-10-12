@@ -484,7 +484,7 @@ For true non-blocking chaining, use C++20 coroutines (see `coroutine_task.cpp`) 
 | 18  | [coroutine_task.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/main/src/cpp/asynchrony/coroutine_task.cpp) | C++20 `co_await` coroutine chaining with a minimal `Task<T>` |
 | 19  | [async_mutex.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/main/src/cpp/asynchrony/async_mutex.cpp) | Use a mutex to synchronize access to shared resources    |
 | 20  | [parallel_fetch.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/main/src/cpp/asynchrony/parallel_fetch.cpp) | Fetch data in parallel (requires libcurl)                |
-| 21  | [async_server.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/main/src/cpp/asynchrony/async_server.cpp) | ⚠️ ANTIPATTERN: detached-thread-per-connection server    |
+| 21  | [async_server_antipattern.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/main/src/cpp/asynchrony/async_server_antipattern.cpp) | ⚠️ ANTIPATTERN: detached-thread-per-connection server    |
 | 22  | [distributed_computing.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/main/src/cpp/asynchrony/distributed_computing.cpp) | Distributed computing with socket server/worker/client  |
 
 #### Examples in Python

@@ -16,7 +16,7 @@
  * Why not std::ofstream without locking?
  *   std::ofstream << may issue multiple write() calls for one <<
  *   expression, and two processes can interleave them, producing
- *   corrupted records.  See shared_array.cpp for an unsynced example.
+ *   corrupted records.  See shared_array_antipattern.cpp for an unsynced example.
  *
  * Compile:
  *   g++ -std=c++17 -o process_manager process_manager.cpp
@@ -62,10 +62,12 @@ public:
 
         std::vector<pid_t> pids;
         for (int i = 0; i < num_workers_; ++i) {
+            std::cout.flush();
             pid_t pid = fork();
             if (pid < 0) { perror("fork"); continue; }
             if (pid == 0) {
                 worker(i);
+                std::cout.flush();
                 _exit(0);
             }
             pids.push_back(pid);

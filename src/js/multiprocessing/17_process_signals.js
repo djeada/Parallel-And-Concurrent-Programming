@@ -37,8 +37,7 @@ if (process.argv[2] === "worker") {
       await sleep(400);
     }
     console.log(`  [Worker ${workerId}] Work loop stopped after ${iteration} iterations`);
-    process.send({ type: "done", workerId });
-    process.exit(0);
+    process.send({ type: "done", workerId }, () => process.disconnect());
   };
 
   // SIGTERM: set flag and let the work loop finish gracefully.
@@ -65,6 +64,8 @@ if (process.argv[2] === "worker") {
 } else {
   const NUM_WORKERS = 3;
   let completedCount = 0;
+  let exitedCount = 0;
+  let shutdownTimer;
   const workers = [];
 
   console.log("=== Process Signals & Graceful Shutdown Demo ===\n");
@@ -83,10 +84,15 @@ if (process.argv[2] === "worker") {
       } else if (msg.type === "done") {
         completedCount++;
         console.log(`  [Parent] Worker ${msg.workerId} shut down gracefully (${completedCount}/${NUM_WORKERS})`);
-        if (completedCount === NUM_WORKERS) {
-          console.log("\n[Parent] All workers exited gracefully.\n=== Demo Complete ===");
-          process.exit(0);
-        }
+
+      }
+    });
+
+    worker.on("exit", (code, signal) => {
+      if (code !== 0 || signal) process.exitCode = 1;
+      if (++exitedCount === NUM_WORKERS) {
+        clearTimeout(shutdownTimer);
+        console.log("\n[Parent] All workers exited.\n=== Demo Complete ===");
       }
     });
 
@@ -99,7 +105,7 @@ if (process.argv[2] === "worker") {
   const shutdown = (signal) => {
     console.log(`\n[Parent] Received ${signal} — forwarding to ${workers.length} workers...`);
     workers.forEach((w) => {
-      if (!w.exitCode) w.kill(signal);
+      if (w.exitCode === null && w.signalCode === null) w.kill(signal);
     });
   };
 
@@ -107,7 +113,7 @@ if (process.argv[2] === "worker") {
   process.on("SIGINT",  () => shutdown("SIGTERM")); // normalize: SIGINT → SIGTERM
 
   // Demo: send ourselves SIGTERM after 2 seconds to trigger graceful shutdown.
-  setTimeout(() => {
+  shutdownTimer = setTimeout(() => {
     console.log("\n[Parent] Sending SIGTERM to self (simulating `kill <pid>` or systemd stop)...");
     process.kill(process.pid, "SIGTERM");
   }, 2000);

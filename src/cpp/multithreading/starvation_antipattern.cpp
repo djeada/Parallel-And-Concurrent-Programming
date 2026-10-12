@@ -1,5 +1,5 @@
 /**
- * Thread Starvation
+ * ANTIPATTERN — Thread Starvation
  *
  * This example demonstrates starvation - when some threads get significantly
  * less CPU time or resources than others, even though they're not blocked.

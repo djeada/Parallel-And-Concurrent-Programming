@@ -9,27 +9,28 @@
  * - try_lock() returns true if lock acquired, false otherwise
  * - Allows threads to do other work if lock is unavailable
  * - Useful for responsive systems or avoiding blocking
- * - Can lead to livelock if not used carefully (see livelock.cpp)
+ * - Can lead to livelock if not used carefully (see livelock_antipattern.cpp)
  *
  * In this example, workers accumulate items before attempting to write
  * to a shared list, doing useful work while waiting.
  */
 
+#include <atomic>
 #include <chrono>
 #include <iostream>
 #include <mutex>
 #include <thread>
 
-unsigned int items_on_list = 0;
+std::atomic<unsigned int> items_on_list{0};
 std::mutex list_mutex;
 
 void worker(const char* name) {
     int items_to_add = 0;
 
-    while (items_on_list <= 20) {
+    while (items_on_list.load(std::memory_order_relaxed) <= 20) {
         if (items_to_add > 0 && list_mutex.try_lock()) {
             // Got the lock - add accumulated items
-            items_on_list += items_to_add;
+            items_on_list.fetch_add(items_to_add, std::memory_order_relaxed);
             std::cout << name << " added " << items_to_add << " item(s).\n";
             items_to_add = 0;
 
@@ -56,7 +57,7 @@ int main() {
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - start).count();
 
-    std::cout << "Final count: " << items_on_list << " items.\n";
+    std::cout << "Final count: " << items_on_list.load() << " items.\n";
     std::cout << "Elapsed time: " << elapsed / 1000.0 << " seconds.\n";
 
     return 0;

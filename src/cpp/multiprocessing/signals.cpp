@@ -22,146 +22,138 @@
 #include <cerrno>
 #include <csignal>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <sys/wait.h>
 #include <unistd.h>
 
-// ── Demo 1: SIGTERM graceful shutdown ─────────────────────────────────────
-// The handler only sets a flag; the main loop checks the flag.
-
-static volatile sig_atomic_t shutdown_requested = 0;
-
-static void sigterm_handler(int /*signum*/) {
-    shutdown_requested = 1;  // async-signal-safe: just set a flag
+// Block before fork so a signal cannot arrive before the child is ready.
+static sigset_t block_signal(int signum) {
+    sigset_t set, previous;
+    sigemptyset(&set);
+    sigaddset(&set, signum);
+    if (sigprocmask(SIG_BLOCK, &set, &previous) < 0) {
+        perror("sigprocmask");
+        std::exit(1);
+    }
+    return previous;
 }
 
-static void demo_sigterm() {
-    write(STDOUT_FILENO, "=== Demo 1: SIGTERM graceful shutdown ===\n", 42);
+static bool wait_for_child(pid_t pid, int& status) {
+    while (waitpid(pid, &status, 0) < 0) {
+        if (errno == EINTR) continue;
+        perror("waitpid");
+        return false;
+    }
+    return true;
+}
 
+static volatile sig_atomic_t signal_received = 0;
+
+static void control_handler(int /*signum*/) {
+    signal_received = 1;
+}
+
+// sigsuspend atomically unblocks the signal and waits. The flag is checked
+// while it is blocked, closing the check-before-pause race.
+static void demo_control_signal(int signum, const char* name) {
+    printf("=== %s: cooperative child shutdown ===\n", name);
+    signal_received = 0;
+    sigset_t previous = block_signal(signum);
+    sigset_t waiting = previous;
+    sigdelset(&waiting, signum);
+    struct sigaction sa{}, old_action{};
+    sa.sa_handler = control_handler;
+    sigemptyset(&sa.sa_mask);
+    if (sigaction(signum, &sa, &old_action) < 0) {
+        perror("sigaction");
+        sigprocmask(SIG_SETMASK, &previous, nullptr);
+        return;
+    }
+    fflush(stdout);
     pid_t pid = fork();
-    if (pid < 0) { perror("fork"); return; }
-
-    if (pid == 0) {
-        // Child: install SIGTERM handler and run a loop
-        struct sigaction sa{};
-        sa.sa_handler = sigterm_handler;
-        sigemptyset(&sa.sa_mask);
-        sa.sa_flags = 0;
-        sigaction(SIGTERM, &sa, nullptr);
-
-        write(STDOUT_FILENO, "  Child: running (PID=", 22);
-        // print PID safely via write
-        char buf[16];
-        int n = snprintf(buf, sizeof(buf), "%d)\n", getpid());
-        write(STDOUT_FILENO, buf, n);
-
-        while (!shutdown_requested) {
-            sleep(1);  // interruptible by signal
-        }
-        write(STDOUT_FILENO, "  Child: received SIGTERM, shutting down cleanly\n", 49);
+    if (pid < 0) {
+        perror("fork");
+    } else if (pid == 0) {
+        printf("  Child: waiting for %s (PID=%d)\n", name, getpid());
+        fflush(stdout);
+        while (!signal_received) sigsuspend(&waiting);
+        printf("  Child: received %s, shutting down cleanly\n", name);
+        fflush(stdout);
         _exit(0);
+    } else {
+        // Safe even if the child has not started: the signal stays pending.
+        printf("  Parent: sending %s to child (PID=%d)\n", name, pid);
+        if (kill(pid, signum) < 0) perror("kill");
+        sigprocmask(SIG_SETMASK, &previous, nullptr);
+        int status;
+        if (wait_for_child(pid, status) && WIFEXITED(status))
+            printf("  Parent: child exited, status=%d\n\n", WEXITSTATUS(status));
     }
-
-    // Parent: let child start, then send SIGTERM
-    sleep(1);
-    printf("  Parent: sending SIGTERM to child (PID=%d)\n", pid);
-    kill(pid, SIGTERM);
-
-    int status;
-    waitpid(pid, &status, 0);
-    printf("  Parent: child exited, status=%d\n\n", WEXITSTATUS(status));
-}
-
-// ── Demo 2: SIGCHLD auto-reaping ──────────────────────────────────────────
-// SIGCHLD fires when a child changes state (exits, stops).
-// The handler calls waitpid(-1, WNOHANG) in a loop to reap all finished
-// children without blocking.  errno must be saved/restored.
-
-static void sigchld_handler(int /*signum*/) {
-    int saved_errno = errno;
-    int status;
-    while (waitpid(-1, &status, WNOHANG) > 0) {
-        // reap the child; real work (logging) done outside handler
-    }
-    errno = saved_errno;
+    sigaction(signum, &old_action, nullptr);
+    sigprocmask(SIG_SETMASK, &previous, nullptr);
 }
 
 static volatile sig_atomic_t children_reaped = 0;
 
-static void demo_sigchld() {
-    printf("=== Demo 2: SIGCHLD auto-reaping ===\n");
+static void sigchld_handler(int /*signum*/) {
+    int saved_errno = errno;
+    while (true) {
+        pid_t pid = waitpid(-1, nullptr, WNOHANG);
+        if (pid > 0) {
+            children_reaped = children_reaped + 1;
+        } else if (pid < 0 && errno == EINTR) {
+            continue;
+        } else {
+            break;
+        }
+    }
+    errno = saved_errno;
+}
 
-    struct sigaction sa{};
+static void demo_sigchld() {
+    printf("=== SIGCHLD: auto-reaping ===\n");
+    children_reaped = 0;
+    sigset_t previous = block_signal(SIGCHLD);
+    sigset_t waiting = previous;
+    sigdelset(&waiting, SIGCHLD);
+    struct sigaction sa{}, old_action{};
     sa.sa_handler = sigchld_handler;
     sigemptyset(&sa.sa_mask);
-    sa.sa_flags = SA_RESTART;  // restart interrupted syscalls
-    sigaction(SIGCHLD, &sa, nullptr);
+    sa.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+    if (sigaction(SIGCHLD, &sa, &old_action) < 0) {
+        perror("sigaction");
+        sigprocmask(SIG_SETMASK, &previous, nullptr);
+        return;
+    }
 
     constexpr int n_children = 4;
+    int spawned = 0;
     for (int i = 0; i < n_children; ++i) {
+        fflush(stdout);
         pid_t pid = fork();
         if (pid < 0) { perror("fork"); continue; }
         if (pid == 0) {
-            sleep(i + 1);  // staggered exits
+            sigprocmask(SIG_SETMASK, &previous, nullptr);
             printf("  Child %d exiting\n", i);
+            fflush(stdout);
             _exit(i * 10);
         }
+        ++spawned;
         printf("  Spawned child %d (PID=%d)\n", i, pid);
     }
 
-    // Main loop: SIGCHLD interrupts sleep() to reap children promptly
-    printf("  Parent: waiting for all children via SIGCHLD...\n");
-    int remaining = n_children;
-    while (remaining > 0) {
-        pause();  // sleep until signal arrives
-        // After waking, check how many children we've reaped
-        // (a real app would track counts in the handler or use waitpid here)
-        --remaining;  // simplified: one signal per exit for this example
-        printf("  Parent: woke up, children remaining ~%d\n", remaining);
-    }
-    printf("  Parent: all children reaped.\n\n");
-}
-
-// ── Demo 3: kill() — sending signals between processes ────────────────────
-
-static volatile sig_atomic_t usr1_received = 0;
-
-static void sigusr1_handler(int /*signum*/) {
-    usr1_received = 1;
-}
-
-static void demo_kill_signal() {
-    printf("=== Demo 3: kill() — sending SIGUSR1 ===\n");
-
-    pid_t pid = fork();
-    if (pid < 0) { perror("fork"); return; }
-
-    if (pid == 0) {
-        struct sigaction sa{};
-        sa.sa_handler = sigusr1_handler;
-        sigemptyset(&sa.sa_mask);
-        sa.sa_flags = 0;
-        sigaction(SIGUSR1, &sa, nullptr);
-
-        printf("  Child: waiting for SIGUSR1...\n");
-        while (!usr1_received) {
-            pause();
-        }
-        printf("  Child: SIGUSR1 received, doing work and exiting\n");
-        _exit(0);
-    }
-
-    sleep(1);
-    printf("  Parent: sending SIGUSR1 to child (PID=%d)\n", pid);
-    kill(pid, SIGUSR1);
-
-    waitpid(pid, nullptr, 0);
-    printf("  Parent: done\n\n");
+    // A single delivery may reap multiple children. Count successful waits.
+    while (children_reaped < spawned) sigsuspend(&waiting);
+    printf("  Parent: all %d children reaped.\n\n", spawned);
+    // Restore the handler so the next demo can wait for its own child.
+    sigaction(SIGCHLD, &old_action, nullptr);
+    sigprocmask(SIG_SETMASK, &previous, nullptr);
 }
 
 int main() {
-    demo_sigterm();
+    demo_control_signal(SIGTERM, "SIGTERM");
     demo_sigchld();
-    demo_kill_signal();
+    demo_control_signal(SIGUSR1, "SIGUSR1");
     return 0;
 }

@@ -17,7 +17,7 @@
  * See deadlock_avoidance.cpp for the fix (consistent lock ordering).
  *
  * Compile:
- *   g++ -std=c++17 -o deadlock deadlock.cpp -lpthread
+ *   g++ -std=c++17 -o deadlock deadlock_antipattern.cpp -lpthread
  */
 
 #include <cerrno>
@@ -101,10 +101,13 @@ int main() {
         return 1;
     }
 
+    std::cout.flush();
+
     pid_t pid = fork();
 
     if (pid == 0) {
         process_a(lock_a, lock_b);
+        std::cout.flush();
         _exit(0);
     } else {
         process_b(lock_a, lock_b);
