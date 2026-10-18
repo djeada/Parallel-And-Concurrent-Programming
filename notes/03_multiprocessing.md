@@ -1127,11 +1127,11 @@ Here, the semaphore provides ordering: the parent blocks until the child has wri
 - Properly manage resources such as file descriptors and shared memory to avoid resource leaks and ensure that resources are cleaned up when no longer needed.
 
 
-| No. | Filename                                          | Description                                           |
+| No. | Example or reference                                          | Description                                           |
 |-----|---------------------------------------------------|-------------------------------------------------------|
 | 1   | [basic_process.cpp](../src/cpp/multiprocessing/basic_process.cpp) | Create and start a basic process                      |
 | 2   | [multiple_processes.cpp](../src/cpp/multiprocessing/multiple_processes.cpp) | Integrate multiple processes for a complex task       |
-| 3   | [exec_process.cpp](../src/cpp/multiprocessing/exec_process.cpp) | fork+exec family (execvp/execl/execve), FD_CLOEXEC, pipe+dup2+exec pipeline |
+| 3   | [exec family reference](https://man7.org/linux/man-pages/man3/exec.3.html) | Manual for execvp/execl/execve; reference material rather than a repository example |
 | 4   | [signals.cpp](../src/cpp/multiprocessing/signals.cpp) | POSIX signals: sigaction, sig_atomic_t, SIGCHLD reaping, kill()+SIGUSR1 |
 | 5   | [named_pipe.cpp](../src/cpp/multiprocessing/named_pipe.cpp) | Named pipes (FIFOs): mkfifo, unrelated-process IPC, EPIPE handling |
 | 6   | [deadlock_antipattern.cpp](../src/cpp/multiprocessing/deadlock_antipattern.cpp) | ⚠️ ANTIPATTERN — circular-wait deadlock; exits via sem_timedwait timeout |
