@@ -194,18 +194,18 @@ headers and linking with `-lcurl`.
 
 ## 🎯 Interactive Quizzes
 
-Test your understanding with interactive quizzes for each topic:
+Test your understanding with a quiz for each topic. Every question has one correct answer and a short explanation, and each quiz links the notes it covers. Take them interactively, with shuffled options, scoring and explanations, on the [Technical Quizzes](https://adamdjellouli.com/tools/quiz_app/?category=parallel_programming) page.
 
-| Quiz | Topic | Questions | Link |
-|------|-------|-----------|------|
-| 📝 | Basic Terminology | Processes, threads, synchronization | [Quiz 1](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/quizzes/01_basic_terminology.md) |
-| 📝 | Threading Concepts | Thread safety, deadlocks, race conditions | [Quiz 2](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/quizzes/02_threading.md) |
-| 📝 | Process Management | IPC, shared memory, process pools | [Quiz 3](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/quizzes/03_processes.md) |
-| 📝 | Async Patterns | Event loops, futures, coroutines | [Quiz 4](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/quizzes/04_async.md) |
-| 📝 | Distributed Systems | MPI, communication patterns, synchronization | [Quiz 5](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/quizzes/05_distributed.md) |
-| 📝 | Hardware & Architecture | CPU caches, memory models, NUMA | [Quiz 6](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/quizzes/06_hardware.md) |
-| 📝 | Performance Analysis | Benchmarking, profiling, optimization | [Quiz 7](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/quizzes/07_performance.md) |
-| 📝 | Parallel Design Patterns | Algorithms, load balancing, scalability | [Quiz 8](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/quizzes/08_parallel_design.md) |
+| # | Topic | Covers | Questions | Link |
+|---|-------|--------|-----------|------|
+| 1 | Basic Terminology | Processes, threads, concurrency vs parallelism, memory models | 32 | [Quiz 1](quizzes/01_basic_terminology.md) |
+| 2 | Multithreading | Locks, conditions, semaphores, deadlocks, race conditions | 51 | [Quiz 2](quizzes/02_threading.md) |
+| 3 | Multiprocessing | Process pools, IPC, shared memory, start methods | 40 | [Quiz 3](quizzes/03_processes.md) |
+| 4 | Asynchronous Programming | Event loops, coroutines, futures, cancellation | 39 | [Quiz 4](quizzes/04_async.md) |
+| 5 | Distributed Computing and MPI | Message passing, collectives, consistency | 37 | [Quiz 5](quizzes/05_distributed.md) |
+| 6 | Hardware and Architecture | Caches, false sharing, NUMA, GPUs | 34 | [Quiz 6](quizzes/06_hardware.md) |
+| 7 | Performance Evaluation | Amdahl, Gustafson, scaling, profiling | 37 | [Quiz 7](quizzes/07_performance.md) |
+| 8 | Parallel Design | Decomposition, load balancing, communication | 36 | [Quiz 8](quizzes/08_parallel_design.md) |
 
 ## 📊 Performance Analysis
 
