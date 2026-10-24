@@ -200,7 +200,7 @@ Check your understanding of message passing with MPI and the basic trade-offs of
 * [x] 6
 * [ ] 10
 
-> **Explanation:** `MPI_Scan` is an inclusive prefix reduction: rank i receives the combination of values from ranks 0 to i. Rank 2 gets 1 + 2 + 3 = 6.
+> **Explanation:** `MPI_Scan` is an inclusive prefix reduction: rank $i$ receives the combination of values from ranks 0 to $i$. Rank 2 gets $1 + 2 + 3 = 6$.
 
 #### Q. What are message tags used for in MPI?
 

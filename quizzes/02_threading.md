@@ -121,7 +121,7 @@ Check your understanding of thread lifecycles, synchronization primitives and th
 
 > **Explanation:** Calling `wait()` after the code means the thread reaches the meeting point only once its work is done. No participant passes the barrier until all have called `wait()`.
 
-#### Q. Workers must all finish phase k before any of them starts phase k+1, and this repeats 100 times. Which C++20 primitive fits best?
+#### Q. Workers must all finish phase $k$ before any of them starts phase $k + 1$, and this repeats 100 times. Which C++20 primitive fits best?
 
 * [x] `std::barrier`, calling `arrive_and_wait()` after each phase
 * [ ] `std::latch`, with each worker calling `count_down()` per phase
