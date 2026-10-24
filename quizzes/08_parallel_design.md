@@ -85,14 +85,14 @@ Check your understanding of the PCAM design method, decomposition strategies, co
 
 > **Explanation:** Each worker owns a region of the data. It works well when computation is mostly local, as in image filters, simulations and matrix operations.
 
-#### Q. A 2D grid is split among four workers. Why do 2×2 square tiles usually communicate less than four thin strips?
+#### Q. A 2D grid is split among four workers. Why do $2 \times 2$ square tiles usually communicate less than four thin strips?
 
 * [ ] Square tiles contain fewer grid points in total
 * [x] Tiles have less boundary per area, so less halo exchange
 * [ ] Thin strips cannot be processed in parallel at all
 * [ ] Square tiles never need any ghost cells
 
-> **Explanation:** Computation grows with a tile's area, while communication grows with its perimeter. For an N×N grid, the cuts total 2N for tiles but 3N for strips.
+> **Explanation:** Computation grows with a tile's area, while communication grows with its perimeter. For an $N \times N$ grid, the cuts total $2N$ for tiles but $3N$ for strips.
 
 #### Q. What is functional decomposition?
 
@@ -283,14 +283,14 @@ Check your understanding of the PCAM design method, decomposition strategies, co
 
 > **Explanation:** Contiguous blocks give good cache locality and simple index arithmetic. They balance poorly when some regions are much more expensive to process than others.
 
-#### Q. With cyclic decomposition, item `i` goes to worker `i mod P`. With 4 workers, which worker processes item 10?
+#### Q. With cyclic decomposition, item $i$ goes to worker $i \bmod P$. With 4 workers, which worker processes item 10?
 
 * [ ] Worker 0
 * [ ] Worker 1
 * [x] Worker 2
 * [ ] Worker 3
 
-> **Explanation:** `10 mod 4 = 2`. Round-robin assignment spreads expensive items across workers, improving balance at the cost of locality.
+> **Explanation:** $10 \bmod 4 = 2$. Round-robin assignment spreads expensive items across workers, improving balance at the cost of locality.
 
 #### Q. Why is block-cyclic decomposition often used in distributed dense linear algebra?
 
@@ -301,7 +301,7 @@ Check your understanding of the PCAM design method, decomposition strategies, co
 
 > **Explanation:** Blocks are dealt round-robin. Pure block layouts can leave some processes idle as the active region shrinks, and pure cyclic layouts lose locality. Block-cyclic is a compromise between the two.
 
-#### Q. Message time is often modelled as `α + n/B` (startup latency plus size over bandwidth). What does this suggest about sending 1,000 tiny messages?
+#### Q. Message time is often modelled as $\alpha + n/B$ (startup latency plus size over bandwidth). What does this suggest about sending 1,000 tiny messages?
 
 * [ ] It costs the same as one message with the same total bytes
 * [x] Latency is paid 1,000 times, so batching them is usually faster

@@ -25,11 +25,11 @@ Check your understanding of speedup, efficiency, scaling laws, work and span, an
 #### Q. Which of these describes a program's speedup?
 
 * [ ] The time one task takes to complete
-* [x] One-processor time divided by p-processor time
+* [x] One-processor time divided by $p$-processor time
 * [ ] The number of tasks completed per unit of time
 * [ ] The number of processors the program uses
 
-> **Explanation:** Speedup is `S_p = T_1 / T_p`, based on wall-clock time for the same problem. A speedup of p is linear, or ideal, speedup.
+> **Explanation:** Speedup is $S_p = \frac{T_1}{T_p}$, based on wall-clock time for the same problem. A speedup of $p$ is linear, or ideal, speedup.
 
 #### Q. 85% of a program's runtime is parallelizable and runs 6 times faster on a 6-core processor. According to Amdahl's Law, what is the overall speedup?
 
@@ -38,7 +38,7 @@ Check your understanding of speedup, efficiency, scaling laws, work and span, an
 * [ ] About 5.10
 * [ ] Exactly 6.00
 
-> **Explanation:** `S = 1 / ((1 - 0.85) + 0.85/6) = 1 / (0.15 + 0.142) ≈ 3.43`. The 15% serial portion keeps the result well below the core count.
+> **Explanation:** $S = \frac{1}{(1 - 0.85) + \frac{0.85}{6}} = \frac{1}{0.15 + 0.142} \approx 3.43$. The 15% serial portion keeps the result well below the core count.
 
 #### Q. Amdahl's Law gives a(n) _____ on the overall speedup from parallelizing a program.
 
@@ -56,13 +56,13 @@ Check your understanding of speedup, efficiency, scaling laws, work and span, an
 * [x] 20
 * [ ] 95
 
-> **Explanation:** As the processor count grows, the speedup approaches `1 / (1 - P) = 1 / 0.05 = 20`. The 5% serial part takes the same time no matter how many processors are added.
+> **Explanation:** As the processor count grows, the speedup approaches $\frac{1}{1 - P} = \frac{1}{0.05} = 20$. The 5% serial part takes the same time no matter how many processors are added.
 
 #### Q. How does Gustafson's Law differ from Amdahl's Law?
 
 * [ ] It applies only to shared-memory machines
 * [x] It lets the problem grow with the processor count
-* [ ] It assumes the serial fraction grows with p
+* [ ] It assumes the serial fraction grows with $p$
 * [ ] It gives a lower bound instead of an upper bound
 
 > **Explanation:** Amdahl asks how much faster a fixed problem can run. Gustafson asks how much larger a problem can be solved in about the same time, giving a more optimistic, weak-scaling view.
@@ -74,7 +74,7 @@ Check your understanding of speedup, efficiency, scaling laws, work and span, an
 * [x] About 30.45
 * [ ] Exactly 32.0
 
-> **Explanation:** Gustafson's scaled speedup is `p - α(p - 1) = 32 - 0.05 × 31 = 30.45`. Because the parallel work grows with p, the serial part matters much less than under Amdahl's Law.
+> **Explanation:** Gustafson's scaled speedup is $p - \alpha(p - 1) = 32 - 0.05 \times 31 = 30.45$. Because the parallel work grows with $p$, the serial part matters much less than under Amdahl's Law.
 
 #### Q. A computation takes 100 seconds on one processor and 28 seconds on four. What is its parallel efficiency?
 
@@ -83,7 +83,7 @@ Check your understanding of speedup, efficiency, scaling laws, work and span, an
 * [x] About 89%
 * [ ] About 357%
 
-> **Explanation:** Speedup is `100 / 28 ≈ 3.57`, and efficiency is speedup divided by processor count: `3.57 / 4 ≈ 0.89`. An efficiency near 100% means near-linear speedup.
+> **Explanation:** Speedup is $\frac{100}{28} \approx 3.57$, and efficiency is speedup divided by processor count: $\frac{3.57}{4} \approx 0.89$. An efficiency near 100% means near-linear speedup.
 
 #### Q. As more processors are applied to a fixed-size problem, what typically happens to parallel efficiency?
 
@@ -97,8 +97,8 @@ Check your understanding of speedup, efficiency, scaling laws, work and span, an
 #### Q. What is superlinear speedup, and what can cause it?
 
 * [ ] Speedup below 1, caused by too much communication
-* [x] Speedup above p, often because each part now fits in cache
-* [ ] Speedup exactly equal to p, from perfect load balance
+* [x] Speedup above $p$, often because each part now fits in cache
+* [ ] Speedup exactly equal to $p$, from perfect load balance
 * [ ] An impossible result that always indicates a timing bug
 
 > **Explanation:** Splitting the problem shrinks each worker's working set, which can cut cache misses or paging. The parallel run then does less memory work per element than the one-processor baseline.
@@ -146,7 +146,7 @@ Check your understanding of speedup, efficiency, scaling laws, work and span, an
 * [x] The total time of all task nodes in the graph
 * [ ] The number of edges between task nodes
 
-> **Explanation:** Work, `T_1`, is the time a single processor needs to execute every task. It is the total amount of computation, regardless of how it is scheduled.
+> **Explanation:** Work, $T_1$, is the time a single processor needs to execute every task. It is the total amount of computation, regardless of how it is scheduled.
 
 #### Q. In a computational graph, which of these describes a program's span?
 
@@ -155,7 +155,7 @@ Check your understanding of speedup, efficiency, scaling laws, work and span, an
 * [ ] The number of processors needed to run the graph
 * [ ] The time between the first and second task nodes
 
-> **Explanation:** Span, `T_∞`, is the execution time with unlimited processors. It equals the length of the critical path.
+> **Explanation:** Span, $T_\infty$, is the execution time with unlimited processors. It equals the length of the critical path.
 
 #### Q. What does the ratio of work to span represent?
 
@@ -202,14 +202,14 @@ Check your understanding of speedup, efficiency, scaling laws, work and span, an
 
 > **Explanation:** Scheduling, cache state, frequency scaling and background activity all change runtimes. Repeated runs, with warm-up handled consistently, show typical behavior and how much it varies.
 
-#### Q. A parallel run on 4 processors takes 30 seconds, and the one-processor baseline takes 100 seconds. What is the total parallel overhead, `T_o = p·T_p − T_1`?
+#### Q. A parallel run on 4 processors takes 30 seconds, and the one-processor baseline takes 100 seconds. What is the total parallel overhead, $T_o = p \cdot T_p - T_1$?
 
 * [ ] 0 seconds
 * [x] 20 seconds
 * [ ] 70 seconds
 * [ ] 120 seconds
 
-> **Explanation:** The parallel run consumes `4 × 30 = 120` processor-seconds, while the useful work is 100 seconds. The extra 20 seconds are communication, synchronization, idle time and other overhead.
+> **Explanation:** The parallel run consumes $4 \times 30 = 120$ processor-seconds, while the useful work is 100 seconds. The extra 20 seconds are communication, synchronization, idle time and other overhead.
 
 #### Q. What does the scalability of a parallel program describe?
 
@@ -229,19 +229,19 @@ Check your understanding of speedup, efficiency, scaling laws, work and span, an
 
 > **Explanation:** In synchronized programs the slowest worker sets the runtime. Dynamic scheduling, work stealing or finer-grained tasks can improve balance.
 
-#### Q. Four workers finish a phase in 10, 10, 10 and 30 seconds. What is the imbalance ratio, `T_max / T_avg`?
+#### Q. Four workers finish a phase in 10, 10, 10 and 30 seconds. What is the imbalance ratio, $T_{\max} / T_{\text{avg}}$?
 
 * [ ] 1.0
 * [ ] 1.5
 * [x] 2.0
 * [ ] 3.0
 
-> **Explanation:** The average is `60 / 4 = 15` seconds, and `30 / 15 = 2.0`. A ratio of 1.0 would mean perfect balance; here three workers sit idle for 20 seconds each.
+> **Explanation:** The average is $\frac{60}{4} = 15$ seconds, and $\frac{30}{15} = 2.0$. A ratio of 1.0 would mean perfect balance; here three workers sit idle for 20 seconds each.
 
 #### Q. What does isoefficiency describe?
 
 * [ ] Every processor in a system having equal efficiency
-* [x] How fast problem size must grow with p to keep efficiency fixed
+* [x] How fast problem size must grow with $p$ to keep efficiency fixed
 * [ ] The energy used per operation by a parallel computer
 * [ ] The efficiency of a program's reads and writes to disk
 
