@@ -1,292 +1,311 @@
 # Hardware and Architecture Quiz
 
-Test your understanding of parallel computing hardware, CPU architecture, and memory systems.
+Notes: [Hardware in Parallel Computing](../notes/06_hardware.md), [GPU Programming](../notes/09_gpu_programming.md)
 
----
+Check your understanding of CPU and GPU architecture, caches, memory systems and Flynn's taxonomy.
+
+#### Q. Flynn's taxonomy classifies computer architectures by the number of concurrent _____ streams and _____ streams.
+
+* [ ] input; output
+* [x] instruction; data
+* [ ] program; memory
+* [ ] cache; I/O
+
+> **Explanation:** Combining single or multiple instruction streams with single or multiple data streams gives the four classes SISD, SIMD, MISD and MIMD.
+
+#### Q. In Flynn's taxonomy, which class describes a modern multicore PC across its cores?
+
+* [ ] SISD
+* [ ] SIMD
+* [ ] MISD
+* [x] MIMD
+
+> **Explanation:** Each core runs its own instruction stream on its own data. Inside each core, vector instructions also provide SIMD, so real systems often combine classes.
+
+#### Q. Which is a typical example of SIMD execution?
+
+* [ ] Two cores running unrelated programs
+* [x] One AVX instruction adding eight pairs of numbers at once
+* [ ] Redundant computers checking each other's results on the same input
+* [ ] A cluster of nodes exchanging MPI messages
+
+> **Explanation:** SIMD applies one instruction to multiple data elements. CPU vector extensions such as SSE, AVX and NEON, and vector processors, are classic SIMD hardware.
 
 #### Q. A Symmetric Multi-Processing (SMP) system has two or more _____ processors connected to a single _____ main memory.
 
-- [x] identical; shared
-- [ ] dissimilar; shared
-- [ ] dissimilar; distributed
-- [ ] identical; distributed
-- [ ] asynchronous; shared
-
-#### Q. A hyperthreaded processor with 8 logical cores will usually provide _____ performance compared to a regular processor with 8 physical cores.
-
-- [x] lower
-- [ ] higher
-- [ ] equivalent
-- [ ] variable
+* [x] identical; shared
+* [ ] dissimilar; shared
+* [ ] dissimilar; distributed
+* [ ] identical; distributed
 
-#### Q. In most modern multi-core CPUs, cache coherency is usually handled by the _____.
-
-- [ ] user
-- [ ] application software
-- [ ] operating system
-- [x] processor hardware
-- [ ] compiler
+> **Explanation:** In SMP all processors are equal peers with the same view of one shared memory, and any of them can run any thread.
 
-#### Q. Which of these applications would benefit the most from parallel execution?
-
-- [x] tool for downloading multiple files from the Internet at the same time
-- [ ] math library for processing large matrices
-- [ ] system logging application that frequently writes to a database
-- [ ] graphical user interface (GUI) for an accounting application
-- [ ] real-time data streaming service
+#### Q. A CPU has 8 physical cores, each with 2-way simultaneous multithreading (SMT). How many logical CPUs does the OS see?
 
-#### Q. What is cache coherency?
-
-- [ ] A measure of cache speed
-- [x] Ensuring that all caches in a multiprocessor system have consistent copies of shared data
-- [ ] The size of the cache
-- [ ] The organization of cache memory
-- [ ] A cache optimization technique
+* [ ] 4
+* [ ] 8
+* [x] 16
+* [ ] 32
 
-#### Q. What is the purpose of a cache line?
-
-- [ ] To connect cache to main memory
-- [ ] To debug cache operations
-- [x] The basic unit of data transfer between cache and main memory
-- [ ] To store cache metadata
-- [ ] To synchronize cache access
+> **Explanation:** Each SMT context appears to the OS as a logical CPU. The 16 contexts still share only 8 cores' execution units and caches.
 
-#### Q. What is "false sharing" in multi-core systems?
-
-- [ ] Sharing invalid data between cores
-- [x] Performance degradation when threads modify different variables that happen to be on the same cache line
-- [ ] Incorrect data sharing due to bugs
-- [ ] Sharing memory that shouldn't be shared
-- [ ] A security vulnerability
+#### Q. Compared with a processor that has 8 physical cores, a hyperthreaded processor with 8 logical cores (4 physical) usually provides _____ performance.
 
-#### Q. What is the difference between NUMA and UMA architectures?
-
-- [ ] NUMA is newer than UMA
-- [x] In UMA, memory access time is uniform; in NUMA, it varies depending on memory location relative to processor
-- [ ] NUMA uses less memory
-- [ ] UMA is for single processors only
-- [ ] There is no significant difference
+* [x] lower
+* [ ] higher
+* [ ] identical
+* [ ] double
 
-#### Q. What is the purpose of a memory barrier (memory fence)?
-
-- [ ] To protect memory from unauthorized access
-- [ ] To allocate memory
-- [x] To ensure memory operations complete in a specific order
-- [ ] To compress memory
-- [ ] To debug memory issues
+> **Explanation:** SMT threads share one core's execution units, caches and bandwidth. SMT improves utilisation when one thread stalls, but it does not match a second physical core.
 
-#### Q. What is "branch prediction" in modern CPUs?
-
-- [ ] Predicting which branch of code to compile
-- [x] CPU technique to guess which way a branch will go to continue executing without waiting
-- [ ] A debugging technique
-- [ ] Predicting memory access patterns
-- [ ] A parallel execution technique
+#### Q. In modern multicore CPUs, what normally keeps the cores' cached copies of memory consistent?
 
-#### Q. What is SIMD (Single Instruction, Multiple Data)?
-
-- [ ] A programming language
-- [x] A parallel processing technique where one instruction operates on multiple data elements simultaneously
-- [ ] A type of memory architecture
-- [ ] A network protocol
-- [ ] A debugging tool
+* [ ] The application, by flushing its caches manually after writes
+* [ ] The operating system, during every context switch
+* [x] The processor hardware, through a cache-coherence protocol
+* [ ] The compiler, by inserting copy instructions
 
-#### Q. What is the difference between L1, L2, and L3 caches?
-
-- [ ] They store different types of data
-- [x] L1 is smallest and fastest; L2 is larger and slower; L3 is largest and slowest among the three
-- [ ] Only L1 is used for data; others are for instructions
-- [ ] They are in different physical locations
-- [ ] L3 is private; L1 and L2 are shared
+> **Explanation:** Coherence is maintained transparently by hardware, typically with a MESI-style protocol. Software sees one consistent value per cache line without managing copies itself.
 
-#### Q. What is hyperthreading (simultaneous multithreading)?
-
-- [ ] Running threads at hyper speed
-- [x] A technique that allows a single CPU core to execute multiple threads by sharing core resources
-- [ ] A type of multi-core processor
-- [ ] Threading across multiple computers
-- [ ] A debugging technique
+#### Q. What does a cache-coherence protocol such as MESI coordinate?
 
-#### Q. What is the memory hierarchy in modern computers?
+* [ ] The order in which threads are scheduled on cores
+* [x] The states of each line's cached copies across cores
+* [ ] Which program may allocate physical memory next
+* [ ] The clock frequency and voltage of each core
 
-- [ ] A management structure for memory allocation
-- [x] The organization of memory from fastest/smallest (registers, cache) to slowest/largest (RAM, disk)
-- [ ] A debugging tool for memory
-- [ ] A way to organize data in memory
-- [ ] A security feature
+> **Explanation:** Cores must agree on each line's value, so lines are tracked as Modified, Exclusive, Shared or Invalid. A write invalidates other cores' copies, which keeps them consistent but generates coherence traffic.
 
-#### Q. What is "speculative execution" in modern CPUs?
+#### Q. Which of these applications would benefit most from parallel execution on multiple cores?
 
-- [ ] Executing code that might not be needed
-- [x] CPU technique of executing instructions before knowing if they're needed, rolling back if wrong
-- [ ] A debugging mode
-- [ ] Parallel execution of speculative code paths
-- [ ] A compiler optimization
+* [ ] A tool that downloads several files from the Internet
+* [x] A math library that processes large matrices
+* [ ] A logging service that frequently writes to a database
+* [ ] A GUI form for an accounting application
 
-#### Q. What is the purpose of a TLB (Translation Lookaside Buffer)?
+> **Explanation:** Large matrix operations are CPU-bound and split naturally into independent pieces. The downloader and logger are mostly I/O-bound, so concurrency helps them more than parallel computation.
 
-- [ ] To translate code between languages
-- [ ] To buffer network translations
-- [x] To cache virtual-to-physical address translations for faster memory access
-- [ ] To translate data formats
-- [ ] To store translation logs
+#### Q. What is a cache line?
 
-#### Q. What is a GPU (Graphics Processing Unit) architecture optimized for?
+* [ ] The bus that connects the L1 cache to main memory
+* [x] The fixed-size block, often 64 bytes, that caches transfer
+* [ ] A queue of pending requests waiting for the cache
+* [ ] A register that counts cache hits and misses
 
-- [ ] Running operating system code
-- [ ] Managing file systems
-- [x] Parallel processing of many similar operations (high throughput)
-- [ ] Single-threaded performance
-- [ ] Memory management
+> **Explanation:** Caches load and track whole lines, not individual bytes. This is why nearby data is cheap to access and why unrelated variables can share a line.
 
-#### Q. What is "cache thrashing"?
+#### Q. What is false sharing?
 
-- [ ] Deliberately destroying cache data
-- [x] Repeated cache misses when data is constantly evicted and reloaded
-- [ ] A cache optimization technique
-- [ ] An attack on cache memory
-- [ ] A debugging process
+* [ ] Two threads reading invalid data because of a race
+* [x] Threads writing separate variables on the same cache line
+* [ ] One thread reading memory that belongs to another process
+* [ ] A security flaw that leaks cache contents across cores
 
-#### Q. What is the difference between shared and distributed memory systems?
+> **Explanation:** The variables are logically independent, but the cache line keeps moving between cores. False sharing can slow a program even when it has no data race.
 
-- [ ] Shared is faster; distributed is slower
-- [x] In shared memory, all processors access the same memory; in distributed, each has its own memory
-- [ ] Shared is for small systems; distributed is for large
-- [ ] They are the same concept
-- [ ] Shared uses more power
+#### Q. Each worker thread increments its own counter, but the counters sit next to each other in one array and the program scales poorly. What is a likely fix?
 
-#### Q. What is "memory bandwidth"?
+* [ ] Protect all the counters with one mutex
+* [x] Give each worker's counter its own cache line
+* [ ] Declare every counter as `volatile`
+* [ ] Add more worker threads to spread the load
 
-- [ ] The width of memory chips
-- [x] The rate at which data can be read from or written to memory
-- [ ] The range of memory addresses
-- [ ] The number of memory channels
-- [ ] The size of memory
+> **Explanation:** Adjacent counters share cache lines, so every increment invalidates other cores' copies. Padding them apart, or keeping local counts and combining them at the end, removes that traffic.
 
-#### Q. What is a "memory-bound" workload?
+#### Q. Does hardware cache coherence make unsynchronized concurrent code correct?
 
-- [ ] A workload limited by memory size
-- [x] A workload whose performance is limited by memory bandwidth or latency, not CPU speed
-- [ ] A workload that uses all memory
-- [ ] A workload that cannot use cache
-- [ ] A workload that is restricted to certain memory regions
+* [ ] Yes, coherence guarantees every thread sees writes in program order
+* [x] No, ordering still needs atomics, locks or other synchronization
+* [ ] Yes, but only on x86 processors with strong ordering
+* [ ] No, because coherence is disabled when several threads run
 
-#### Q. What is the purpose of prefetching in modern CPUs?
+> **Explanation:** Coherence keeps each cache line consistent, but compilers and CPUs still reorder operations. The language memory model, through synchronization, is what defines correct ordering.
 
-- [ ] To fetch data before the program starts
-- [x] To load data into cache before it's actually needed to reduce wait time
-- [ ] To prefetch instructions for compilation
-- [ ] To organize data in memory
-- [ ] To debug memory access
+#### Q. How do UMA and NUMA architectures differ?
 
-#### Q. What is "Amdahl's number" or the sequential fraction in parallel computing?
+* [ ] UMA is found only in single-core processors
+* [x] UMA access time is uniform; in NUMA it depends on location
+* [ ] NUMA systems cannot offer a shared address space
+* [ ] NUMA uses faster memory chips than UMA systems
 
-- [ ] A random number used in algorithms
-- [x] The fraction of a program that cannot be parallelized
-- [ ] The number of processors needed
-- [ ] The maximum speedup possible
-- [ ] The efficiency rating
+> **Explanation:** In NUMA, memory is attached to particular sockets or nodes, and local accesses are faster than remote ones. Modern multi-socket servers are typically cache-coherent NUMA.
 
-#### Q. What is the difference between physical and logical cores?
+#### Q. On a Linux NUMA server, one thread initialises a large array and then 32 threads on two sockets process it. Why might the threads on one socket run slower?
 
-- [ ] Physical cores are real hardware; logical are software simulations
-- [x] Physical cores are actual hardware units; logical cores are the threads a physical core can run (e.g., with hyperthreading)
-- [ ] Logical cores are faster
-- [ ] Physical cores handle data; logical handle instructions
-- [ ] There is no difference
+* [ ] The other socket's cores have a lower clock speed
+* [x] First-touch placed every page on the initialising thread's node
+* [ ] NUMA prevents two sockets from reading the same array
+* [ ] Only one socket at a time can use its L1 caches
 
-#### Q. What is a "compute-bound" workload?
+> **Explanation:** By default a page lives on the node of the thread that first touches it, so the other socket's accesses are remote. Initialising data in parallel, with the same threads that will use it, keeps accesses local.
 
-- [ ] A workload bound to a specific computer
-- [x] A workload whose performance is limited by CPU speed, not memory or I/O
-- [ ] A workload that cannot be parallelized
-- [ ] A workload that uses extensive computation
-- [ ] A workload limited by network speed
+#### Q. What is the purpose of a memory barrier (fence)?
 
-#### Q. What is "instruction-level parallelism" (ILP)?
+* [ ] To protect memory from unauthorised access
+* [ ] To allocate a new block of aligned memory
+* [x] To limit how memory operations may be reordered
+* [ ] To flush the entire CPU cache to disk
 
-- [ ] Parallel execution of programs
-- [x] CPU technique of executing multiple instructions simultaneously within a single core
-- [ ] Parallelism between different programming languages
-- [ ] A compiler optimization
-- [ ] Parallel instruction decoding
+> **Explanation:** A fence stops the compiler and CPU from reordering certain loads and stores across it. Atomics with acquire or release ordering provide the same kind of guarantee in a structured way.
 
-#### Q. What is a "vector processor"?
+#### Q. What is branch prediction?
 
-- [ ] A processor that handles graphics
-- [x] A processor designed to perform the same operation on multiple data elements simultaneously
-- [ ] A processor for mathematical calculations only
-- [ ] A processor with multiple cores
-- [ ] A processor for vector graphics
+* [ ] The compiler choosing which branch of an `if` to compile
+* [x] The CPU guessing a branch's outcome to keep fetching instructions
+* [ ] Predicting which memory addresses a program will access next
+* [ ] Running both sides of every branch on different cores
 
-#### Q. What is "out-of-order execution"?
+> **Explanation:** A correct guess keeps the pipeline full. A misprediction forces the CPU to discard the speculative work and refill the pipeline, costing many cycles.
 
-- [ ] Executing code in random order
-- [x] CPU technique of executing instructions in an order different from the program order to maximize efficiency
-- [ ] Executing code without compilation
-- [ ] A bug in program execution
-- [ ] Executing instructions backwards
+#### Q. What is speculative execution?
 
-#### Q. What is the "memory wall" problem?
+* [ ] Running only the code the programmer marked as optional
+* [x] Executing instructions before knowing they are needed, undoing wrong guesses
+* [ ] A debugging mode that executes every instruction twice to check it
+* [ ] A compiler optimisation that deletes code it predicts will be unused
 
-- [ ] A physical limit on memory size
-- [x] The growing disparity between CPU speed and memory access speed
-- [ ] A security barrier for memory
-- [ ] A debugging challenge
-- [ ] A memory corruption issue
+> **Explanation:** Combined with branch prediction, speculation lets the CPU work ahead. Only correctly predicted results are committed to the architectural state.
 
-#### Q. What is "cache associativity"?
+#### Q. What does out-of-order execution do?
 
-- [ ] Linking caches together
-- [x] The number of cache locations where a memory block can be placed
-- [ ] The speed of cache access
-- [ ] The association between cache levels
-- [ ] Cache sharing between cores
+* [ ] Executes the program's statements in a random order each run
+* [x] Runs independent instructions as soon as their inputs are ready
+* [ ] Reorders the source code once at compile time
+* [ ] Executes instructions backwards to undo earlier mistakes
 
-#### Q. What is a "write-back" cache policy?
+> **Explanation:** While one instruction waits, for example on a cache miss, later independent instructions can run. Retiring in order preserves the program's visible behavior on that core.
 
-- [ ] Writing data back to the program
-- [x] Writing modified data to main memory only when the cache line is evicted
-- [ ] Undoing write operations
-- [ ] A backup mechanism
-- [ ] Writing data immediately to disk
+#### Q. What is instruction-level parallelism (ILP)?
 
-#### Q. What is "write-through" cache policy?
+* [ ] Running several programs at once on several cores
+* [x] One core executing several independent instructions at once
+* [ ] Splitting one instruction across several cores
+* [ ] Parallelism between different programming languages
 
-- [ ] Writing data through multiple caches
-- [x] Writing data to both cache and main memory simultaneously
-- [ ] A faster writing technique
-- [ ] Writing through a buffer
-- [ ] A debugging mode
+> **Explanation:** Pipelining, superscalar issue and out-of-order execution exploit ILP. Data dependencies between instructions limit how much is available.
 
-#### Q. What is the "von Neumann bottleneck"?
+#### Q. How do the L1, L2 and L3 caches typically compare?
 
-- [ ] A bottleneck in the CPU
-- [x] The limitation of having a single path between CPU and memory for both instructions and data
-- [ ] A software design problem
-- [ ] A network bottleneck
-- [ ] A memory allocation issue
+* [ ] They are the same size but store different kinds of data
+* [x] L1 is smallest and fastest; L3 is largest and slowest
+* [ ] L3 is fastest because it is closest to memory
+* [ ] L1 is shared by all cores, while L3 is private to each core
 
-#### Q. What is "GPGPU" computing?
+> **Explanation:** Each level trades speed for capacity, with L2 in between. L1 is usually private to a core, while L3 is often shared by several or all cores.
 
-- [ ] Graphics processing for games
-- [x] Using graphics processing units for general-purpose computing tasks
-- [ ] A graphics programming language
-- [ ] A type of GPU architecture
-- [ ] Graphics debugging
+#### Q. What is a GPU's architecture optimised for?
 
-#### Q. What is NUMA (Non-Uniform Memory Access)?
+* [ ] Running operating-system code with low latency
+* [ ] Fast execution of single-threaded, branch-heavy programs
+* [x] High throughput on many similar, independent operations
+* [ ] Managing file systems and storage devices
 
-- [ ] A cache coherence protocol
-- [x] A memory architecture where access time depends on the memory's proximity to a processor
-- [ ] A type of GPU memory
-- [ ] A network topology
-- [ ] A data compression scheme
+> **Explanation:** A GPU keeps many lightweight threads in flight and switches between them to hide memory latency. CPUs invest more hardware in making a few threads fast.
+
+#### Q. When can offloading a computation to a GPU make it slower than running it on the CPU?
+
+* [ ] Whenever the data is stored in floating point
+* [x] When the problem is small and data transfers dominate
+* [ ] Whenever the CPU has more than eight cores
+* [ ] When the algorithm is perfectly data-parallel
+
+> **Explanation:** A GPU is not automatically faster. Transfer cost, small problem size, branch divergence and low arithmetic intensity can all remove the benefit.
+
+#### Q. What does GPGPU computing mean?
+
+* [ ] Using a GPU only for rendering games and video
+* [x] Using GPUs for general-purpose, non-graphics computation
+* [ ] A shading language for writing graphics effects
+* [ ] A tool for debugging graphics drivers on Linux
+
+> **Explanation:** Programming models such as CUDA, HIP, OpenCL and SYCL let GPUs run simulations, linear algebra and machine learning workloads.
+
+#### Q. What best describes the difference between latency and throughput?
+
+* [ ] Latency is work per second; throughput is the time for one operation
+* [x] Latency is time per operation; throughput is work per unit time
+* [ ] Latency matters only for GPUs; throughput only for CPUs
+* [ ] Both measure the same thing in different units
+
+> **Explanation:** A system can process many items per second while each item still takes a long time. CPUs lean towards low latency, GPUs towards high throughput.
+
+#### Q. How are data parallelism and SIMD related?
+
+* [ ] They are two names for the same hardware feature
+* [x] Data parallelism is a workload property; SIMD is one way to exploit it
+* [ ] SIMD is a workload property; data parallelism is a CPU instruction set
+* [ ] Data parallelism requires a GPU, while SIMD requires a cluster
+
+> **Explanation:** Applying the same operation to many elements can be executed with SIMD instructions, GPU threads in SIMT groups or multiple cores.
+
+#### Q. What is a vector processor?
+
+* [ ] A processor dedicated to drawing vector graphics on screen
+* [x] A processor whose instructions operate on whole vectors of elements
+* [ ] A processor with many independent, identical cores
+* [ ] A processor that only performs integer arithmetic
+
+> **Explanation:** One vector instruction streams many elements through deep pipelines, so a new element can enter every cycle after start-up. Long vectors use the hardware best.
+
+#### Q. What is cache thrashing?
+
+* [ ] Deliberately clearing the cache to improve security
+* [x] Repeated misses as data is evicted before it can be reused
+* [ ] Two caches exchanging lines faster than memory can
+* [ ] A cache optimisation that prefetches data in bulk
+
+> **Explanation:** Thrashing happens when the working set does not fit, or when access patterns map many addresses to the same cache sets. Performance then approaches that of main memory.
+
+#### Q. How do shared-memory and distributed-memory systems differ?
+
+* [ ] Shared memory is always faster; distributed memory is always slower
+* [x] Shared: one address space; distributed: per-node memory and messages
+* [ ] Shared memory is used for small data; distributed memory for large data
+* [ ] There is no practical difference for programmers
+
+> **Explanation:** Shared memory lets threads communicate through loads and stores. Distributed memory scales further but requires explicit message passing, for example with MPI.
 
 #### Q. What is memory bandwidth?
 
-- [ ] The amount of memory available
-- [x] The rate at which data can be read from or written to memory
-- [ ] The delay in accessing memory
-- [ ] The size of the CPU cache
-- [ ] The number of memory channels
+* [ ] The total amount of installed memory
+* [x] The rate at which data can be read from or written to memory
+* [ ] The delay before the first byte of a request arrives
+* [ ] The number of memory addresses a program may use
+
+> **Explanation:** Bandwidth is measured in bytes per second and limits data-heavy workloads. The delay for one access is latency, a separate property.
+
+#### Q. A memory-bound loop already saturates DRAM bandwidth with 8 cores. What usually happens if you run it on 16 cores?
+
+* [ ] It becomes about twice as fast, like compute-bound code
+* [x] It barely speeds up, since bandwidth is already saturated
+* [ ] It always slows down to exactly half its speed
+* [ ] It becomes compute-bound and scales linearly
+
+> **Explanation:** All cores share finite memory bandwidth. Once it is saturated, extra cores add compute capacity that the loop cannot use.
+
+#### Q. What is hardware prefetching?
+
+* [ ] Loading a program into memory before it is started
+* [x] Loading data into cache before the program requests it
+* [ ] Compiling frequently used functions ahead of time
+* [ ] Reordering data in memory so it is sorted
+
+> **Explanation:** Prefetchers recognise patterns such as sequential or strided access. Predictable access patterns therefore run much faster than random ones.
+
+#### Q. What is the "memory wall"?
+
+* [ ] A physical limit on how much RAM a single machine can hold
+* [x] The growing gap between processor speed and memory access speed
+* [ ] A hardware barrier that isolates each process's memory from others
+* [ ] A cache that blocks writes from reaching memory
+
+> **Explanation:** Processors improved faster than DRAM latency for decades, so many programs spend much of their time waiting for memory. Caches, prefetching and locality-aware code help.
+
+#### Q. With a write-back cache policy, when is modified data written to main memory?
+
+* [ ] Immediately, as part of every store
+* [x] When the dirty line is evicted or flushed
+* [ ] Only when the owning program exits
+* [ ] Never, because the cache replaces main memory
+
+> **Explanation:** Write-back avoids writing to memory on every store, saving bandwidth. A write-through cache, by contrast, updates memory on every write.

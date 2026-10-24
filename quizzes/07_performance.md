@@ -1,311 +1,338 @@
 # Performance Evaluation Quiz
 
-Test your understanding of performance metrics, speedup, efficiency, and scaling in parallel computing.
+Notes: [Evaluating Performance](../notes/07_evaluating_performance.md), [Designing Parallel Programs](../notes/08_designing_parallel_programs.md)
 
----
+Check your understanding of speedup, efficiency, scaling laws, work and span, and how to measure parallel programs.
 
-#### Q. Which of these describes a program's "latency"?
+#### Q. Which of these describes a program's latency?
 
-- [ ] ratio of sequential execution time to the parallel execution time with some number of processors
-- [x] amount of time a task takes to execute
-- [ ] number of tasks that can be executed in a certain amount of time
-- [ ] number of processors used by the program
+* [ ] The ratio of sequential to parallel execution time
+* [x] The time one task takes to complete
+* [ ] The number of tasks completed per unit of time
+* [ ] The number of processors the program uses
 
-#### Q. If 85% of a program is parallelizable so that using a 6-core processor will produce a 6x speedup for that portion of the code, what is the maximum overall speedup the program can achieve?
+> **Explanation:** Latency is measured per operation, from start to finish. Percentiles such as p95 and p99 are often reported because an average can hide slow outliers.
 
-- [x] 4.62
-- [ ] 5.1
-- [ ] 1
-- [ ] 6
-- [ ] 5.5
+#### Q. Which of these describes a program's throughput?
 
-#### Q. What does calculating a program's efficiency (speedup divided by number of parallel processors) provide an indicator of?
+* [x] The number of tasks completed per unit of time
+* [ ] The ratio of sequential to parallel execution time
+* [ ] The time one task takes to complete
+* [ ] The number of processors the program uses
 
-- [ ] the maximum number of parallel processors the program can utilize
-- [ ] how well the parallel program is performing compared to its sequential implementation
-- [x] how well the parallel processing resources are being utilized
-- [ ] the optimal number of parallel processors for the program to use
-- [ ] the minimum number of processors needed
+> **Explanation:** Throughput counts completed work per second, such as requests or images. A system can raise throughput without lowering the latency of any single task.
 
-#### Q. What is an advantage of using fine-grained parallelism with a large number of small tasks?
+#### Q. Which of these describes a program's speedup?
 
-- [ ] high computation-to-communication ratio
-- [ ] poor load balancing
-- [ ] low computation-to-communication ratio
-- [x] good load-balancing
-- [ ] reduced synchronization overhead
+* [ ] The time one task takes to complete
+* [x] One-processor time divided by p-processor time
+* [ ] The number of tasks completed per unit of time
+* [ ] The number of processors the program uses
 
-#### Q. Which of these describes a program's "throughput"?
+> **Explanation:** Speedup is `S_p = T_1 / T_p`, based on wall-clock time for the same problem. A speedup of p is linear, or ideal, speedup.
 
-- [x] number of tasks that can be executed in a certain amount of time
-- [ ] ratio of sequential execution time to the parallel execution time with some number of processors
-- [ ] amount of time a task takes to execute
-- [ ] number of processors used by the program
+#### Q. 85% of a program's runtime is parallelizable and runs 6 times faster on a 6-core processor. According to Amdahl's Law, what is the overall speedup?
 
-#### Q. Which of these describes a program's "critical path"?
+* [x] About 3.43
+* [ ] About 4.62
+* [ ] About 5.10
+* [ ] Exactly 6.00
 
-- [x] longest series of sequential operations through the program
-- [ ] sum of the time for all task nodes in a computational graph
-- [ ] sum of the time for all task nodes along the critical path
-- [ ] shortest execution path through the program
+> **Explanation:** `S = 1 / ((1 - 0.85) + 0.85/6) = 1 / (0.15 + 0.142) ≈ 3.43`. The 15% serial portion keeps the result well below the core count.
 
-#### Q. What does a work-to-span ratio less than one indicate?
+#### Q. Amdahl's Law gives a(n) _____ on the overall speedup from parallelizing a program.
 
-- [ ] A parallelized version of the program will execute faster than the sequential version.
-- [ ] A parallelized version of the program will execute in the same amount of time as the sequential version.
-- [ ] The work-to-span ratio cannot be less than one.
-- [x] A parallelized version of the program will execute slower than the sequential version.
-- [ ] The program has no parallelism opportunities.
+* [ ] lower limit
+* [x] upper limit
+* [ ] average value
+* [ ] exact prediction
 
-#### Q. Increasing the number of processors with a fixed problem size per processor leverages weak scaling to accomplish _____ in _____.
+> **Explanation:** The model assumes the parallel part divides perfectly and ignores communication, synchronization and imbalance. Real programs therefore do no better than it predicts, and usually worse.
 
-- [ ] more work; more time
-- [ ] same work; less time
-- [x] more work; less time
-- [ ] more work; same time
-- [ ] less work; same time
+#### Q. If 95% of a fixed-size program can be parallelized, what is the maximum speedup with unlimited processors, according to Amdahl's Law?
 
-#### Q. Which of these describes a program's "work"?
+* [ ] 5
+* [ ] 19
+* [x] 20
+* [ ] 95
 
-- [ ] sum of the time for all task nodes along the critical path
-- [ ] longest series of sequential operations through the program
-- [x] sum of the time for all task nodes in a computational graph
-- [ ] total number of operations performed by the program
+> **Explanation:** As the processor count grows, the speedup approaches `1 / (1 - P) = 1 / 0.05 = 20`. The 5% serial part takes the same time no matter how many processors are added.
 
-#### Q. Why should you average the execution time across multiple runs when measuring a program's performance?
+#### Q. How does Gustafson's Law differ from Amdahl's Law?
 
-- [ ] The system clock used to determine the start and end times of the program is inconsistent and may fluctuate randomly.
-- [ ] It's good luck to do things multiple times.
-- [ ] The program might crash so you should measure it multiple times to make sure you get at least one good run.
-- [x] The execution time will vary from run-to-run depending on how the operating system chooses to schedule your program.
-- [ ] To account for hardware variability.
+* [ ] It applies only to shared-memory machines
+* [x] It lets the problem grow with the processor count
+* [ ] It assumes the serial fraction grows with p
+* [ ] It gives a lower bound instead of an upper bound
 
-#### Q. Which of these describes a program's "span"?
+> **Explanation:** Amdahl asks how much faster a fixed problem can run. Gustafson asks how much larger a problem can be solved in about the same time, giving a more optimistic, weak-scaling view.
 
-- [ ] longest series of sequential operations through the program
-- [x] sum of the time for all task nodes along the critical path
-- [ ] sum of the time for all task nodes in a computational graph
-- [ ] total execution time of the program
+#### Q. A scaled workload has a serial fraction of 0.05. What speedup does Gustafson's Law predict on 32 processors?
 
-#### Q. Increasing the number of processors with a fixed total problem size leverages strong scaling to accomplish _____ in _____.
+* [ ] About 12.5
+* [ ] About 20.0
+* [x] About 30.45
+* [ ] Exactly 32.0
 
-- [ ] more work; less time
-- [x] same work; less time
-- [ ] more work; same time
-- [ ] more work; more time
-- [ ] less work; more time
+> **Explanation:** Gustafson's scaled speedup is `p - α(p - 1) = 32 - 0.05 × 31 = 30.45`. Because the parallel work grows with p, the serial part matters much less than under Amdahl's Law.
 
-#### Q. Amdahl's Law calculates a(n) _____ for the overall speedup that parallelizing a program will achieve.
+#### Q. A computation takes 100 seconds on one processor and 28 seconds on four. What is its parallel efficiency?
 
-- [ ] upper and lower limit
-- [ ] lower limit
-- [x] upper limit
-- [ ] average value
-- [ ] median value
+* [ ] About 28%
+* [ ] About 72%
+* [x] About 89%
+* [ ] About 357%
 
-#### Q. What is an advantage of using coarse-grained parallelism with a small number of large tasks?
+> **Explanation:** Speedup is `100 / 28 ≈ 3.57`, and efficiency is speedup divided by processor count: `3.57 / 4 ≈ 0.89`. An efficiency near 100% means near-linear speedup.
 
-- [x] high computation-to-communication ratio
-- [ ] poor load balancing
-- [ ] low computation-to-communication ratio
-- [ ] good load-balancing
-- [ ] reduced memory overhead
+#### Q. As more processors are applied to a fixed-size problem, what typically happens to parallel efficiency?
 
-#### Q. Which of these describes a program's "speedup"?
+* [ ] It stays constant at 100%
+* [ ] It rises steadily along with speedup
+* [x] It falls, even while speedup may still increase
+* [ ] It becomes exactly zero beyond 8 processors
 
-- [ ] amount of time a task takes to execute
-- [x] ratio of sequential execution time to the parallel execution time with some number of processors
-- [ ] number of tasks that can be executed in a certain amount of time
-- [ ] number of processors used by the program
+> **Explanation:** Serial work, communication and synchronization stay roughly constant or grow while each processor's share of useful work shrinks, so each added processor contributes less.
 
-#### Q. Granularity can be described as the ratio of _____ over _____.
+#### Q. What is superlinear speedup, and what can cause it?
 
-- [ ] speedup; number of processors
-- [ ] tasks; time
-- [ ] tasks; number of processors
-- [x] computation; communication
-- [ ] workload; processors
+* [ ] Speedup below 1, caused by too much communication
+* [x] Speedup above p, often because each part now fits in cache
+* [ ] Speedup exactly equal to p, from perfect load balance
+* [ ] An impossible result that always indicates a timing bug
 
-#### Q. Why are computational graphs useful?
+> **Explanation:** Splitting the problem shrinks each worker's working set, which can cut cache misses or paging. The parallel run then does less memory work per element than the one-processor baseline.
 
-- [x] They include all of the tasks within a program, from start to finish.
-- [ ] They help to identify critical sections of code that will require mutual exclusion.
-- [ ] They provide a good excuse to practice your drawing skills.
-- [x] They help to identify opportunities for parallel execution.
-- [ ] They simplify the debugging process.
+#### Q. What is an advantage of fine-grained parallelism with many small tasks?
 
-#### Q. What is "parallel overhead"?
+* [ ] A high computation-to-communication ratio
+* [ ] Lower scheduling overhead
+* [x] Good load balancing
+* [ ] Better cache locality
 
-- [ ] The memory used by parallel programs
-- [x] Extra time spent on coordination, communication, and synchronization that wouldn't exist in sequential execution
-- [ ] The cost of parallel hardware
-- [ ] The complexity of parallel code
-- [ ] The power consumption of parallel systems
+> **Explanation:** Many small tasks can be spread evenly and rebalanced dynamically. The cost is more frequent scheduling, synchronization and communication.
 
-#### Q. What is the "scalability" of a parallel program?
+#### Q. What is an advantage of coarse-grained parallelism with a few large tasks?
 
-- [ ] How large the program can grow
-- [x] How well performance improves as more processors are added
-- [ ] How many features the program has
-- [ ] The maximum number of processors it can use
-- [ ] The size of problems it can solve
+* [x] A high computation-to-communication ratio
+* [ ] Good load balancing for irregular work
+* [ ] More tasks available than processors
+* [ ] Easier recovery from slow tasks
 
-#### Q. What is Gustafson's Law and how does it differ from Amdahl's Law?
+> **Explanation:** Large tasks do more computation between coordination events, so overhead is a smaller fraction of runtime. If a few tasks run long, though, other processors sit idle.
 
-- [ ] They are the same law
-- [x] Gustafson's Law considers that problem size can grow with processors (weak scaling), showing more optimistic speedup potential
-- [ ] Gustafson's Law is for single processors
-- [ ] Gustafson's Law is deprecated
-- [ ] Gustafson's Law applies only to shared memory
+#### Q. Granularity can be described as the ratio of _____ to _____.
 
-#### Q. What is "parallel efficiency"?
+* [ ] speedup; number of processors
+* [ ] tasks; time
+* [ ] tasks; number of processors
+* [x] computation; communication
 
-- [ ] How efficiently parallel code is written
-- [x] The ratio of speedup to the number of processors (speedup/P), measuring resource utilization
-- [ ] The energy efficiency of parallel computing
-- [ ] The memory efficiency of parallel programs
-- [ ] The ratio of communication to computation
+> **Explanation:** Granularity compares useful work in a task with its coordination cost. A task must do enough work to amortise the cost of scheduling and communicating it.
 
-#### Q. What is "load imbalance" in parallel computing?
+#### Q. In a computational graph, which of these describes the critical path?
 
-- [ ] An error in load balancing algorithms
-- [x] When work is unevenly distributed among processors, causing some to wait while others are busy
-- [ ] When the load is too heavy for processors
-- [ ] A network bandwidth issue
-- [ ] A memory allocation problem
+* [x] The longest chain of dependent operations through the program
+* [ ] The total time of all task nodes in the graph
+* [ ] The shortest path from the start node to the end node
+* [ ] The set of tasks that access shared memory
 
-#### Q. What is "isoefficiency" in the context of parallel computing?
+> **Explanation:** Operations on the critical path must run one after another, so its length bounds the execution time no matter how many processors are available.
 
-- [ ] Equal efficiency across all processors
-- [x] The rate at which problem size must grow with the number of processors to maintain constant efficiency
-- [ ] A measure of energy efficiency
-- [ ] The efficiency of I/O operations
-- [ ] A debugging metric
+#### Q. In a computational graph, which of these describes a program's work?
 
-#### Q. What is the difference between "wall clock time" and "CPU time"?
+* [ ] The time of the task nodes along the critical path
+* [ ] The longest chain of dependent operations
+* [x] The total time of all task nodes in the graph
+* [ ] The number of edges between task nodes
 
-- [ ] They are the same thing
-- [x] Wall clock time is actual elapsed time; CPU time is only the time the CPU spent on the task
-- [ ] Wall clock is for sequential; CPU time is for parallel
-- [ ] Wall clock includes sleep time; CPU time doesn't
-- [ ] CPU time is always longer
+> **Explanation:** Work, `T_1`, is the time a single processor needs to execute every task. It is the total amount of computation, regardless of how it is scheduled.
 
-#### Q. What is "communication overhead" in parallel computing?
+#### Q. In a computational graph, which of these describes a program's span?
 
-- [ ] The bandwidth of the network
-- [x] The time spent sending and receiving messages between processors instead of computing
-- [ ] The complexity of the communication protocol
-- [ ] The cost of communication hardware
-- [ ] The error rate in communication
+* [ ] The total time of all task nodes in the graph
+* [x] The total time of the task nodes along the critical path
+* [ ] The number of processors needed to run the graph
+* [ ] The time between the first and second task nodes
 
-#### Q. What does "superlinear speedup" mean?
+> **Explanation:** Span, `T_∞`, is the execution time with unlimited processors. It equals the length of the critical path.
 
-- [ ] Speedup that exceeds expectations
-- [x] Speedup greater than the number of processors (greater than linear), often due to cache effects
-- [ ] The maximum possible speedup
-- [ ] Speedup using special hardware
-- [ ] A theoretical impossibility
+#### Q. What does the ratio of work to span represent?
 
-#### Q. What is the "efficiency paradox" in parallel computing?
+* [ ] The communication overhead paid per processor
+* [x] The parallelism, an upper bound on achievable speedup
+* [ ] The fraction of the program that must run serially
+* [ ] The number of tasks that are on the critical path
 
-- [ ] Parallel programs being less efficient
-- [x] As you add more processors, efficiency typically decreases even as speedup increases
-- [ ] Sequential programs being more efficient
-- [ ] A bug in efficiency calculations
-- [ ] The cost of efficiency optimizations
-
-#### Q. How does problem size affect parallel speedup?
-
-- [ ] Larger problems always have lower speedup
-- [x] Larger problems often achieve better speedup because parallel overhead becomes a smaller fraction of total work
-- [ ] Problem size doesn't affect speedup
-- [ ] Smaller problems always have better speedup
-- [ ] Only medium-sized problems benefit from parallelization
-
-#### Q. What is "profiling" in the context of parallel performance?
-
-- [ ] Creating user profiles
-- [x] Measuring and analyzing where a program spends its time to identify bottlenecks
-- [ ] Profiling hardware capabilities
-- [ ] Creating performance profiles for different users
-- [ ] A security analysis technique
-
-#### Q. What is the "roofline model"?
-
-- [ ] A model for ceiling height calculations
-- [x] A visual performance model that shows the upper bound on performance based on compute and memory bandwidth
-- [ ] A model for network topology
-- [ ] A hardware architecture model
-- [ ] A cost estimation model
-
-#### Q. What is "Karp-Flatt metric"?
-
-- [ ] A metric for memory usage
-- [x] A metric to measure the serial fraction of a parallel program empirically
-- [ ] A metric for network latency
-- [ ] A metric for cache efficiency
-- [ ] A metric for power consumption
-
-#### Q. What is "synchronization overhead"?
-
-- [ ] The cost of buying synchronization hardware
-- [x] Time spent waiting at synchronization points (barriers, locks) instead of computing
-- [ ] The complexity of synchronization code
-- [ ] Network synchronization delays
-- [ ] Clock synchronization time
-
-#### Q. What is "scalability analysis"?
-
-- [ ] Analyzing code size
-- [x] Studying how performance changes as the number of processors or problem size increases
-- [ ] Analyzing hardware capabilities
-- [ ] Measuring memory scalability
-- [ ] A type of security analysis
-
-#### Q. What is "performance portability"?
-
-- [ ] Running the same code on different systems
-- [x] Achieving good performance across different hardware architectures without major code changes
-- [ ] Porting code between languages
-- [ ] Moving performance data between systems
-- [ ] Portable performance monitoring
-
-#### Q. What is "idle time" in parallel computing?
-
-- [ ] Time when the computer is in sleep mode
-- [x] Time when a processor is not doing useful work while waiting for data or synchronization
-- [ ] Time between program runs
-- [ ] Time to initialize the system
-- [ ] Time to shut down the system
-
-#### Q. What is "memory latency"?
-
-- [ ] The size of memory
-- [x] The time delay between requesting data from memory and receiving it
-- [ ] The speed of memory
-- [ ] The age of memory hardware
-- [ ] Memory allocation time
-
-#### Q. What is "arithmetic intensity"?
-
-- [ ] How complex the math operations are
-- [x] The ratio of floating-point operations to bytes of data moved from memory
-- [ ] The speed of arithmetic operations
-- [ ] The number of arithmetic units
-- [ ] A measure of CPU capability
-
-#### Q. What is "strong scaling"?
-
-- [ ] Increasing both workload size and processor count together
-- [x] Keeping workload size fixed while increasing the number of processors to see speedup
-- [ ] Reducing workload size while reducing processor count
-- [ ] Measuring performance by decreasing processors gradually
-- [ ] Scaling only memory bandwidth
-
-#### Q. What is "weak scaling"?
-
-- [ ] Keeping workload fixed while reducing processors
-- [x] Increasing workload size proportionally with processor count to keep work per processor constant
-- [ ] Running fewer processors for the same workload
-- [ ] Decreasing workload as processors increase
-- [ ] Ignoring communication costs when scaling
+> **Explanation:** Because span is part of the work, the ratio is always at least 1. A ratio of 1 means no parallelism; larger values mean more processors can be used profitably.
+
+#### Q. Why are computational graphs useful when designing a parallel program?
+
+* [ ] They automatically eliminate data races between tasks
+* [x] They show which tasks depend on which, exposing parallelism
+* [ ] They replace the need to measure performance later
+* [ ] They pinpoint exactly which lines of code need a mutex
+
+> **Explanation:** Tasks with no path between them in the graph are independent and can run concurrently. The graph also exposes the critical path that limits speedup.
+
+#### Q. Increasing the number of processors while keeping the problem size per processor fixed (weak scaling) aims to accomplish _____ in _____.
+
+* [ ] the same work; less time
+* [x] more work; the same time
+* [ ] more work; less time
+* [ ] less work; the same time
+
+> **Explanation:** In weak scaling the total problem grows with the machine. Ideally the runtime stays constant while the total amount of work increases.
+
+#### Q. Increasing the number of processors while keeping the total problem size fixed (strong scaling) aims to accomplish _____ in _____.
+
+* [ ] more work; less time
+* [x] the same work; less time
+* [ ] more work; the same time
+* [ ] less work; more time
+
+> **Explanation:** Strong scaling divides a fixed problem among more processors. It eventually saturates when each processor's share becomes too small relative to overhead.
+
+#### Q. Why should you repeat a timing measurement several times and report the variation?
+
+* [ ] The system clock drifts randomly between runs
+* [ ] The first run always crashes on parallel machines
+* [x] Scheduling, caches and background load vary between runs
+* [ ] Averaging makes the program itself run faster
+
+> **Explanation:** Scheduling, cache state, frequency scaling and background activity all change runtimes. Repeated runs, with warm-up handled consistently, show typical behavior and how much it varies.
+
+#### Q. A parallel run on 4 processors takes 30 seconds, and the one-processor baseline takes 100 seconds. What is the total parallel overhead, `T_o = p·T_p − T_1`?
+
+* [ ] 0 seconds
+* [x] 20 seconds
+* [ ] 70 seconds
+* [ ] 120 seconds
+
+> **Explanation:** The parallel run consumes `4 × 30 = 120` processor-seconds, while the useful work is 100 seconds. The extra 20 seconds are communication, synchronization, idle time and other overhead.
+
+#### Q. What does the scalability of a parallel program describe?
+
+* [ ] How large its source code can grow over time
+* [x] How its performance changes as resources are added
+* [ ] The maximum number of threads its language allows
+* [ ] How many users can download and install it at once
+
+> **Explanation:** A scalable program keeps gaining useful performance as resources grow. Scalability is measured experimentally, for example with strong- and weak-scaling studies.
+
+#### Q. What is load imbalance?
+
+* [ ] A power supply that cannot sustain the processors' load
+* [x] Uneven work, so some processors wait while others are busy
+* [ ] Too much total work for the machine's memory to hold
+* [ ] A network link carrying more traffic than another
+
+> **Explanation:** In synchronized programs the slowest worker sets the runtime. Dynamic scheduling, work stealing or finer-grained tasks can improve balance.
+
+#### Q. Four workers finish a phase in 10, 10, 10 and 30 seconds. What is the imbalance ratio, `T_max / T_avg`?
+
+* [ ] 1.0
+* [ ] 1.5
+* [x] 2.0
+* [ ] 3.0
+
+> **Explanation:** The average is `60 / 4 = 15` seconds, and `30 / 15 = 2.0`. A ratio of 1.0 would mean perfect balance; here three workers sit idle for 20 seconds each.
+
+#### Q. What does isoefficiency describe?
+
+* [ ] Every processor in a system having equal efficiency
+* [x] How fast problem size must grow with p to keep efficiency fixed
+* [ ] The energy used per operation by a parallel computer
+* [ ] The efficiency of a program's reads and writes to disk
+
+> **Explanation:** A slowly growing isoefficiency function means the algorithm scales well: modest increases in problem size keep added processors productive.
+
+#### Q. A program uses 4 threads and finishes in 10 seconds of elapsed time, consuming about 40 seconds of CPU time. Which time should be used to compute its speedup?
+
+* [x] The 10 seconds of wall-clock time
+* [ ] The 40 seconds of CPU time
+* [ ] The CPU time divided by the number of threads
+* [ ] The CPU time of the slowest thread only
+
+> **Explanation:** Speedup is about how long the user waits, which is elapsed wall-clock time. CPU time adds up across threads and can increase even as the program gets faster.
+
+#### Q. Why do larger problems often achieve better parallel speedup than small ones?
+
+* [ ] Larger problems always contain less serial code
+* [x] Fixed overheads become a smaller share of the total work
+* [ ] Larger problems run at a higher clock frequency
+* [ ] Small problems cannot be split across processors at all
+
+> **Explanation:** Communication and start-up costs matter relatively less as useful work per processor grows. This is the effect Gustafson's Law and weak scaling describe.
+
+#### Q. What is the main purpose of profiling a parallel program?
+
+* [ ] To create performance profiles for different users
+* [x] To find where time goes, including waiting, before optimising
+* [ ] To test the program for security vulnerabilities
+* [ ] To list every hardware platform the program supports
+
+> **Explanation:** In parallel programs, time is often lost in locks, barriers, communication or imbalance rather than in the hottest function. Measure first, then optimise the measured bottleneck.
+
+#### Q. How does sampling profiling differ from instrumentation?
+
+* [x] Sampling records the location periodically; instrumentation adds measurement code
+* [ ] Sampling requires recompiling the whole program; instrumentation never does
+* [ ] Sampling can measure only GPU code; instrumentation only CPU code
+* [ ] They are two names for the same profiling technique
+
+> **Explanation:** Tools such as `perf` sample, which barely disturbs timing. Instrumentation, as with `gprof` or Callgrind, records every call but can change the behavior it measures.
+
+#### Q. What does the roofline model show?
+
+* [ ] The physical height limit of racks in a data centre
+* [x] Performance bounds set by peak compute and memory bandwidth
+* [ ] The network topology connecting the nodes of a cluster
+* [ ] The cost of a machine relative to its performance
+
+> **Explanation:** It plots attainable performance against arithmetic intensity. Kernels with low intensity sit under the sloped memory-bandwidth roof; those with high intensity hit the flat compute roof. It shows which limit to attack.
+
+#### Q. What is arithmetic intensity?
+
+* [ ] How complicated a program's mathematical formulas are
+* [x] Operations performed per byte moved from memory
+* [ ] The clock speed of the arithmetic units
+* [ ] The number of arithmetic units in a processor
+
+> **Explanation:** High arithmetic intensity means each byte loaded is reused for much computation, so the code is more likely to be compute-bound than memory-bound.
+
+#### Q. When timing an MPI phase, why is the maximum elapsed time across ranks reported, for example with `MPI_Reduce` and `MPI_MAX`?
+
+* [ ] The maximum is always the most accurate single measurement
+* [x] The phase is not complete until the slowest rank finishes
+* [ ] Rank 0 cannot measure its own time
+* [ ] MPI timers only work on the slowest rank
+
+> **Explanation:** Averaging per-rank times would hide stragglers. The parallel phase ends when every rank has finished, so the slowest one determines its duration.
+
+#### Q. A program reports 100% CPU utilisation on every core but shows poor speedup. How is this possible?
+
+* [ ] It is not possible, since full utilisation guarantees linear speedup
+* [x] The cores may be busy spinning on locks, missing in cache or doing redundant work
+* [ ] Utilisation counters are always inaccurate on multicore CPUs
+* [ ] Speedup cannot be measured when utilisation is 100%
+
+> **Explanation:** Busy is not the same as productive. Interpret utilisation together with throughput, efficiency and hardware counters to see whether the cycles are doing useful work.
+
+#### Q. Why can timing only the host call that launches a GPU kernel be misleading?
+
+* [ ] Kernel launches always take exactly the same time as the kernel
+* [x] The launch returns before the kernel finishes running
+* [ ] GPU kernels cannot be timed from the host at all
+* [ ] The host clock is paused while a kernel runs
+
+> **Explanation:** The timer captures only submission. Use GPU events for device time, or synchronize before stopping a host timer. Also state whether data transfers and allocation are included.
+
+#### Q. In a strong-scaling study, what is the "scaling knee"?
+
+* [ ] The processor count at which the program first produces correct output
+* [x] The point beyond which adding processors gives little further improvement
+* [ ] The processor count at which power consumption is highest
+* [ ] The point where efficiency first exceeds 100%
+
+> **Explanation:** Plotting runtime, speedup and efficiency against processor count shows where gains flatten out. Running past the knee wastes resources for that workload and configuration.
