@@ -615,7 +615,7 @@ Producers→|   QUEUE   |← shared
 Instead of checking **all workers**, each task just samples **two random workers** and goes to the one with the shorter queue.
 
 $$
-\text{Assign}(T) = \arg\min{Q(A), Q(B)}
+\text{Assign}(T) = \arg\min\{Q(A), Q(B)\}
 $$
 
 This tiny bit of choice dramatically reduces the maximum queue length compared to pure random assignment.
@@ -764,6 +764,8 @@ struct Counters {
 *Fix (pad or align to cache line, e.g. 64B):*
 
 ```c
+#include <stdalign.h>  // C11: alignas macro (a keyword in C23 and C++)
+
 struct Counters { 
     alignas(64) int a; 
     alignas(64) int b;  // each on its own cache line

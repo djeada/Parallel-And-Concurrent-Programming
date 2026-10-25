@@ -198,14 +198,15 @@ Test your understanding with a quiz for each topic. Every question has one corre
 
 | # | Topic | Covers | Questions | Link |
 |---|-------|--------|-----------|------|
-| 1 | Basic Terminology | Processes, threads, concurrency vs parallelism, memory models | 32 | [Quiz 1](quizzes/01_basic_terminology.md) |
-| 2 | Multithreading | Locks, conditions, semaphores, deadlocks, race conditions | 51 | [Quiz 2](quizzes/02_threading.md) |
-| 3 | Multiprocessing | Process pools, IPC, shared memory, start methods | 40 | [Quiz 3](quizzes/03_processes.md) |
-| 4 | Asynchronous Programming | Event loops, coroutines, futures, cancellation | 39 | [Quiz 4](quizzes/04_async.md) |
-| 5 | Distributed Computing and MPI | Message passing, collectives, consistency | 37 | [Quiz 5](quizzes/05_distributed.md) |
-| 6 | Hardware and Architecture | Caches, false sharing, NUMA, GPUs | 34 | [Quiz 6](quizzes/06_hardware.md) |
-| 7 | Performance Evaluation | Amdahl, Gustafson, scaling, profiling | 37 | [Quiz 7](quizzes/07_performance.md) |
-| 8 | Parallel Design | Decomposition, load balancing, communication | 36 | [Quiz 8](quizzes/08_parallel_design.md) |
+| 1 | Basic Terminology | Processes, threads, concurrency vs parallelism, memory models | 41 | [Quiz 1](quizzes/01_basic_terminology.md) |
+| 2 | Multithreading | Locks, conditions, semaphores, deadlocks, race conditions | 63 | [Quiz 2](quizzes/02_threading.md) |
+| 3 | Multiprocessing | Process pools, IPC, shared memory, start methods | 52 | [Quiz 3](quizzes/03_processes.md) |
+| 4 | Asynchronous Programming | Event loops, coroutines, futures, cancellation | 51 | [Quiz 4](quizzes/04_async.md) |
+| 5 | Distributed Computing and MPI | Message passing, collectives, consistency | 45 | [Quiz 5](quizzes/05_distributed.md) |
+| 6 | Hardware and Architecture | Caches, false sharing, NUMA, GPUs | 41 | [Quiz 6](quizzes/06_hardware.md) |
+| 7 | Performance Evaluation | Amdahl, Gustafson, scaling, profiling | 45 | [Quiz 7](quizzes/07_performance.md) |
+| 8 | Parallel Design | Decomposition, load balancing, communication | 44 | [Quiz 8](quizzes/08_parallel_design.md) |
+| 9 | GPU Programming | SIMT, warps, memory hierarchy, coalescing, streams | 45 | [Quiz 9](quizzes/09_gpu_programming.md) |
 
 ## 📊 Performance Analysis
 

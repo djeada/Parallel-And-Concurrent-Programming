@@ -267,6 +267,18 @@ T3 -> Bank 0
 
 Banked memory increases bandwidth only when access patterns spread requests across banks. Poor strides can create bank conflicts.
 
+#### CUDA Shared Memory Banks and Padding
+
+On NVIDIA GPUs, shared memory has 32 banks, and successive 32-bit words map to successive banks, so word `k` is in bank `k % 32`. A conflict occurs when threads of one warp access *different* words in the same bank. When several threads read the *same* word, it is broadcast to them, so there is no conflict. If each thread reads `s[threadIdx.x * 32]` from a `float` array, every address falls in bank 0 and the 32 accesses are serialized. A stride of 2 words gives a 2-way conflict.
+
+A common case is reading a column of a `32 x 32` tile, for example in a matrix transpose. Adding one padding column shifts each row by one bank, so a column read touches 32 different banks:
+
+```cpp
+__shared__ float tile[32][32];  // tile[t][c] for t = 0..31 all map to one bank
+__shared__ float tile[32][33];  // padded: tile[t][c] is in bank (t * 33 + c) % 32,
+                                //         which differs for every t
+```
+
 ### Vectorizable Loops
 
 A loop is **vectorizable** when its iterations are sufficiently independent to execute in parallel without changing the program's result.
@@ -556,7 +568,7 @@ A thread is the basic programming unit. Each thread has:
 
 #### Warp / Wavefront
 
-A warp is a hardware execution group. On NVIDIA GPUs, a warp contains 32 threads. On AMD GPUs, the corresponding group is usually called a wavefront or wave, and its width depends on the architecture and execution mode.
+A warp is a hardware execution group. On NVIDIA GPUs, a warp contains 32 threads. On AMD GPUs, the corresponding group is usually called a wavefront or wave, and its width depends on the architecture and execution mode: 64 lanes on GCN and CDNA GPUs, and 32 or 64 lanes on RDNA GPUs. Portable code should query the width (for example `warpSize` in CUDA and HIP) instead of hard-coding 32.
 
 ```text
 +-------------------------------------------------------------+
@@ -576,6 +588,20 @@ A warp is a hardware execution group. On NVIDIA GPUs, a warp contains 32 threads
 |  +------------------+    +------------------+               |
 +-------------------------------------------------------------+
 ```
+
+#### CUDA and OpenCL Terminology
+
+OpenCL uses different names for the same ideas. A CUDA thread corresponds to an OpenCL **work-item**, a block to a **work-group**, and the grid to the **NDRange**. Memory shared by one block, CUDA `__shared__`, is OpenCL `__local` memory, while CUDA global memory is OpenCL `__global` memory. Note that CUDA "local memory" means something else: per-thread storage that physically lives in device memory.
+
+| CUDA | OpenCL |
+|---|---|
+| Thread | Work-item |
+| Block | Work-group |
+| Grid | NDRange |
+| `__shared__` memory | `__local` memory |
+| Global memory | `__global` memory |
+| `threadIdx.x` | `get_local_id(0)` |
+| `blockIdx.x * blockDim.x + threadIdx.x` | `get_global_id(0)` |
 
 ### Warp-Based SIMD
 
@@ -663,7 +689,24 @@ scale<<<grid, block>>>(d_data, 2.0f, n);
 cudaDeviceSynchronize();
 ```
 
-The grid size is rounded up so every element is covered. The bounds check inside the kernel prevents out-of-range memory access.
+The grid size is rounded up so every element is covered. The bounds check inside the kernel prevents out-of-range memory access. With `n = 1000` and `block = 256`, the grid has 4 blocks (1,024 threads), and the last 24 threads fail `i < n`. Writing `grid = n / block` instead would launch only 3 blocks and leave elements 768–999 unprocessed.
+
+On current GPUs a block may contain at most 1,024 threads. A launch that exceeds a limit fails with a configuration error and the kernel does not run.
+
+#### Grid-Stride Loops
+
+Instead of sizing the grid to the data, a kernel can loop with a stride equal to the total number of threads. Each thread then handles elements `i`, `i + stride`, `i + 2 * stride`, and so on, so a fixed-size grid covers any `n`.
+
+```cpp
+__global__ void scaleGridStride(float* d, float s, int n) {
+  int stride = blockDim.x * gridDim.x;
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += stride) {
+    d[i] *= s;
+  }
+}
+```
+
+With 2 blocks of 4 threads and `n = 20`, the stride is 8, so the thread with global index 5 processes elements 5 and 13.
 
 #### Copy Results Back and Free Memory
 
@@ -671,6 +714,56 @@ The grid size is rounded up so every element is covered. The bounds check inside
 cudaMemcpy(h_data, d_data, bytes, cudaMemcpyDeviceToHost);
 cudaFree(d_data);
 ```
+
+`cudaMemcpy` is synchronous with respect to the host: it returns only after the copy has completed. It is issued to the default stream, and work in one stream runs in issue order, so when the kernel was also launched in the (legacy) default stream, the device-to-host copy waits for it to finish. No extra synchronization is needed for correctness.
+
+#### Checking for Errors
+
+A kernel launch does not return an error code, and it is asynchronous: control returns to the host before the kernel runs. Errors therefore show up in two places:
+
+- **Launch errors**, such as an invalid configuration, are reported by `cudaGetLastError()` (which also resets the last error) or `cudaPeekAtLastError()` right after the launch.
+- **Execution errors**, such as an invalid memory access inside the kernel, appear only after the kernel has run, in the return value of a later synchronizing call such as `cudaDeviceSynchronize()` or `cudaMemcpy()`. Some of these errors leave the context unusable, so later calls keep failing.
+
+```cpp
+scale<<<grid, block>>>(d_data, 2.0f, n);
+cudaError_t err = cudaGetLastError();        // launch errors
+if (err == cudaSuccess) {
+  err = cudaDeviceSynchronize();             // errors during execution
+}
+if (err != cudaSuccess) {
+  fprintf(stderr, "CUDA error: %s\n", cudaGetErrorString(err));
+}
+```
+
+For the same reason, timing a kernel with a host clock around the launch measures only the launch. Synchronize first, or record `cudaEvent_t` events in the stream and use `cudaEventElapsedTime()`.
+
+### Pinned Memory, Streams, and Overlap
+
+Ordinary `malloc` or `new` memory is **pageable**: the operating system may move or swap it. The GPU's copy engines transfer data by DMA, which needs **page-locked (pinned)** host memory, allocated with `cudaMallocHost()` or `cudaHostAlloc()` and released with `cudaFreeHost()`. Pinned memory often copies faster and is necessary for truly asynchronous transfers with `cudaMemcpyAsync()`; with pageable memory, the copy is staged through a pinned buffer and generally cannot overlap with other work. Pinning too much memory can degrade overall system performance, because the OS can no longer page it.
+
+A **stream** is an ordered queue of GPU work. Operations in one stream run in issue order, while operations in different streams may overlap. Splitting data into chunks and giving each chunk its own stream lets copies for one chunk overlap with kernels for another, depending on the GPU's copy engines and available resources:
+
+```cpp
+// d: device buffer of n floats, allocated with cudaMalloc
+float* h;                                   // pinned host buffer
+cudaMallocHost(&h, bytes);
+
+cudaStream_t s[2];
+for (int k = 0; k < 2; ++k) cudaStreamCreate(&s[k]);
+
+size_t half = n / 2;                        // assume n is even
+for (int k = 0; k < 2; ++k) {
+  size_t off = k * half;
+  cudaMemcpyAsync(d + off, h + off, half * sizeof(float),
+                  cudaMemcpyHostToDevice, s[k]);
+  scale<<<(half + 255) / 256, 256, 0, s[k]>>>(d + off, 2.0f, half);
+  cudaMemcpyAsync(h + off, d + off, half * sizeof(float),
+                  cudaMemcpyDeviceToHost, s[k]);
+}
+cudaDeviceSynchronize();                    // wait for both streams
+```
+
+Work launched without a stream argument goes to the **default stream**. By default this is the *legacy* default stream, which synchronizes implicitly with other blocking streams in the same context: a kernel in it waits for earlier work in those streams, and later work in them waits for it. One stray default-stream launch can therefore serialize an overlapped pipeline. Streams created with `cudaStreamCreateWithFlags(&s, cudaStreamNonBlocking)`, or compiling with `nvcc --default-stream per-thread`, avoid this implicit synchronization.
 
 ### Shared Memory Example: Block Reduction
 
@@ -714,7 +807,39 @@ This version addresses two common issues:
 - It checks `i < n` before reading input.
 - It uses dynamically sized shared memory so the buffer matches the block size.
 
-The halving reduction shown here assumes a power-of-two block size, such as the `256` threads used in the launch example.
+The halving reduction shown here assumes a power-of-two block size, such as the `256` threads used in the launch example. With `blockDim.x == 192`, the strides become 96, 48, 24, 12, 6, 3, 1; after stride 3, `buf[2]` holds a partial sum that the final stride-1 step never adds to `buf[0]`, so the result is wrong.
+
+The kernel produces one partial sum per block. Combining them needs results from every block, which a block cannot safely wait for inside the same conventional kernel: blocks are not guaranteed to run concurrently or in any order. Launch a second kernel, finish on the host, or use atomics as shown below.
+
+### Atomic Operations
+
+When many threads update the same memory location, a plain `x += 1` is a read-modify-write race: two threads can read the same old value and one update is lost. A histogram written with `bins[v] += 1` therefore tends to come out too low. `__syncthreads()` does not fix this, since it only orders threads of one block. **Atomic functions** such as `atomicAdd`, `atomicSub`, `atomicMin`, `atomicMax`, `atomicExch` and `atomicCAS` perform the whole read-modify-write as one indivisible operation.
+
+```cpp
+__global__ void histogram(const int* in, int* bins, int n) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i < n) {
+    atomicAdd(&bins[in[i]], 1);
+  }
+}
+```
+
+`atomicAdd` returns the value stored *before* the addition. This makes it useful for handing out unique slots, for example to compact selected elements into an output array; every thread gets a distinct index, but the order is unspecified:
+
+```cpp
+int slot = atomicAdd(&count, 1);   // count starts at 0
+out[slot] = value;
+```
+
+Atomics on the same address are serialized, so having every thread in a large grid update one global counter creates a bottleneck. A common improvement is to reduce within each block first (in registers or shared memory, as in `blockSum`) and then issue one atomic per block:
+
+```cpp
+if (threadIdx.x == 0) {
+  atomicAdd(total, buf[0]);   // one global atomic per block
+}
+```
+
+Atomics with a narrower scope, such as shared-memory atomics within a block, are generally cheaper than device-wide or system-wide ones.
 
 ### Occupancy, Utilization, and Performance
 
