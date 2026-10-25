@@ -233,7 +233,7 @@ for (j = 0; j < N; j++) for (i = 0; i < N; i++) s += a[i][j];   /* column order 
 * [ ] Neither, since clock speed and IPC cancel each other out
 * [ ] CPU A, since IPC does not affect how long a program runs
 
-> **Explanation:** Instruction throughput is clock rate times IPC: $4 	imes 1 = 4$ versus $3 	imes 2 = 6$ billion per second. Clock speed alone does not predict performance.
+> **Explanation:** Instruction throughput is clock rate times IPC: $4 \times 1 = 4$ versus $3 \times 2 = 6$ billion per second. Clock speed alone does not predict performance.
 
 #### Q. Compiled with `gcc -O2` (no `-ffast-math`), the second loop below summed the same `double` array about 3.5 times faster than the first on a modern x86 CPU. Why?
 
