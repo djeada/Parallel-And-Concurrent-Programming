@@ -1,88 +1,53 @@
 /**
- * Producer-Consumer Pattern
+ * Modern C++20: Bounded Producer-Consumer Queue with Explicit Closure
  *
- * This example demonstrates the producer-consumer pattern using a
- * thread-safe queue. Producers add items, consumers take them.
+ * A capacity limit applies backpressure. close() wakes all waiters, consumers
+ * drain accepted items, and an empty optional signals completion. Every int
+ * remains a valid task: there is no magic poison-pill value.
+ * std::jthread owns the workers; stop-aware waits also allow cancellation.
  *
- * Key concepts:
- * - Thread-safe queue using mutex + condition_variable
- * - Producers signal consumers when items are added
- * - Consumers block waiting for items
- * - Poison pill pattern (-1) signals termination
- * - Multiple consumers can process the same queue
+ * Compile: g++ -std=c++20 -pthread producer_consumer.cpp
  */
 
+#include "../common/bounded_queue.hpp"
+
 #include <condition_variable>
+#include <cstddef>
 #include <iostream>
 #include <mutex>
+#include <optional>
 #include <queue>
+#include <stdexcept>
+#include <stop_token>
+#include <syncstream>
 #include <thread>
 
-class TaskQueue {
-public:
-    void add_task(int task) {
-        {
-            std::scoped_lock lock(mutex_);
-            queue_.push(task);
-        }
-        cv_.notify_one();
-    }
-
-    int take_task() {
-        std::unique_lock<std::mutex> lock(mutex_);
-        cv_.wait(lock, [this] { return !queue_.empty(); });
-
-        int task = queue_.front();
-        queue_.pop();
-        return task;
-    }
-
-private:
-    std::queue<int> queue_;
-    std::mutex mutex_;
-    std::condition_variable cv_;
-};
-
-TaskQueue task_queue;
-
-void producer() {
-    // Add tasks
-    for (int i = 0; i < 10000; ++i) {
-        task_queue.add_task(1);
-    }
-
-    // Signal end with poison pill
-    task_queue.add_task(-1);
-    std::cout << "Producer: finished adding tasks.\n";
-}
-
-void consumer(int id) {
-    int tasks_completed = 0;
-
-    while (true) {
-        int task = task_queue.take_task();
-
-        if (task == -1) {
-            // Put poison pill back for other consumers
-            task_queue.add_task(-1);
-            break;
-        }
-
-        tasks_completed += task;
-    }
-
-    std::cout << "Consumer " << id << ": completed " << tasks_completed
-              << " tasks.\n";
-}
+using TaskQueue = cpp_example::BoundedQueue<int>;
 
 int main() {
-    std::thread prod(producer);
-    std::thread cons1(consumer, 1);
-    std::thread cons2(consumer, 2);
+    TaskQueue queue(32); // Construct shared state before workers that refer to it.
+    {
+        const auto consume = [&queue](std::stop_token stop, int id) {
+            int tasks_completed = 0;
+            while (const auto task = queue.take_task(stop)) {
+                tasks_completed += *task;
+            }
+            std::osyncstream(std::cout) << "Consumer " << id << ": completed "
+                                      << tasks_completed << " tasks.\n";
+        };
+        std::jthread consumer1(consume, 1);
+        std::jthread consumer2(consume, 2);
+        std::jthread producer([&queue](std::stop_token stop) {
+            for (int i = 0; i < 10'000; ++i) {
+                if (!queue.add_task(1, stop)) break;
+            }
+        });
 
-    prod.join();
-    cons1.join();
-    cons2.join();
-
+        // Completion is required before closing the queue: join() deliberately
+        // waits without requesting cancellation, preserving every produced task.
+        producer.join();
+        queue.close();
+    } // Consumers drain the closed queue and join before it is destroyed.
+    std::cout << "All tasks completed.\n";
     return 0;
 }

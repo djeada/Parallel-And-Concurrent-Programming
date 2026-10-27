@@ -1,4 +1,6 @@
 /**
+ * Modern C++20 example: scoped worker ownership with std::jthread.
+ *
  * Deadlock Avoidance with std::scoped_lock
  *
  * When two threads each need to hold two mutexes, acquiring them in
@@ -13,11 +15,12 @@
  *
  * See deadlock_philosophers_antipattern.cpp for the deadlocking version.
  *
- * Compile: g++ -std=c++17 -pthread scoped_lock_deadlock_avoidance.cpp
+ * Compile: g++ -std=c++20 -pthread scoped_lock_deadlock_avoidance.cpp
  */
 
 #include <iostream>
 #include <mutex>
+#include <functional>
 #include <thread>
 
 int item_count = 5000;
@@ -37,8 +40,8 @@ int main() {
 
     // Alice locks A then B; Bob locks B then A.
     // scoped_lock's deadlock-avoidance algorithm makes this safe.
-    std::thread alice(worker, std::ref(resource_a), std::ref(resource_b));
-    std::thread bob(worker,   std::ref(resource_b), std::ref(resource_a));
+    std::jthread alice(worker, std::ref(resource_a), std::ref(resource_b));
+    std::jthread bob(worker,   std::ref(resource_b), std::ref(resource_a));
 
     alice.join();
     bob.join();

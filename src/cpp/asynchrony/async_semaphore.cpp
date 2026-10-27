@@ -1,5 +1,5 @@
 /**
- * Semaphore with Async Tasks
+ * Modern C++20: Standard Semaphore with Future-Based Tasks
  *
  * This example demonstrates using a counting semaphore to limit
  * concurrent access to a resource from async tasks.
@@ -8,58 +8,47 @@
  * - Semaphore limits concurrent access to N tasks
  * - acquire() blocks if count is 0
  * - release() increments count and wakes waiting tasks
- * - Useful for rate limiting or resource pooling
+ * - Limits concurrent access; this is not a requests-per-second rate limiter
  *
- * Note: C++20 provides std::counting_semaphore, but this shows
- * the underlying mechanism using mutex and condition_variable.
+ * acquire() blocks the calling worker thread; it does not suspend a coroutine.
+ * Compare ../multithreading/legacy/semaphore.cpp for the manual implementation.
+ * Compile: g++ -std=c++20 -pthread async_semaphore.cpp
  */
 
 #include <chrono>
-#include <condition_variable>
 #include <future>
 #include <iostream>
 #include <mutex>
 #include <random>
+#include <semaphore>
+#include <syncstream>
 #include <thread>
 #include <vector>
 
-class Semaphore {
+// Adapt the semaphore to the lock/unlock interface so lock_guard restores the
+// permit even when work throws. std::counting_semaphore itself has no lock().
+class ResourceLimit {
 public:
-    explicit Semaphore(int count) : count_(count) {}
-
-    void acquire() {
-        std::unique_lock<std::mutex> lock(mutex_);
-        cv_.wait(lock, [this] { return count_ > 0; });
-        --count_;
-    }
-
-    void release() {
-        std::scoped_lock lock(mutex_);
-        ++count_;
-        cv_.notify_one();
-    }
+    void lock() { permits_.acquire(); }
+    void unlock() { permits_.release(); }
 
 private:
-    std::mutex mutex_;
-    std::condition_variable cv_;
-    int count_;
+    std::counting_semaphore<3> permits_{3};
 };
 
-Semaphore resource_limit(3);  // Only 3 concurrent accessors
+ResourceLimit resource_limit;  // Only 3 concurrent accessors
 
 void access_resource(int task_id) {
-    resource_limit.acquire();
+    std::lock_guard permit(resource_limit);
 
-    std::cout << "Task " << task_id << " using resource\n";
+    std::osyncstream(std::cout) << "Task " << task_id << " using resource\n";
 
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> dist(500, 2000);
     std::this_thread::sleep_for(std::chrono::milliseconds(dist(gen)));
 
-    std::cout << "Task " << task_id << " done\n";
-
-    resource_limit.release();
+    std::osyncstream(std::cout) << "Task " << task_id << " done\n";
 }
 
 int main() {

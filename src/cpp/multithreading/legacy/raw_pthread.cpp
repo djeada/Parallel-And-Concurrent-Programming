@@ -1,8 +1,11 @@
 /**
+ * PLATFORM / LEGACY COMPARISON: POSIX threads. Start with ../jthread.cpp (C++20).
+ * Kept for platform interoperability and reading existing pthread code.
+ *
  * POSIX Threads (pthreads)
  *
  * This example demonstrates the low-level pthread API for comparison
- * with modern C++ threading. While std::thread is preferred in modern C++,
+ * with modern C++ threading. While std::jthread is preferred for scoped workers,
  * understanding pthreads helps when working with legacy code or specific
  * platforms.
  *
@@ -12,8 +15,7 @@
  * - Thread functions take and return void*
  * - Data is passed via struct pointers
  *
- * Note: Modern C++ code should prefer std::thread for portability
- * and type safety.
+ * Note: Prefer std::jthread for scoped ownership, portability, and type safety.
  */
 
 #include <iostream>

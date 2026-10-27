@@ -1,4 +1,7 @@
 /**
+ * LEGACY COMPARISON: manual std::thread ownership. Start with ../jthread.cpp.
+ * std::thread remains useful when explicit ownership control is required.
+ *
  * Thread Joinability
  *
  * This example demonstrates the joinable() method and thread lifecycle.

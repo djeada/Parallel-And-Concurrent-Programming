@@ -1,4 +1,6 @@
 /**
+ * C++20 + MPI: scoped environment and checked calls through the supported C API.
+ *
  * Broadcast Communication
  *
  * This example demonstrates MPI_Bcast, a collective operation that sends
@@ -15,43 +17,42 @@
  * Parameters for MPI_Bcast:
  *   buffer, count, datatype, root, communicator
  *
- * Compile: mpicxx -o broadcast broadcast_communication.cpp
+ * Compile: mpicxx -std=c++20 -o broadcast broadcast_communication.cpp
  * Run: mpirun -np 4 ./broadcast
  */
 
-#include <mpi.h>
+#include "../common/mpi_support.hpp"
 
 #include <iostream>
 
 int main(int argc, char* argv[]) {
-    MPI_Init(&argc, &argv);
+    return mpi_example::run(argc, argv, [&]() -> int {
 
-    int rank = 0;
-    int size = 0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+        int rank = 0;
+        int size = 0;
+        mpi_example::check(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
+        mpi_example::check(MPI_Comm_size(MPI_COMM_WORLD, &size));
 
-    // Data buffer - root initializes, others receive
-    int data = 0;
-    constexpr int root = 0;
+        // Data buffer - root initializes, others receive
+        int data = 0;
+        constexpr int root = 0;
 
-    if (rank == root) {
-        // Root process sets the data to broadcast
-        data = 42;
-        std::cout << "Process " << rank << " (root): Broadcasting value "
-                  << data << " to all processes" << std::endl;
-    } else {
-        std::cout << "Process " << rank << ": Waiting to receive broadcast..."
+        if (rank == root) {
+            // Root process sets the data to broadcast
+            data = 42;
+            std::cout << "Process " << rank << " (root): Broadcasting value "
+                      << data << " to all processes" << std::endl;
+        } else {
+            std::cout << "Process " << rank << ": Waiting to receive broadcast..."
+                      << std::endl;
+        }
+
+        // All processes call MPI_Bcast - this is a collective operation
+        mpi_example::check(MPI_Bcast(&data, 1, MPI_INT, root, MPI_COMM_WORLD));
+
+        // After broadcast, all processes have the same data
+        std::cout << "Process " << rank << ": Received value " << data
                   << std::endl;
-    }
-
-    // All processes call MPI_Bcast - this is a collective operation
-    MPI_Bcast(&data, 1, MPI_INT, root, MPI_COMM_WORLD);
-
-    // After broadcast, all processes have the same data
-    std::cout << "Process " << rank << ": Received value " << data
-              << std::endl;
-
-    MPI_Finalize();
-    return 0;
+        return 0;
+    });
 }

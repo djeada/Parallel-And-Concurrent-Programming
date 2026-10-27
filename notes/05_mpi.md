@@ -984,10 +984,53 @@ Use Cases:
 1. Install an MPI implementation, such as OpenMPI or MPICH.
 2. Compile your C/C++ MPI program using the provided wrapper scripts:
    - For C: `mpicc mpi_program.c -o mpi_program`
-   - For C++: `mpic++ mpi_program.cpp -o mpi_program` (some implementations also provide `mpiCC`)
+   - For C++: `mpic++ -std=c++20 mpi_program.cpp -o mpi_program` (some implementations also provide `mpiCC`)
 3. Run your MPI program using the provided `mpiexec` or `mpirun` command:
    - `mpiexec -n <number_of_processes> ./mpi_program`
    - `mpirun -n <number_of_processes> ./mpi_program`
+
+##### Modern C++ Ownership with the MPI C Interface
+
+The C++ examples use **C++20** and the supported MPI C API. The `MPI_Send`,
+`MPI_Allreduce`, and other C entry points are current MPI interfaces; their use
+from C++ does not make an example legacy. The removed `MPI::` C++ bindings are
+not used. The earlier `c` snippets in this chapter expose the MPI operations
+directly; the executable C++ examples add ownership and error handling.
+
+[mpi_support.hpp](../src/cpp/common/mpi_support.hpp) owns initialization and
+finalization, checks MPI return codes, and scopes created communicators and
+datatypes. Program buffers and owned MPI handles leave scope before MPI
+finalizes. Unexpected C++ exceptions and MPI errors abort the job so peers are
+not left waiting after one rank exits. This is a fail-fast teaching policy,
+rather than distributed fault recovery.
+
+Choose a collective that expresses the operation: broadcast configuration with
+`MPI_Bcast`, combine results with `MPI_Reduce` or `MPI_Allreduce`, and distribute
+unequal partitions with `MPI_Scatterv`/`MPI_Gatherv`. The
+[matrix example](../src/cpp/mpi/parallel_matrix_multiplication.cpp) handles uneven
+row counts and ranks with no rows, then validates against a sequential reference.
+The [derived datatype example](../src/cpp/mpi/derived_data_types.cpp) uses
+`std::array`, a standard-layout assertion, and a scoped datatype owner.
+
+Nonblocking sends/receives let independent work proceed before completion, but
+the transfer buffer must remain alive and unchanged until the corresponding
+request completes. They permit overlap; the runtime and hardware determine
+whether useful background progress occurs. See the
+[MPI nonblocking-communication specification](https://www.mpi-forum.org/docs/mpi-4.1/mpi41-report/node71.htm).
+
+From the repository root:
+
+```bash
+mpic++ -std=c++20 src/cpp/mpi/hello_world_mpi.cpp -o /tmp/mpi_hello
+mpiexec -n 2 /tmp/mpi_hello
+mpic++ -std=c++20 src/cpp/mpi/parallel_matrix_multiplication.cpp -o /tmp/mpi_matrix
+mpiexec -n 3 /tmp/mpi_matrix
+```
+
+Keep `src/cpp/common/` with the source files. An MPI barrier is a process-level
+collective; the C++20 in-process `std::barrier` does not replace it. See the
+[C++ guide](../src/cpp/README.md) for the separation between application-level
+solutions, low-level mechanisms, and legacy comparisons.
 
 The following C/C++ examples demonstrate different aspects of MPI:
 
@@ -1008,7 +1051,7 @@ The following C/C++ examples demonstrate different aspects of MPI:
 | 13 | [ring_topology.cpp](../src/cpp/mpi/ring_topology.cpp) | Implement ring topology communication pattern |
 | 14 | [derived_data_types.cpp](../src/cpp/mpi/derived_data_types.cpp) | Create and use derived data types for complex data structures |
 | 15 | [parallel_computation_of_pi.cpp](../src/cpp/mpi/parallel_computation_of_pi.cpp) | Compute Pi in parallel using numerical integration |
-| 16 | [parallel_matrix_multiplication.cpp](../src/cpp/mpi/parallel_matrix_multiplication.cpp) | Perform parallel matrix multiplication using MPI |
+| 16 | [parallel_matrix_multiplication.cpp](../src/cpp/mpi/parallel_matrix_multiplication.cpp) | Distribute uneven matrix row partitions and validate the gathered result |
 
 #### Python MPI
 
@@ -1034,4 +1077,4 @@ The following Python examples demonstrate different aspects of MPI:
 | 11 | [cartesian_topology.py](../src/python/mpi/cartesian_topology.py) | Create and use Cartesian topology for structured process communication |
 | 12 | [ring_topology.py](../src/python/mpi/ring_topology.py) | Implement ring topology communication pattern |
 | 13 | [parallel_computation_of_pi.py](../src/python/mpi/parallel_computation_of_pi.py) | Compute Pi in parallel using numerical integration |
-| 14 | [parallel_matrix_multiplication.py](../src/python/mpi/parallel_matrix_multiplication.py) | Perform parallel matrix multiplication using MPI |
+| 14 | [parallel_matrix_multiplication.py](../src/python/mpi/parallel_matrix_multiplication.py) | Distribute uneven matrix row partitions and validate the gathered result |

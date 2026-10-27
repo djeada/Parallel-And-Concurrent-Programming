@@ -17,7 +17,7 @@
  * See deadlock_avoidance.cpp for the fix (consistent lock ordering).
  *
  * Compile:
- *   g++ -std=c++17 -o deadlock deadlock_antipattern.cpp -lpthread
+ *   g++ -std=c++20 -o deadlock deadlock_antipattern.cpp -lpthread
  */
 
 #include <cerrno>

@@ -252,6 +252,29 @@ In thread-based programs, reduce shared mutable state whenever possible. Passing
 
 In C++, asynchronous and concurrent work can be expressed with facilities such as `std::async`, `std::future`, and `std::promise`, while event-driven asynchronous I/O is typically provided by libraries such as Boost.Asio. These mechanisms can keep a caller responsive or coordinate work that completes later, but they are not all based on an event loop.
 
+##### Choose the Execution Model First
+
+The [C++ guide](../src/cpp/README.md) uses **C++20** as its baseline and separates
+modern solutions, older comparisons, and low-level mechanics. A feature's
+introduction date does not decide whether it fits a problem today.
+
+| Problem | Approach | Execution model |
+|---|---|---|
+| A few independent results | `std::async` with retained futures | C++11 facility still useful in modern code; `get()` blocks the caller |
+| Many small tasks with results | [Owned worker pool](../src/cpp/asynchrony/thread_pool_futures.cpp) | C++20 `std::jthread` workers; packaged tasks propagate results and exceptions |
+| Pause, resume, or cancel a worker | [Stop-aware waits](../src/cpp/asynchrony/pause_resume.cpp) | C++20 stop tokens and `condition_variable_any` |
+| Sort or reduce independent data | [Standard parallel algorithms](../src/cpp/multithreading/parallel_algorithms.cpp) | C++17 execution policies remain the higher-level starting point |
+| Learn coroutine suspension and return types | [Generator](../src/cpp/asynchrony/coroutine_generator.cpp) and [Task](../src/cpp/asynchrony/coroutine_task.cpp) | C++20 mechanics; these examples execute synchronously |
+| Event-driven HTTP | [Bounded libcurl multi transfers](../src/cpp/asynchrony/parallel_fetch.cpp) | Multiple requests progressed on one event-loop thread |
+| Event-driven TCP | [Bounded poll-based echo service](../src/cpp/asynchrony/distributed_computing.cpp) | Owned nonblocking sockets, per-client output limits, and backpressure |
+| Coroutine-based network I/O | An async I/O library such as Boost.Asio | Library-provided event loop, I/O operations, and coroutine integration |
+
+The `async_mutex`, `async_barrier`, `async_semaphore`, and
+`async_producer_consumer` filenames refer to threaded/future-based work. Their
+waits block OS threads; they are not awaitable coroutine synchronization tools.
+For a bounded queue with explicit closure, start with
+[producer_consumer.cpp](../src/cpp/multithreading/producer_consumer.cpp).
+
 ##### Asynchronous Tasks with `std::async`
 
 With `std::launch::async`, `std::async` starts a callable asynchronously and returns a `std::future` that will hold its result or exception.
@@ -301,13 +324,13 @@ int main() {
     std::promise<int> promise;
     std::future<int> future = promise.get_future();
 
-    std::thread t(set_value, std::ref(promise));
+    std::jthread producer(set_value, std::ref(promise));
     
     std::cout << "Waiting for value..." << std::endl;
     int value = future.get(); // Wait for the value
     std::cout << "Value: " << value << std::endl;
 
-    t.join();
+    // producer joins automatically before promise is destroyed.
     return 0;
 }
 ```
@@ -316,7 +339,7 @@ In this example, the `set_value` function sets a value to the promise, which is 
 
 ##### Asynchronous Waiting with `std::future`
 
-The `std::future` object provides a way to wait for a result that is being computed asynchronously.
+The `std::future` object provides a way to wait for a result that is being computed asynchronously. Its wait functions block the calling thread; they do not suspend a coroutine or drive an event loop.
 
 ```cpp
 #include <iostream>
@@ -392,7 +415,7 @@ int compute_value() {
 int main() {
     std::shared_future<int> shared_future = std::async(std::launch::async, compute_value).share();
 
-    std::vector<std::thread> threads;
+    std::vector<std::jthread> threads;
     for (int i = 0; i < 5; ++i) {
         threads.emplace_back([shared_future, i]() {
             std::cout << "Thread " << i << ": " << shared_future.get() << std::endl;
@@ -413,7 +436,7 @@ In this example, the result of `compute_value` is shared among multiple threads 
 
 Asynchronous continuations allow chaining of asynchronous operations.
 
-> **⚠️ Note:** `std::future` does **not** have a `.then()` method in standard C++ (C++11–C++23). Such code will not compile. The `.then()` continuation API was proposed in the Concurrency TS (N4538) but was never merged into the standard. Libraries such as Folly, HPX, and Boost.Future provide it as an extension.
+> **⚠️ Note:** `std::future` has no `.then()` method in this repository's C++20 baseline. The continuation API appeared in the Concurrency TS; libraries such as Folly, HPX, and Boost.Future provide continuations as extensions.
 
 The standard way to sequence async work is to call `.get()` and pass the result manually:
 
@@ -445,10 +468,11 @@ int main() {
 }
 ```
 
-For true non-blocking chaining, use C++20 coroutines (see `coroutine_task.cpp`) or a library such as Boost.Asio.
+For event-driven composition, use a library such as [Boost.Asio](https://www.boost.org/doc/libs/latest/doc/html/boost_asio/overview/composition/cpp20_coroutines.html) with asynchronous operations. The local [coroutine_task.cpp](../src/cpp/asynchrony/coroutine_task.cpp) only demonstrates synchronous `co_await` mechanics; it supplies no I/O scheduler.
 
 ##### Performance Considerations and Best Practices
 
+- For HTTP I/O, [parallel_fetch.cpp](../src/cpp/asynchrony/parallel_fetch.cpp) uses libcurl multi with at most four in-flight transfers, scoped handles, timeouts, and per-request error reporting. It creates no thread per URL.
 - Use asynchronous or concurrent execution when it helps keep the caller responsive or overlap independent work.
 - Handle exceptions from asynchronous operations explicitly, especially when retrieving results through futures.
 - Protect shared mutable state with appropriate synchronization when work can run concurrently.
@@ -466,19 +490,19 @@ For true non-blocking chaining, use C++20 coroutines (see `coroutine_task.cpp`) 
 | 7   | [async_antipatterns.cpp](../src/cpp/asynchrony/async_antipatterns.cpp) | ⚠️ ANTIPATTERN: forgotten future, default launch policy, double `.get()` |
 | 8   | [promise_future.cpp](../src/cpp/asynchrony/promise_future.cpp) | Use promises and futures to pass values between tasks    |
 | 9   | [packaged_task.cpp](../src/cpp/asynchrony/packaged_task.cpp) | Wrap a callable with `std::packaged_task` for deferred execution |
-| 10  | [thread_pool_futures.cpp](../src/cpp/asynchrony/thread_pool_futures.cpp) | Thread pool with `packaged_task` and future-based interface |
-| 11  | [pause_resume.cpp](../src/cpp/asynchrony/pause_resume.cpp) | Pause and resume asynchronous tasks                      |
+| 10  | [thread_pool_futures.cpp](../src/cpp/asynchrony/thread_pool_futures.cpp) | C++20 owned worker pool with packaged tasks, futures, and draining shutdown |
+| 11  | [pause_resume.cpp](../src/cpp/asynchrony/pause_resume.cpp) | Pause, resume, and cancel a C++20 worker with stop-aware waits |
 | 12  | [heavy_functions.cpp](../src/cpp/asynchrony/heavy_functions.cpp) | Execute heavy functions asynchronously                   |
-| 13  | [async_producer_consumer.cpp](../src/cpp/asynchrony/async_producer_consumer.cpp) | Implement a producer-consumer pattern asynchronously     |
+| 13  | [async_producer_consumer.cpp](../src/cpp/asynchrony/async_producer_consumer.cpp) | Future-based tasks with a bounded queue, explicit closure, and draining |
 | 14  | [recursive_sum.cpp](../src/cpp/asynchrony/recursive_sum.cpp) | Parallel divide-and-conquer sum with `std::async`        |
-| 15  | [async_semaphore.cpp](../src/cpp/asynchrony/async_semaphore.cpp) | Control access to shared resources with a semaphore      |
-| 16  | [async_barrier.cpp](../src/cpp/asynchrony/async_barrier.cpp) | Synchronize multiple asynchronous tasks using a barrier  |
-| 17  | [coroutine_generator.cpp](../src/cpp/asynchrony/coroutine_generator.cpp) | C++20 lazy generator with `co_yield`                     |
-| 18  | [coroutine_task.cpp](../src/cpp/asynchrony/coroutine_task.cpp) | C++20 `co_await` coroutine chaining with a minimal `Task<T>` |
-| 19  | [async_mutex.cpp](../src/cpp/asynchrony/async_mutex.cpp) | Use a mutex to synchronize access to shared resources    |
-| 20  | [parallel_fetch.cpp](../src/cpp/asynchrony/parallel_fetch.cpp) | Fetch data in parallel (requires libcurl)                |
+| 15  | [async_semaphore.cpp](../src/cpp/asynchrony/async_semaphore.cpp) | Bound concurrent worker access with `std::counting_semaphore`      |
+| 16  | [async_barrier.cpp](../src/cpp/asynchrony/async_barrier.cpp) | Synchronize OS worker threads with a blocking `std::barrier` |
+| 17  | [coroutine_generator.cpp](../src/cpp/asynchrony/coroutine_generator.cpp) | C++20 synchronous lazy generator with `co_yield`                     |
+| 18  | [coroutine_task.cpp](../src/cpp/asynchrony/coroutine_task.cpp) | C++20 synchronous `co_await` mechanics with a minimal `Task<T>` |
+| 19  | [async_mutex.cpp](../src/cpp/asynchrony/async_mutex.cpp) | Protect shared state in threaded tasks with a mutex    |
+| 20  | [parallel_fetch.cpp](../src/cpp/asynchrony/parallel_fetch.cpp) | Bounded asynchronous HTTP on one libcurl multi event-loop thread                |
 | 21  | [async_server_antipattern.cpp](../src/cpp/asynchrony/async_server_antipattern.cpp) | ⚠️ ANTIPATTERN: detached-thread-per-connection server    |
-| 22  | [distributed_computing.cpp](../src/cpp/asynchrony/distributed_computing.cpp) | Distributed computing with socket server/worker/client  |
+| 22  | [distributed_computing.cpp](../src/cpp/asynchrony/distributed_computing.cpp) | Bounded nonblocking TCP echo protocol with owned sockets and backpressure  |
 
 #### Examples in Python
 

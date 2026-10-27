@@ -1,5 +1,5 @@
 /**
- * Thread Pool with std::packaged_task — Future-Based Interface
+ * Modern C++20 Thread Pool with std::packaged_task and std::jthread
  *
  * std::async is convenient but gives you no control over:
  *   - how many threads run concurrently
@@ -12,10 +12,11 @@
  *   - Each submitted task returns a std::future for the result
  *
  * This implementation uses std::packaged_task to bridge a callable
- * into a future, and a std::queue + condition_variable for work dispatch.
+ * into a future, and a queue + stop-aware condition_variable_any for dispatch.
+ * Shutdown drains accepted jobs before automatically joining owned workers.
  *
  * Compile:
- *   g++ -std=c++17 -pthread -O1 thread_pool_futures.cpp
+ *   g++ -std=c++20 -pthread -O1 thread_pool_futures.cpp
  */
 
 #include <chrono>
@@ -23,31 +24,41 @@
 #include <functional>
 #include <future>
 #include <iostream>
+#include <memory>
 #include <mutex>
 #include <queue>
 #include <stdexcept>
+#include <stop_token>
 #include <thread>
+#include <tuple>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 class ThreadPool {
 public:
     explicit ThreadPool(std::size_t num_threads) {
+        if (num_threads == 0) {
+            throw std::invalid_argument("ThreadPool needs at least one worker");
+        }
+        workers_.reserve(num_threads);
         for (std::size_t i = 0; i < num_threads; ++i) {
-            workers_.emplace_back([this] { worker_loop(); });
+            workers_.emplace_back([this](std::stop_token stop) { worker_loop(stop); });
         }
     }
 
     ~ThreadPool() {
-        {
-            std::scoped_lock lock(mutex_);
-            shutdown_ = true;
+        for (auto& worker : workers_) {
+            worker.request_stop();
         }
-        cv_.notify_all();
-        for (auto& t : workers_) t.join();
+        // The workers_ member is destroyed first and joins while state is alive.
     }
 
+    ThreadPool(const ThreadPool&) = delete;
+    ThreadPool& operator=(const ThreadPool&) = delete;
+
     // Submit a callable and return a future for its result.
-    // Throws std::runtime_error if the pool has been shut down.
+    // The owner must keep the pool alive throughout submission.
     template <typename F, typename... Args>
     auto submit(F&& f, Args&&... args) -> std::future<std::invoke_result_t<F, Args...>> {
         using ReturnType = std::invoke_result_t<F, Args...>;
@@ -62,8 +73,6 @@ public:
 
         {
             std::scoped_lock lock(mutex_);
-            if (shutdown_)
-                throw std::runtime_error("submit() called on a stopped ThreadPool");
             queue_.push([task]() { (*task)(); });
         }
         cv_.notify_one();
@@ -74,13 +83,14 @@ public:
     std::size_t thread_count() const { return workers_.size(); }
 
 private:
-    void worker_loop() {
+    void worker_loop(std::stop_token stop) {
         while (true) {
             std::function<void()> job;
             {
                 std::unique_lock<std::mutex> lock(mutex_);
-                cv_.wait(lock, [this] { return shutdown_ || !queue_.empty(); });
-                if (shutdown_ && queue_.empty()) return;
+                cv_.wait(lock, stop, [this] { return !queue_.empty(); });
+                // A stop request wakes idle workers; keep draining queued work.
+                if (queue_.empty()) return;
                 job = std::move(queue_.front());
                 queue_.pop();
             }
@@ -88,11 +98,10 @@ private:
         }
     }
 
-    std::vector<std::thread>          workers_;
     std::queue<std::function<void()>> queue_;
     std::mutex                        mutex_;
-    std::condition_variable           cv_;
-    bool                              shutdown_{false};
+    std::condition_variable_any       cv_;
+    std::vector<std::jthread>         workers_; // Destroy before queue/mutex/cv.
 };
 
 // ── Demo ───────────────────────────────────────────────────────────────────
@@ -132,10 +141,7 @@ int main() {
         std::cout << "  caught from pool task: " << e.what() << "\n";
     }
 
-    // ── submit() after shutdown throws ────────────────────────────────
-    // pool destructor fires here, joining all workers
-    // (submit after this would throw — pool is destroyed)
-
-    std::cout << "\nDone — pool shut down cleanly.\n";
+    // Scope exit requests stop, drains jobs, and joins all workers.
+    std::cout << "\nAll results retrieved; leaving pool scope.\n";
     return 0;
 }

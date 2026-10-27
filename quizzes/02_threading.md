@@ -2,7 +2,7 @@
 
 Notes: [Multithreading](../notes/02_multithreading.md)
 
-Check your understanding of thread lifecycles, synchronization primitives and thread safety in Python, C++ and Node.js.
+Check your understanding of thread lifecycles, synchronization primitives and thread safety in Python, C++ and Node.js. The C++ learning path uses **C++20**; questions about manual `std::thread` ownership are labeled **legacy comparison**. See the [C++ guide](../src/cpp/README.md).
 
 #### Q. In Python's `threading` module, which call lets a thread sleep until another thread notifies it?
 
@@ -71,12 +71,12 @@ Check your understanding of thread lifecycles, synchronization primitives and th
 
 ```cpp
 std::shared_mutex m;
-m.lock_shared();
+std::shared_lock main_reader(m);
 bool w = true, r = false;
-std::thread t([&] {
+std::jthread t([&] {
     w = m.try_lock();
-    r = m.try_lock_shared();
-    if (r) m.unlock_shared();
+    std::shared_lock reader(m);
+    r = reader.owns_lock();
 });
 t.join();
 std::cout << w << ' ' << r << '\n';
@@ -87,7 +87,7 @@ std::cout << w << ' ' << r << '\n';
 * [x] `0 1`
 * [ ] `0 0`
 
-> **Explanation:** Exclusive ownership needs every reader to leave, so `try_lock()` fails. Shared ownership can be held by many threads at once, so the second reader's `try_lock_shared()` succeeds.
+> **Explanation:** Exclusive ownership needs every reader to leave, so `try_lock()` fails. Shared ownership can be held by many threads at once, so the second scoped shared lock can acquire ownership.
 
 #### Q. Why would you mark a Python background thread as a daemon thread?
 
@@ -116,7 +116,7 @@ std::cout << w << ' ' << r << '\n';
 
 > **Explanation:** An uncaught exception ends only that thread and is reported through `threading.excepthook`. To pass errors back, catch them in the thread or use `concurrent.futures`, whose `result()` re-raises.
 
-#### Q. In C++, what happens right after a `std::thread` object is constructed with a callable?
+#### Q. Legacy comparison: what happens right after a `std::thread` object is constructed with a callable?
 
 * [x] It starts running the callable, subject to OS scheduling
 * [ ] The thread waits until the parent calls `start()`
@@ -132,19 +132,19 @@ void add_one(int& x) { ++x; }
 
 int main() {
     int v = 0;
-    std::thread t(add_one, v);
+    std::jthread t(add_one, v);
     t.join();
 }
 ```
 
 * [x] Arguments are copied and passed as rvalues, so pass `std::ref(v)`
-* [ ] `std::thread` cannot run free functions; wrap `add_one` in a lambda
+* [ ] `std::jthread` cannot run free functions; wrap `add_one` in a lambda
 * [ ] `v` must be global, because threads cannot use local variables
 * [ ] `add_one` must return a value; change it to return `int`
 
-> **Explanation:** `std::thread` stores decayed copies of its arguments, which cannot bind to `int&`, so a static assertion fails. With `std::ref(v)` the thread changes `v`, which must outlive the thread.
+> **Explanation:** `std::jthread` stores decayed copies of its arguments, which cannot bind to `int&`, so a static assertion fails. With `std::ref(v)` the thread changes `v`, which must outlive the thread.
 
-#### Q. What happens if a `std::thread` object is destroyed while it is still joinable?
+#### Q. Legacy comparison: what happens if a `std::thread` object is destroyed while it is still joinable?
 
 * [ ] The thread is detached automatically
 * [ ] The destructor joins the thread automatically
@@ -160,9 +160,9 @@ int main() {
 * [ ] It calls `std::terminate`, exactly like `std::thread`
 * [ ] It forcibly kills the thread without waiting for it to finish
 
-> **Explanation:** `std::jthread` calls `request_stop()` and then `join()`. The thread function can watch its `std::stop_token` to exit promptly, which makes RAII-style cleanup safe.
+> **Explanation:** `std::jthread` calls `request_stop()` and then `join()`. The thread function can watch its `std::stop_token` to exit promptly, which provides scoped ownership. A stop request is cooperative; it does not interrupt arbitrary blocking calls.
 
-#### Q. In C++, after calling `t.detach()`, what does `t.joinable()` return?
+#### Q. Legacy comparison: after calling `t.detach()`, what does `t.joinable()` return?
 
 * [ ] `true`
 * [ ] `true` until the detached thread finishes
@@ -184,7 +184,7 @@ void work() {
 }
 
 int main() {
-    std::thread a(work), b(work);
+    std::jthread a(work), b(work);
     a.join(); b.join();
     std::cout << "main " << n << '\n';
 }

@@ -2,7 +2,7 @@
 
 Notes: [Asynchronous Programming](../notes/04_asynchronous_programming.md)
 
-Check your understanding of coroutines, event loops, futures and tasks in Python's `asyncio`, C++ and JavaScript. Python behaviour is as of CPython 3.12 unless a question says otherwise.
+Check your understanding of coroutines, event loops, futures and tasks in Python's `asyncio`, C++ and JavaScript. Python behaviour is as of CPython 3.12 unless a question says otherwise. C++ examples use the **C++20** baseline; futures remain useful for result-oriented threaded work, while event-driven I/O needs an I/O runtime. See the [C++ guide](../src/cpp/README.md).
 
 #### Q. Roughly how long does this C++ program take, and why?
 

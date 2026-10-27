@@ -1,7 +1,9 @@
 /**
+ * Modern C++20 example: scoped worker ownership with std::jthread.
+ *
  * try_lock - Non-Blocking Lock Acquisition
  *
- * This example demonstrates mutex.try_lock(), which attempts to acquire
+ * This example demonstrates unique_lock::try_lock(), which attempts to acquire
  * a lock without blocking. If the lock is unavailable, it returns false
  * immediately instead of waiting.
  *
@@ -18,6 +20,7 @@
 #include <atomic>
 #include <chrono>
 #include <iostream>
+#include <syncstream>
 #include <mutex>
 #include <thread>
 
@@ -28,19 +31,19 @@ void worker(const char* name) {
     int items_to_add = 0;
 
     while (items_on_list.load(std::memory_order_relaxed) <= 20) {
-        if (items_to_add > 0 && list_mutex.try_lock()) {
+        std::unique_lock lock(list_mutex, std::defer_lock);
+        if (items_to_add > 0 && lock.try_lock()) {
             // Got the lock - add accumulated items
             items_on_list.fetch_add(items_to_add, std::memory_order_relaxed);
-            std::cout << name << " added " << items_to_add << " item(s).\n";
+            std::osyncstream(std::cout) << name << " added " << items_to_add << " item(s).\n";
             items_to_add = 0;
 
             std::this_thread::sleep_for(std::chrono::milliseconds(300));
-            list_mutex.unlock();
         } else {
             // Lock unavailable - do other work instead of blocking
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             ++items_to_add;
-            std::cout << name << " found another item.\n";
+            std::osyncstream(std::cout) << name << " found another item.\n";
         }
     }
 }
@@ -48,8 +51,8 @@ void worker(const char* name) {
 int main() {
     auto start = std::chrono::steady_clock::now();
 
-    std::thread alice(worker, "Alice");
-    std::thread bob(worker, "Bob");
+    std::jthread alice(worker, "Alice");
+    std::jthread bob(worker, "Bob");
 
     alice.join();
     bob.join();
@@ -57,8 +60,8 @@ int main() {
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - start).count();
 
-    std::cout << "Final count: " << items_on_list.load() << " items.\n";
-    std::cout << "Elapsed time: " << elapsed / 1000.0 << " seconds.\n";
+    std::osyncstream(std::cout) << "Final count: " << items_on_list.load() << " items.\n";
+    std::osyncstream(std::cout) << "Elapsed time: " << elapsed / 1000.0 << " seconds.\n";
 
     return 0;
 }

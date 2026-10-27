@@ -1,4 +1,6 @@
 /**
+ * Modern C++20 example: scoped worker ownership with std::jthread.
+ *
  * std::barrier — C++20 Reusable Phase Synchronization
  *
  * std::barrier blocks threads at a synchronization point until the expected
@@ -16,13 +18,14 @@
  * - Runs before any thread is released for the next phase
  * - Useful for aggregating results or printing phase summaries
  *
- * Compare with barrier.cpp which shows a manual implementation.
+ * Compare with legacy/barrier.cpp for the manual implementation.
  *
  * Compile: g++ -std=c++20 -pthread std_barrier.cpp
  */
 
 #include <barrier>
 #include <iostream>
+#include <syncstream>
 #include <numeric>
 #include <thread>
 #include <vector>
@@ -37,14 +40,15 @@ int main() {
     int phase = 0;  // Captured by reference in completion lambda
 
     // Completion function: called once when all workers finish each phase.
-    // Runs with the barrier internally locked — safe to access shared state.
-    std::barrier sync(kWorkers, [&phase] {
+    // Arrivals happen before completion, and completion happens before workers
+    // resume. That ordering makes the shared results safe to read here.
+    std::barrier sync(kWorkers, [&phase]() noexcept {
         int total = std::accumulate(results.begin(), results.end(), 0);
-        std::cout << "  ─── Phase " << ++phase
+        std::osyncstream(std::cout) << "  ─── Phase " << ++phase
                   << " complete. Sum = " << total << " ───\n";
     });
 
-    std::vector<std::thread> workers;
+    std::vector<std::jthread> workers;
     workers.reserve(kWorkers);
 
     for (int id = 0; id < kWorkers; ++id) {
@@ -52,19 +56,19 @@ int main() {
             for (int p = 1; p <= kPhases; ++p) {
                 // Compute this worker's contribution for the phase
                 results[id] = id * p;
-                std::cout << "Worker " << id
+                std::osyncstream(std::cout) << "Worker " << id
                           << " finished phase " << p
                           << " (result = " << results[id] << ")\n";
 
                 // Wait for all workers; completion function runs here
                 sync.arrive_and_wait();
             }
-            std::cout << "Worker " << id << " done.\n";
+            std::osyncstream(std::cout) << "Worker " << id << " done.\n";
         });
     }
 
     for (auto& w : workers) w.join();
 
-    std::cout << "\nAll phases complete.\n";
+    std::osyncstream(std::cout) << "\nAll phases complete.\n";
     return 0;
 }

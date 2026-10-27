@@ -1,21 +1,21 @@
 /**
- * Simple Mutex
+ * Modern C++20: Scoped Mutex Ownership
  *
  * This example demonstrates the basic use of std::mutex to protect
  * shared data from concurrent access.
  *
  * Key concepts:
- * - mutex.lock() acquires exclusive access
- * - mutex.unlock() releases the mutex
+ * - std::scoped_lock acquires the mutex and releases it on scope exit
+ * - std::jthread owns each worker and joins on scope exit
  * - Only one thread can hold the mutex at a time
  * - Other threads block at lock() until it's available
  *
- * Note: Prefer std::scoped_lock or std::lock_guard for automatic
- * unlock via RAII (see race_condition.cpp for example).
+ * Compile: g++ -std=c++20 -pthread simple_mutex.cpp
  */
 
 #include <chrono>
 #include <iostream>
+#include <syncstream>
 #include <mutex>
 #include <thread>
 
@@ -24,24 +24,22 @@ std::mutex counter_mutex;
 
 void worker() {
     for (int i = 0; i < 5; ++i) {
-        std::cout << "Thread " << std::this_thread::get_id()
+        std::osyncstream(std::cout) << "Thread " << std::this_thread::get_id()
                   << " is planning...\n";
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         // Protect the critical section
-        counter_mutex.lock();
+        std::scoped_lock lock(counter_mutex);
         ++task_count;
-        counter_mutex.unlock();
     }
 }
 
 int main() {
-    std::thread alice(worker);
-    std::thread bob(worker);
+    {
+        std::jthread alice(worker);
+        std::jthread bob(worker);
+    } // Both workers finish before the counter is read.
 
-    alice.join();
-    bob.join();
-
-    std::cout << "Completed " << task_count << " tasks.\n";
+    std::osyncstream(std::cout) << "Completed " << task_count << " tasks.\n";
     return 0;
 }

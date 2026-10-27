@@ -1,83 +1,58 @@
 /**
- * Pausable Asynchronous Tasks
+ * Modern C++20: Pause, Resume, and Cancel an Owned Worker
  *
- * This example demonstrates how to pause and resume async tasks
- * using a condition variable and mutex-protected flags.
+ * A mutex protects the pause predicate. std::jthread supplies the stop_token,
+ * and condition_variable_any supports interruptible waits, including when
+ * the task is paused. The thread's scope supplies the completion boundary.
  *
- * Key concepts:
- * - Mutex-protected flags for task control
- * - std::condition_variable to block until a condition is met
- * - std::promise/std::future for signaling task completion
- * - Combining these primitives enables cooperative task control
- *
- * This pattern is useful for tasks that should be interruptible
- * or controllable by external events.
+ * Compile: g++ -std=c++20 -pthread pause_resume.cpp
  */
 
 #include <chrono>
 #include <condition_variable>
-#include <future>
 #include <iostream>
 #include <mutex>
+#include <stop_token>
+#include <syncstream>
 #include <thread>
 
-std::mutex mtx;
-std::condition_variable cv;
-bool paused = false;  // Protected by mtx
-bool running = true;  // Protected by mtx
-
-void pausable_task(std::promise<void>&& done_signal) {
-    int step = 0;
-    std::unique_lock<std::mutex> lock(mtx);
-    while (running) {
-        cv.wait(lock, [] { return !paused || !running; });
-
-        if (!running) break;
-
-        std::cout << "Executing step " << step++ << "\n";
-        cv.wait_for(lock, std::chrono::seconds(1), [] {
-            return paused || !running;
-        });
-    }
-    lock.unlock();
-    done_signal.set_value();
-}
-
 int main() {
-    std::promise<void> done_promise;
-    std::future<void> done_future = done_promise.get_future();
+    std::mutex mutex;
+    std::condition_variable_any changed;
+    bool paused = false;  // Protected by mutex; outlives the worker.
 
-    auto task = std::async(std::launch::async, pausable_task,
-                           std::move(done_promise));
-
-    std::cout << "Task running. Commands: 'p' = pause/resume, 'q' = quit\n";
-
-    char cmd;
-    while (std::cin >> cmd) {
-        if (cmd == 'p') {
-            bool is_paused;
-            {
-                std::lock_guard<std::mutex> lock(mtx);
-                paused = !paused;
-                is_paused = paused;
-            }
-            cv.notify_all();
-            std::cout << (is_paused ? "Paused" : "Resumed") << "\n";
-        } else if (cmd == 'q') {
-            break;
-        }
-    }
-
-    // EOF and 'q' both stop the worker, including while it is paused.
     {
-        std::lock_guard<std::mutex> lock(mtx);
-        running = false;
+        std::jthread task([&](std::stop_token stop) {
+            int step = 0;
+            std::unique_lock lock(mutex);
+            while (changed.wait(lock, stop, [&] { return !paused; })) {
+                if (stop.stop_requested()) break;
+                std::osyncstream(std::cout) << "Executing step " << step++ << '\n';
+                changed.wait_for(lock, stop, std::chrono::seconds(1), [&] {
+                    return paused;
+                });
+            }
+        });
+
+        std::osyncstream(std::cout)
+            << "Task running. Commands: 'p' = pause/resume, 'q' = quit\n";
+        char command;
+        while (std::cin >> command) {
+            if (command == 'q') break;
+            if (command == 'p') {
+                bool is_paused;
+                {
+                    std::scoped_lock lock(mutex);
+                    paused = !paused;
+                    is_paused = paused;
+                }
+                changed.notify_all();
+                std::osyncstream(std::cout) << (is_paused ? "Paused\n" : "Resumed\n");
+            }
+        }
+        // EOF and 'q' both leave this scope. The jthread destructor requests
+        // stop, wakes either interruptible wait, and joins the worker.
     }
-    cv.notify_all();
 
-    done_future.get();
-    task.get();
     std::cout << "Task completed\n";
-
-    return 0;
 }

@@ -1,101 +1,105 @@
 /**
- * Process Pool
- *
- * This example demonstrates a simple process pool - a fixed number
- * of worker processes that execute tasks from a queue.
- *
- * Key concepts:
- * - Limits the number of concurrent processes to avoid resource exhaustion
- * - Reuses process slots as tasks complete
- * - Parent process manages the pool and collects results via exit codes
- * - Child exit status is retrieved via WEXITSTATUS macro
- *
- * Process pools are useful when:
- * - Tasks are CPU-bound and benefit from parallel execution
- * - You want to limit system resource usage
- * - Each task needs memory isolation
+ * C++20 + POSIX: persistent workers and typed pipe results.
+ * Each worker reads multiple tasks from its pipe. Results travel through IPC,
+ * not eight-bit exit codes. Bound in-flight tasks to apply backpressure, close
+ * task writers to signal EOF, then collect results and reap owned children.
+ * Compile: g++ -std=c++20 -pthread process_pool.cpp
  */
+#include "../common/posix.hpp"
 
-#include <algorithm>
+#include <array>
 #include <chrono>
+#include <cstdint>
 #include <iostream>
-#include <sys/wait.h>
+#include <span>
 #include <thread>
-#include <unistd.h>
 #include <vector>
 
 class ProcessPool {
 public:
-    explicit ProcessPool(size_t max_workers)
-        : max_workers_(max_workers) {}
-
-    void submit(int task_id) {
-        // If pool is full, wait for a worker to finish
-        if (workers_.size() >= max_workers_) {
-            wait_for_one();
+    explicit ProcessPool(std::size_t workers)
+        : tasks_(workers), children_(workers) {
+        if (workers == 0 || workers > 64) {
+            throw std::invalid_argument("Worker count must be between 1 and 64");
         }
-
-        std::cout.flush();
-
-        pid_t pid = fork();
-        if (pid < 0) {
-            std::cerr << "fork() failed\n";
-            return;
+        for (std::size_t id = 0; id < workers; ++id) {
+            children_.spawn([&, id] {
+                results_.reader.reset();
+                for (std::size_t index = 0; index < tasks_.size(); ++index) {
+                    tasks_[index].writer.reset();
+                    if (index != id) tasks_[index].reader.reset();
+                }
+                int task = 0;
+                while (posix_example::read_exact(tasks_[id].reader.get(),
+                       std::as_writable_bytes(std::span(&task, 1)))) {
+                    std::cout << "Task " << task << " starting (PID: " << getpid() << ")\n";
+                    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+                    const std::array<std::int64_t, 2> result{task, std::int64_t{task} * 2};
+                    // One small record fits PIPE_BUF: writes from workers do
+                    // not interleave. Native int layout is local-machine IPC.
+                    posix_example::write_all(results_.writer.get(), std::as_bytes(std::span(result)));
+                    std::cout << "Task " << task << " finished\n";
+                }
+            });
         }
-        if (pid == 0) {
-            // Child: execute task and exit with result
-            execute_task(task_id);
-            std::cout.flush();
-            _exit(task_id * 2);  // Return result via exit code
-        } else {
-            workers_.push_back(pid);
+        results_.writer.reset();
+        for (auto& task : tasks_) task.reader.reset();
+    }
+
+    ~ProcessPool() {
+        for (auto& task : tasks_) task.writer.reset();
+        if (std::uncaught_exceptions() == 0) {
+            try {
+                while (pending_ != 0) collect_one();
+            } catch (...) {
+                children_.terminate();
+            }
         }
+        // children_ is destroyed first and reaps workers while pipe state lives.
+    }
+    ProcessPool(const ProcessPool&) = delete;
+    ProcessPool& operator=(const ProcessPool&) = delete;
+
+    void submit(int task) {
+        if (closed_) throw std::logic_error("Submitting to a closed process pool");
+        if (pending_ >= tasks_.size() * 2) collect_one();
+        auto& destination = tasks_[next_worker_++ % tasks_.size()];
+        posix_example::write_all(destination.writer.get(), std::as_bytes(std::span(&task, 1)));
+        ++pending_;
     }
 
     void wait_all() {
-        while (!workers_.empty()) {
-            wait_for_one();
-        }
+        for (auto& task : tasks_) task.writer.reset();
+        closed_ = true;
+        while (pending_ != 0) collect_one();
+        if (!children_.wait_all()) throw std::runtime_error("A process worker failed");
     }
 
 private:
-    void wait_for_one() {
-        int status;
-        pid_t finished = wait(&status);
-
-        if (WIFEXITED(status)) {
-            std::cout << "Task result: " << WEXITSTATUS(status) << "\n";
+    void collect_one() {
+        std::array<std::int64_t, 2> result{};
+        if (!posix_example::read_exact(results_.reader.get(), std::as_writable_bytes(std::span(result)))) {
+            throw std::runtime_error("Workers stopped before returning all results");
         }
-
-        auto it = std::find(workers_.begin(), workers_.end(), finished);
-        if (it != workers_.end()) {
-            workers_.erase(it);
-        }
+        --pending_;
+        std::cout << "Task result: " << result[1] << '\n';
     }
 
-    void execute_task(int task_id) {
-        std::cout << "Task " << task_id << " starting (PID: " 
-                  << getpid() << ")\n";
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-        std::cout << "Task " << task_id << " finished\n";
-    }
-
-    size_t max_workers_;
-    std::vector<pid_t> workers_;
+    std::vector<posix_example::Pipe> tasks_;
+    posix_example::Pipe results_;
+    std::size_t next_worker_ = 0;
+    std::size_t pending_ = 0;
+    bool closed_ = false;
+    posix_example::ChildGroup children_;
 };
 
-int main() {
-    constexpr int num_tasks = 10;
-    constexpr int pool_size = 3;
-
-    ProcessPool pool(pool_size);
-
-    for (int i = 0; i < num_tasks; ++i) {
-        pool.submit(i);
-    }
-
+int main() try {
+    ProcessPool pool(3);
+    for (int task = 0; task < 10; ++task) pool.submit(task);
     pool.wait_all();
     std::cout << "All tasks completed\n";
-
     return 0;
+} catch (const std::exception& error) {
+    std::cerr << error.what() << '\n';
+    return 1;
 }

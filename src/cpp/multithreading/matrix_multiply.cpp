@@ -1,4 +1,6 @@
 /**
+ * Modern C++20 example: scoped worker ownership with std::jthread.
+ *
  * Parallel Matrix Multiplication
  *
  * This example demonstrates data parallelism by distributing matrix
@@ -18,6 +20,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <functional>
 #include <thread>
 #include <vector>
 
@@ -64,7 +67,7 @@ void parallel_multiply(const Matrix& A, const Matrix& B, Matrix& C) {
     size_t chunk_size = static_cast<size_t>(std::ceil(
         static_cast<double>(rows) / num_threads));
 
-    std::vector<std::thread> workers;
+    std::vector<std::jthread> workers;
     workers.reserve(num_threads);
 
     for (size_t i = 0; i < num_threads; ++i) {

@@ -23,7 +23,7 @@
  *   Use future.valid() to check before calling .get().
  *
  * Compile:
- *   g++ -std=c++17 -pthread -O1 async_antipatterns.cpp
+ *   g++ -std=c++20 -pthread -O1 async_antipatterns.cpp
  */
 
 #include <chrono>

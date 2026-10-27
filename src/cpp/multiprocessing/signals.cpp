@@ -1,4 +1,6 @@
 /**
+ * PLATFORM MECHANICS: POSIX signal handlers and explicit child reaping.
+ *
  * POSIX Signals — sigaction, kill, SIGCHLD, SIGTERM
  *
  * Signals are asynchronous notifications sent to a process.
@@ -16,7 +18,7 @@
  *   3. kill() to send arbitrary signals between processes
  *
  * Compile:
- *   g++ -std=c++17 -o signals signals.cpp
+ *   g++ -std=c++20 -o signals signals.cpp
  */
 
 #include <cerrno>

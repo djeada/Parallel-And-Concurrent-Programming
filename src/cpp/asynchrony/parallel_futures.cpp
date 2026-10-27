@@ -15,7 +15,7 @@
  * See also async_antipatterns.cpp for pitfalls to avoid.
  *
  * Compile:
- *   g++ -std=c++17 -pthread -O1 parallel_futures.cpp
+ *   g++ -std=c++20 -pthread -O1 parallel_futures.cpp
  */
 
 #include <chrono>

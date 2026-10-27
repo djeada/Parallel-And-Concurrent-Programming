@@ -1,4 +1,6 @@
 /**
+ * Modern C++20 example: scoped worker ownership with std::jthread.
+ *
  * C++20 Barrier Synchronization
  *
  * This example demonstrates std::barrier (C++20) for synchronizing
@@ -10,12 +12,16 @@
  * - Barrier is reusable - can be used for multiple phases
  * - Useful for phased parallel algorithms
  *
+ * Despite the filename, arrive_and_wait() blocks OS threads; it is not a
+ * coroutine awaitable or event-loop synchronization primitive.
+ *
  * Compile with: g++ -std=c++20 -pthread async_barrier.cpp
  */
 
 #include <barrier>
 #include <chrono>
 #include <iostream>
+#include <syncstream>
 #include <random>
 #include <thread>
 #include <vector>
@@ -37,15 +43,15 @@ private:
         std::mt19937 gen(rd());
         std::uniform_int_distribution<> dist(1, 3);
 
-        std::cout << "Worker " << id_ << " phase 1 starting\n";
+        std::osyncstream(std::cout) << "Worker " << id_ << " phase 1 starting\n";
         std::this_thread::sleep_for(std::chrono::seconds(dist(gen)));
-        std::cout << "Worker " << id_ << " phase 1 done\n";
+        std::osyncstream(std::cout) << "Worker " << id_ << " phase 1 done\n";
     }
 
     void phase2() {
-        std::cout << "Worker " << id_ << " phase 2 starting\n";
+        std::osyncstream(std::cout) << "Worker " << id_ << " phase 2 starting\n";
         std::this_thread::sleep_for(std::chrono::seconds(1));
-        std::cout << "Worker " << id_ << " phase 2 done\n";
+        std::osyncstream(std::cout) << "Worker " << id_ << " phase 2 done\n";
     }
 
     int id_;
@@ -56,7 +62,7 @@ int main() {
     constexpr int num_workers = 4;
     std::barrier sync_point(num_workers);
 
-    std::vector<std::thread> workers;
+    std::vector<std::jthread> workers;
     for (int i = 0; i < num_workers; ++i) {
         workers.emplace_back(Worker(i, &sync_point));
     }
@@ -65,6 +71,6 @@ int main() {
         w.join();
     }
 
-    std::cout << "All workers completed\n";
+    std::osyncstream(std::cout) << "All workers completed\n";
     return 0;
 }

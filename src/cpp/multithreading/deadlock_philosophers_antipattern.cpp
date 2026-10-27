@@ -19,7 +19,7 @@
  *
  * WARNING: This code intentionally demonstrates a deadlock pattern!
  *
- * Compile: g++ -std=c++11 -pthread deadlock_philosophers_antipattern.cpp
+ * Compile: g++ -std=c++20 -pthread deadlock_philosophers_antipattern.cpp
  */
 
 #include <chrono>

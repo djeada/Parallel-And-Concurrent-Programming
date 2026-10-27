@@ -1,4 +1,7 @@
 /**
+ * LOW-LEVEL COMPARISON: busy waiting. Start with simple_mutex.cpp for shared state
+ * or atomic_wait.cpp when waiting for a single atomic value to change.
+ *
  * Spinlock with std::atomic_flag
  *
  * A spinlock achieves mutual exclusion through busy-waiting: instead of
@@ -19,7 +22,7 @@
  * or under high contention they can STARVE other threads.
  * Default to std::mutex and only switch to a spinlock with profiling evidence.
  *
- * Compile: g++ -std=c++11 -O2 -pthread spinlock.cpp
+ * Compile: g++ -std=c++20 -O2 -pthread spinlock.cpp
  */
 
 #include <atomic>
@@ -57,9 +60,8 @@ long counter = 0;
 
 void spinlock_worker() {
     for (int i = 0; i < 1000000; ++i) {
-        spinlock.lock();
+        std::lock_guard lock(spinlock);
         ++counter;
-        spinlock.unlock();
     }
 }
 
@@ -77,7 +79,7 @@ void mutex_worker() {
 
 template <typename F>
 long benchmark_ms(F&& func, int num_threads) {
-    std::vector<std::thread> threads;
+    std::vector<std::jthread> threads;
     threads.reserve(num_threads);
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < num_threads; ++i) threads.emplace_back(func);

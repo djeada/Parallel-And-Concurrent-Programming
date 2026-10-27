@@ -1,53 +1,49 @@
 /**
- * Thread Life Cycle
+ * Modern C++20: Worker Lifetime and Cooperative Cancellation
  *
- * This example demonstrates the lifecycle of a thread and how to
- * communicate between threads using atomic variables.
+ * A jthread passes its stop_token to the worker. request_stop() asks the
+ * worker to return; destruction joins it. Cancellation is cooperative:
+ * blocking operations must support stopping, or have a bounded wait.
  *
- * Key concepts:
- * - Thread starts executing immediately after construction
- * - std::atomic<bool> provides thread-safe flag communication
- * - Threads run until their function returns
- * - join() waits for thread completion
- *
- * The pattern shown here allows the main thread to signal workers
- * to stop after a certain time has elapsed.
+ * Compile: g++ -std=c++20 -pthread thread_life_cycle.cpp
  */
 
-#include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <iostream>
+#include <mutex>
+#include <stop_token>
+#include <syncstream>
 #include <thread>
 
-std::atomic<bool> running{true};
+using namespace std::chrono_literals;
 
-void task_worker(const char* name) {
+void task_worker(std::stop_token stop, const char* name) {
     unsigned int task_count = 0;
+    std::mutex mutex;
+    std::condition_variable_any wake;
+    std::unique_lock lock(mutex);
 
-    // Run until signaled to stop
-    while (running) {
+    while (!stop.stop_requested()) {
         ++task_count;
+        // Simulate waiting between jobs. A stop request interrupts this wait.
+        wake.wait_for(lock, stop, 100ms, [] { return false; });
     }
 
-    std::cout << name << " completed " << task_count << " tasks.\n";
+    std::osyncstream(std::cout) << name << " completed " << task_count << " tasks.\n";
 }
 
 int main() {
-    std::thread worker1(task_worker, "Alice");
-    std::thread worker2(task_worker, "Bob");
+    {
+        std::jthread alice(task_worker, "Alice");
+        std::jthread bob(task_worker, "Bob");
+        std::cout << "Workers are running...\n";
+        std::this_thread::sleep_for(1s);
 
-    std::cout << "Workers are running...\n";
-
-    // Let workers run for 1 second
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-
-    // Signal workers to stop
-    running = false;
-
-    // Wait for workers to finish
-    worker1.join();
-    worker2.join();
+        // Ask both workers to stop before either destructor waits for them.
+        alice.request_stop();
+        bob.request_stop();
+    }
 
     std::cout << "All workers stopped.\n";
-    return 0;
 }

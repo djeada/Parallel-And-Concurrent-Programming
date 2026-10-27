@@ -1,4 +1,6 @@
 /**
+ * Modern C++20 example: scoped worker ownership with std::jthread.
+ *
  * Mutex Contention with Multiple Threads
  *
  * This example shows how multiple threads contend for a single mutex.
@@ -11,11 +13,13 @@
  *   repeatedly win (see starvation_antipattern.cpp for a dedicated example)
  * - A thread may exit early without processing all remaining tasks
  *
- * Compile: g++ -std=c++11 -pthread mutex_contention.cpp
+ * Compile: g++ -std=c++20 -pthread mutex_contention.cpp
  */
 
 #include <iostream>
+#include <syncstream>
 #include <mutex>
+#include <functional>
 #include <thread>
 
 int task_count = 5000;
@@ -32,22 +36,22 @@ void worker(int id, std::mutex& task_lock) {
         // Early exit: worker 0 stops at a threshold to illustrate
         // that threads can leave without draining the whole queue.
         if (id == 0 && task_count == 100) {
-            std::cout << "Worker 0 reached threshold and exited early.\n";
+            std::osyncstream(std::cout) << "Worker 0 reached threshold and exited early.\n";
             break;
         }
     }
-    std::cout << "Worker " << id << " processed " << processed << " tasks.\n";
+    std::osyncstream(std::cout) << "Worker " << id << " processed " << processed << " tasks.\n";
 }
 
 int main() {
     std::mutex task_lock;
 
-    std::thread alice(worker, 0, std::ref(task_lock));
-    std::thread bob(worker,   1, std::ref(task_lock));
+    std::jthread alice(worker, 0, std::ref(task_lock));
+    std::jthread bob(worker,   1, std::ref(task_lock));
 
     alice.join();
     bob.join();
 
-    std::cout << "Tasks remaining: " << task_count << "\n";
+    std::osyncstream(std::cout) << "Tasks remaining: " << task_count << "\n";
     return 0;
 }

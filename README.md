@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
-[![C++](https://img.shields.io/badge/C++-11+-00599C.svg)](https://isocpp.org/)
+[![C++](https://img.shields.io/badge/C++-20-00599C.svg)](https://isocpp.org/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E.svg)](https://www.javascript.com/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
@@ -124,10 +124,12 @@ src/
 │   └── processes/     # Multiprocessing examples
 │
 ├── ⚙️ cpp/             # C++ implementations
-│   ├── multithreading/ # std::thread, atomics, synchronization
-│   ├── multiprocessing/ # POSIX processes and IPC
-│   ├── asynchrony/    # Futures, async tasks, C++20 coroutines
-│   └── mpi/           # Distributed communication with MPI
+│   ├── multithreading/ # C++20 jthread, atomics, standard synchronization
+│   │   └── legacy/    # Older implementations for comparison
+│   ├── multiprocessing/ # Scoped POSIX resources, spawn, persistent workers
+│   ├── asynchrony/    # Futures, bounded async I/O, coroutine mechanics
+│   ├── mpi/           # C++20 ownership around the MPI C interface
+│   └── common/        # Shared ownership, queue, and I/O helpers
 │
 └── 🟨 js/              # JavaScript/Node.js
     ├── asynchrony/    # Promises, async/await
@@ -177,20 +179,38 @@ cd Parallel-And-Concurrent-Programming
 # Run Python examples
 python src/python/asynchrony/async_generator.py
 
-# Run C++ examples (requires compilation)
-g++ -std=c++20 -pthread src/cpp/multithreading/simple_mutex.cpp -o thread_demo
+# Run C++ examples (C++20 compiler and standard library)
+g++ -std=c++20 -pthread src/cpp/multithreading/atomic_wait.cpp -o thread_demo
 ./thread_demo
 
 # Run JavaScript examples
 node src/js/asynchrony/03_future_callback.js
 ```
 
+### C++: modern approaches first
+
+Follow the [C++ guide and problem-to-solution table](src/cpp/README.md). The main
+path uses C++20: `std::jthread` for scoped workers, stop tokens for cooperative
+cancellation, scoped locks, standard semaphores/latches/barriers, and parallel
+algorithms for independent data processing. Futures and mutexes remain useful
+when they fit the problem.
+
+Older thread wrappers, manual `std::thread` lifecycle examples, pthreads, and
+hand-built synchronization primitives live in
+[`src/cpp/multithreading/legacy/`](src/cpp/multithreading/legacy/) for explicit
+comparison. POSIX process and MPI examples are separate platform/distributed
+topics with scoped resource owners and checked failures. Process workers are
+reused and return results over IPC; MPI matrix multiplication handles uneven
+partitions. HTTP transfers use bounded libcurl asynchronous I/O, and the TCP
+example owns nonblocking connections. Their notes describe the same approaches.
+Coroutine mechanics examples are labeled separately from asynchronous I/O.
+
 C++ and Node.js examples that deliberately demonstrate unsafe or inefficient
 patterns use `_antipattern` (or `_antipatterns` for multiple pitfalls) before their
 filename extension.
 Their comments explain the intentional problem and point to safer alternatives.
 C++ MPI examples require an MPI toolchain; C++ HTTP examples require libcurl development
-headers and linking with `-lcurl`.
+headers and linking with `-lcurl`. Retain `src/cpp/common/` when copying the examples.
 
 ## 🎯 Interactive Quizzes
 
@@ -275,7 +295,7 @@ Before diving into parallel and concurrent programming, ensure you have:
 
 3. **🔧 Explore language-specific tools**
    - Python: `threading`, `multiprocessing`, `asyncio`
-   - C++: `std::thread`, OpenMP, TBB
+   - C++: `std::jthread`, stop tokens, standard parallel algorithms, OpenMP, TBB
    - JavaScript: Promises, async/await, Web Workers
 
 4. **🏗️ Build real projects**
@@ -313,11 +333,14 @@ pip install line_profiler memory_profiler
 <summary><b>C++ Setup</b></summary>
 
 ```bash
-# Install compiler with C++11 support
+# Install a compiler and standard library with C++20 support
 sudo apt-get install g++ cmake
 
 # Install OpenMP (usually included with GCC)
-# Install Intel TBB
+# Optional HTTP and MPI dependencies
+sudo apt-get install libcurl4-openssl-dev libopenmpi-dev openmpi-bin
+
+# Optional TBB backend for standard parallel algorithms (link with -ltbb)
 sudo apt-get install libtbb-dev
 
 # CUDA for GPU programming
@@ -423,6 +446,9 @@ We welcome contributions from developers at all skill levels! Here's how you can
    - Write clean, documented code
    - Follow existing code style and conventions
    - Add comments explaining complex logic
+   - For C++, follow the [modern C++ learning path](src/cpp/README.md): prefer
+     scoped ownership and standard primitives, and label legacy comparisons,
+     low-level mechanisms, and antipatterns explicitly
    - Test your changes thoroughly
 
 4. **✅ Test Your Code**
@@ -430,8 +456,9 @@ We welcome contributions from developers at all skill levels! Here's how you can
    # Python regression checks (Python 3.11+, standard library only)
    python3 -m unittest discover -s tests -p 'test_python_regressions.py' -v
    
-   # C++ regression checks (POSIX, g++, and AddressSanitizer required)
-   python3 -m unittest discover -s tests -p 'test_cpp_regressions.py' -v
+   # C++ regression checks (C++20, POSIX, g++, and AddressSanitizer required)
+   python3 -m unittest discover -s tests -p 'test_cpp*.py' -v
+   # MPI and HTTP checks skip explicitly when their optional dependencies are missing.
    
    # Node.js regression checks (Node.js 20.6+)
    node --test tests/test_node_examples.cjs
@@ -460,7 +487,7 @@ We welcome contributions from developers at all skill levels! Here's how you can
 ### 🌟 Code Style Guidelines
 
 - **Python**: Follow PEP 8, use type hints where appropriate
-- **C++**: Follow Google C++ Style Guide, use modern C++11/14/17 features
+- **C++**: Follow Google C++ Style Guide and the [C++20 learning path](src/cpp/README.md); keep older comparisons in `legacy/`
 - **JavaScript**: Use ESLint, prefer ES6+ features
 - **Comments**: Explain *why*, not *what* (code should be self-explanatory)
 
