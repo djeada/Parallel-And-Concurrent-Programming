@@ -1,97 +1,58 @@
 /**
- * Async Producer-Consumer Pattern
- *
- * This example demonstrates the producer-consumer pattern using
- * async tasks and a thread-safe queue.
- *
- * Key concepts:
- * - Thread-safe queue with mutex and condition_variable
- * - Multiple producers and consumers can run concurrently
- * - put() notifies waiting consumers
- * - get() blocks until an item is available
- *
- * This pattern decouples data production from consumption,
- * enabling pipeline-style processing.
+ * C++20: future-based producers and consumers sharing a bounded queue.
+ * Capacity applies backpressure; close() ends consumption after draining.
+ * Consumers do not need to know how many items will arrive. Queue waits block
+ * worker threads; use parallel_fetch.cpp for event-driven asynchronous I/O.
+ * Compile: g++ -std=c++20 -pthread async_producer_consumer.cpp
  */
+#include "../common/bounded_queue.hpp"
 
-#include <chrono>
-#include <condition_variable>
+#include <functional>
 #include <future>
 #include <iostream>
-#include <mutex>
-#include <queue>
-#include <random>
 #include <string>
-#include <thread>
+#include <syncstream>
 #include <vector>
 
-class AsyncQueue {
-public:
-    void put(const std::string& item) {
-        {
-            std::scoped_lock lock(mutex_);
-            queue_.push(item);
-        }
-        cv_.notify_one();
-    }
+using AsyncQueue = cpp_example::BoundedQueue<std::string>;
 
-    std::string get() {
-        std::unique_lock<std::mutex> lock(mutex_);
-        cv_.wait(lock, [this] { return !queue_.empty(); });
-        std::string item = queue_.front();
-        queue_.pop();
-        return item;
-    }
-
-private:
-    std::queue<std::string> queue_;
-    std::mutex mutex_;
-    std::condition_variable cv_;
-};
-
-void producer(std::shared_ptr<AsyncQueue> queue, int id, int count) {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dist(200, 800);
-
-    for (int i = 0; i < count; ++i) {
-        std::string item = "P" + std::to_string(id) + "-Item" + std::to_string(i);
-        queue->put(item);
-        std::cout << "Producer " << id << ": " << item << "\n";
-        std::this_thread::sleep_for(std::chrono::milliseconds(dist(gen)));
+void producer(AsyncQueue& queue, int id) {
+    for (int item = 0; item < 4; ++item) {
+        auto value = "P" + std::to_string(id) + "-Item" + std::to_string(item);
+        if (!queue.add_task(std::move(value))) return;
     }
 }
 
-void consumer(std::shared_ptr<AsyncQueue> queue, int id, int count) {
-    for (int i = 0; i < count; ++i) {
-        std::string item = queue->get();
-        std::cout << "Consumer " << id << ": " << item << "\n";
+void consumer(AsyncQueue& queue, int id) {
+    int count = 0;
+    while (auto value = queue.take_task()) {
+        ++count;
+        std::osyncstream(std::cout) << "Consumer " << id << ": " << *value << '\n';
     }
+    std::osyncstream(std::cout) << "Consumer " << id << " consumed " << count << " items\n";
 }
 
-int main() {
-    auto queue = std::make_shared<AsyncQueue>();
-
-    constexpr int num_producers = 3;
-    constexpr int items_per_producer = 4;
-    constexpr int num_consumers = 2;
-    constexpr int items_per_consumer = 6;  // Total: 12 items produced, 12 consumed
-
-    std::vector<std::future<void>> producers;
-    for (int i = 0; i < num_producers; ++i) {
-        producers.push_back(
-            std::async(std::launch::async, producer, queue, i, items_per_producer));
-    }
-
+int main() try {
+    AsyncQueue queue(4); // Outlives every future and worker that references it.
     std::vector<std::future<void>> consumers;
-    for (int i = 0; i < num_consumers; ++i) {
-        consumers.push_back(
-            std::async(std::launch::async, consumer, queue, i, items_per_consumer));
+    std::vector<std::future<void>> producers;
+    try {
+        for (int id = 0; id < 2; ++id) {
+            consumers.push_back(std::async(std::launch::async, consumer, std::ref(queue), id));
+        }
+        for (int id = 0; id < 3; ++id) {
+            producers.push_back(std::async(std::launch::async, producer, std::ref(queue), id));
+        }
+        for (auto& future : producers) future.get();
+    } catch (...) {
+        queue.close(); // Release waiters before futures wait during unwinding.
+        throw;
     }
-
-    for (auto& p : producers) p.get();
-    for (auto& c : consumers) c.get();
-
+    queue.close();
+    for (auto& future : consumers) future.get();
     std::cout << "All done\n";
     return 0;
+} catch (const std::exception& error) {
+    std::cerr << error.what() << '\n';
+    return 1;
 }

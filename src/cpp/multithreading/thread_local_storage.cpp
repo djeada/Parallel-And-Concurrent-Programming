@@ -1,4 +1,6 @@
 /**
+ * Modern C++20 example: scoped worker ownership with std::jthread.
+ *
  * Thread Local Storage
  *
  * This example demonstrates thread_local storage - variables that have
@@ -14,6 +16,7 @@
  */
 
 #include <iostream>
+#include <syncstream>
 #include <thread>
 #include <vector>
 
@@ -32,12 +35,12 @@ void worker(int id) {
     do_work();
 
     // Each thread sees its own value
-    std::cout << "Thread " << id << " has value: " << thread_data << "\n";
+    std::osyncstream(std::cout) << "Thread " << id << " has value: " << thread_data << "\n";
 }
 
 int main() {
     constexpr int num_threads = 5;
-    std::vector<std::thread> threads;
+    std::vector<std::jthread> threads;
     threads.reserve(num_threads);
 
     for (int i = 1; i <= num_threads; ++i) {
@@ -50,7 +53,7 @@ int main() {
 
     // Each thread sees: thread_id * 2
     // Thread 1 -> 2, Thread 2 -> 4, Thread 3 -> 6, etc.
-    std::cout << "All threads complete.\n";
+    std::osyncstream(std::cout) << "All threads complete.\n";
 
     return 0;
 }

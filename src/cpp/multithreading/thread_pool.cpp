@@ -1,5 +1,5 @@
 /**
- * Thread Pool
+ * Modern C++20: Thread Pool with Owned Workers
  *
  * This example demonstrates a thread pool - a collection of worker threads
  * that efficiently execute queued tasks.
@@ -7,39 +7,44 @@
  * Key concepts:
  * - Fixed number of threads avoids thread creation overhead
  * - Tasks are queued and executed by available workers
- * - Workers wait on condition_variable when queue is empty
- * - Destructor signals workers to stop and waits for completion
+ * - Workers use stop-aware condition_variable_any waits
+ * - Destructor requests stop, drains queued work, and joins via std::jthread
+ * - Worker members are destroyed before the state they access
+ * - Submitted callables must not throw; use asynchrony/thread_pool_futures.cpp
+ *   for a result/exception channel (path relative to src/cpp)
  *
  * Thread pools are essential for managing concurrent workloads efficiently.
  */
 
-#include <atomic>
 #include <condition_variable>
 #include <functional>
 #include <iostream>
+#include <syncstream>
 #include <mutex>
 #include <queue>
+#include <stdexcept>
+#include <stop_token>
 #include <thread>
+#include <utility>
 #include <vector>
 
 class ThreadPool {
 public:
-    explicit ThreadPool(size_t num_threads) : stop_(false) {
+    explicit ThreadPool(size_t num_threads) {
+        if (num_threads == 0) {
+            throw std::invalid_argument("ThreadPool needs at least one worker");
+        }
         workers_.reserve(num_threads);
         for (size_t i = 0; i < num_threads; ++i) {
-            workers_.emplace_back(&ThreadPool::worker_loop, this);
+            workers_.emplace_back([this](std::stop_token stop) { worker_loop(stop); });
         }
     }
 
     ~ThreadPool() {
-        {
-            std::scoped_lock lock(queue_mutex_);
-            stop_ = true;
-        }
-        cv_.notify_all();
-
+        // Stop-aware waits wake automatically. Ask every worker to stop before
+        // vector destruction joins them, keeping queue state alive until then.
         for (auto& worker : workers_) {
-            worker.join();
+            worker.request_stop();
         }
     }
 
@@ -56,17 +61,15 @@ public:
     }
 
 private:
-    void worker_loop() {
+    void worker_loop(std::stop_token stop) {
         while (true) {
             std::function<void()> task;
 
             {
                 std::unique_lock<std::mutex> lock(queue_mutex_);
-                cv_.wait(lock, [this] {
-                    return stop_ || !tasks_.empty();
-                });
+                cv_.wait(lock, stop, [this] { return !tasks_.empty(); });
 
-                if (stop_ && tasks_.empty()) {
+                if (tasks_.empty()) {
                     return;
                 }
 
@@ -78,15 +81,14 @@ private:
         }
     }
 
-    std::vector<std::thread> workers_;
     std::queue<std::function<void()>> tasks_;
     std::mutex queue_mutex_;
-    std::condition_variable cv_;
-    bool stop_;
+    std::condition_variable_any cv_;
+    std::vector<std::jthread> workers_; // Destroy first, including on constructor failure.
 };
 
 void process_task(int id) {
-    std::cout << "Thread " << std::this_thread::get_id()
+    std::osyncstream(std::cout) << "Thread " << std::this_thread::get_id()
               << " processed task " << id << ".\n";
 }
 
@@ -104,6 +106,6 @@ int main() {
         // Pool destructor waits for all tasks to complete
     }
 
-    std::cout << "All tasks completed.\n";
+    std::osyncstream(std::cout) << "All tasks completed.\n";
     return 0;
 }

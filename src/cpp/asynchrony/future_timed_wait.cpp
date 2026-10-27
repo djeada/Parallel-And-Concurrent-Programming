@@ -18,7 +18,7 @@
  * you must use a separate mechanism (stop_token, atomic flag, etc.).
  *
  * Compile:
- *   g++ -std=c++17 -pthread -O1 future_timed_wait.cpp
+ *   g++ -std=c++20 -pthread -O1 future_timed_wait.cpp
  */
 
 #include <atomic>

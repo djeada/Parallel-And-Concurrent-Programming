@@ -1,5 +1,12 @@
 ## GPU Programming
 
+The CUDA and OpenCL listings in this chapter are **platform API and kernel
+mechanics**, separate from the [C++20 application examples](../src/cpp/README.md).
+CUDA kernels need a CUDA toolchain, and OpenCL examples need its runtime and
+headers. Raw device allocation, transfer, and launch calls are shown to explain
+the GPU execution model; application code should keep those resources in scoped
+owners and may use higher-level device algorithms when they fit the work.
+
 GPUs (Graphics Processing Units) are throughput-oriented processors designed to apply similar operations across large numbers of data elements in parallel. They were originally built for graphics workloads, where millions of pixels or vertices must be processed, but the same architecture is also effective for scientific simulation, image processing, machine learning, numerical computing, and other data-parallel workloads.
 
 **What makes GPU programming different?**

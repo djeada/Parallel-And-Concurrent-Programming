@@ -1,4 +1,6 @@
 /**
+ * Modern C++20 example: scoped worker ownership with std::jthread.
+ *
  * Condition Variables
  *
  * This example demonstrates std::condition_variable, which allows threads
@@ -16,6 +18,7 @@
 
 #include <condition_variable>
 #include <iostream>
+#include <syncstream>
 #include <mutex>
 #include <thread>
 #include <vector>
@@ -28,7 +31,6 @@ constexpr int kNumWorkers = 5;
 
 void worker(int id) {
     int tasks_completed = 0;
-    int yielded_turns = 0;
 
     while (true) {
         std::unique_lock<std::mutex> lock(task_mutex);
@@ -51,12 +53,12 @@ void worker(int id) {
         task_available.notify_all();  // Wake other workers to check their turn
     }
 
-    std::cout << "Worker " << id << " completed " << tasks_completed
+    std::osyncstream(std::cout) << "Worker " << id << " completed " << tasks_completed
               << " tasks.\n";
 }
 
 int main() {
-    std::vector<std::thread> workers;
+    std::vector<std::jthread> workers;
     workers.reserve(kNumWorkers);
 
     for (int i = 0; i < kNumWorkers; ++i) {
@@ -67,6 +69,6 @@ int main() {
         w.join();
     }
 
-    std::cout << "All tasks completed.\n";
+    std::osyncstream(std::cout) << "All tasks completed.\n";
     return 0;
 }

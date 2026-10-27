@@ -1,4 +1,6 @@
 /**
+ * C++20 + POSIX: exclusive queue name, complete records, and checked child exit.
+ *
  * POSIX Message Queues
  *
  * This example demonstrates inter-process communication using
@@ -16,7 +18,7 @@
  * - Decoupling sender and receiver timing
  * - Buffering data when processes work at different speeds
  *
- * Build: g++ -std=c++17 -o message_queue message_queue.cpp -lrt
+ * Build: g++ -std=c++20 -o message_queue message_queue.cpp -lrt
  */
 
 #include <cerrno>

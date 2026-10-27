@@ -1,90 +1,59 @@
 /**
- * Process Barrier
- *
- * This example demonstrates a barrier synchronization pattern
- * across multiple processes using a semaphore.
- *
- * Key concepts:
- * - Barrier ensures all processes reach a point before any proceed
- * - Useful for phased computation where stages must complete together
- * - Implementation using countdown and notification semaphores
- *
- * Note: This is a simplified barrier. For robust production use,
- * consider pthread_barrier_t (requires PTHREAD_PROCESS_SHARED) or
- * more sophisticated implementations.
+ * C++20 + POSIX: use a process-shared platform barrier.
+ * pthread_barrier_t is stored in shared memory with PTHREAD_PROCESS_SHARED.
+ * Unlike std::barrier, this API supports synchronization across processes.
+ * All participants must arrive; a failed startup terminates/reaps started peers.
+ * Compile: g++ -std=c++20 -pthread process_barrier.cpp
  */
+#include "../common/posix.hpp"
 
-#include <fcntl.h>
+#include <chrono>
 #include <iostream>
-#include <semaphore.h>
-#include <sys/mman.h>
-#include <sys/wait.h>
-#include <unistd.h>
+#include <pthread.h>
+#include <thread>
 
-void worker(int id, int* counter, sem_t* mutex, sem_t* barrier, int num_workers) {
-    // Phase 1: Do initial work
-    std::cout << "Worker " << id << " doing phase 1 work...\n";
-    sleep(id % 3 + 1);  // Variable work time
-
-    // Arrive at barrier
-    sem_wait(mutex);
-    (*counter)++;
-    std::cout << "Worker " << id << " arrived at barrier ("
-              << *counter << "/" << num_workers << ")\n";
-
-    if (*counter == num_workers) {
-        // Last to arrive - release all waiting
-        for (int i = 0; i < num_workers; ++i) {
-            sem_post(barrier);
-        }
+class ProcessBarrier {
+public:
+    ProcessBarrier(pthread_barrier_t& barrier, unsigned int count) : barrier_(barrier) {
+        pthread_barrierattr_t attributes;
+        check(pthread_barrierattr_init(&attributes));
+        const int shared = pthread_barrierattr_setpshared(&attributes, PTHREAD_PROCESS_SHARED);
+        const int initialized = shared == 0 ? pthread_barrier_init(&barrier_, &attributes, count) : shared;
+        pthread_barrierattr_destroy(&attributes);
+        check(initialized);
     }
-    sem_post(mutex);
+    ~ProcessBarrier() { pthread_barrier_destroy(&barrier_); }
+    ProcessBarrier(const ProcessBarrier&) = delete;
+    ProcessBarrier& operator=(const ProcessBarrier&) = delete;
+    void wait() {
+        const int code = pthread_barrier_wait(&barrier_);
+        if (code != PTHREAD_BARRIER_SERIAL_THREAD) check(code);
+    }
 
-    // Wait at barrier
-    sem_wait(barrier);
+private:
+    static void check(int code) {
+        if (code != 0) throw std::system_error(code, std::generic_category(), "pthread barrier");
+    }
+    pthread_barrier_t& barrier_;
+};
 
-    // Phase 2: Continue after barrier
-    std::cout << "Worker " << id << " passed barrier, doing phase 2\n";
-}
-
-int main() {
+int main() try {
     constexpr int num_workers = 4;
-
-    // Create shared counter
-    int* counter = static_cast<int*>(
-        mmap(nullptr, sizeof(int), PROT_READ | PROT_WRITE,
-             MAP_SHARED | MAP_ANONYMOUS, -1, 0));
-    *counter = 0;
-
-    // Create semaphores
-    sem_unlink("/barrier_mutex");
-    sem_unlink("/barrier_wait");
-    sem_t* mutex = sem_open("/barrier_mutex", O_CREAT, 0644, 1);
-    sem_t* barrier = sem_open("/barrier_wait", O_CREAT, 0644, 0);
-
-    // Spawn workers
-    for (int i = 0; i < num_workers; ++i) {
-        std::cout.flush();
-        pid_t pid = fork();
-        if (pid == 0) {
-            worker(i, counter, mutex, barrier, num_workers);
-            std::cout.flush();
-            _exit(0);
-        }
+    posix_example::SharedObject<pthread_barrier_t> state;
+    ProcessBarrier barrier(*state.get(), num_workers);
+    posix_example::ChildGroup children(num_workers);
+    for (int id = 0; id < num_workers; ++id) {
+        children.spawn([&, id] {
+            std::cout << "Worker " << id << " doing phase 1 work...\n" << std::flush;
+            std::this_thread::sleep_for(std::chrono::milliseconds(20 * id));
+            barrier.wait();
+            std::cout << "Worker " << id << " passed barrier, doing phase 2\n";
+        });
     }
-
-    // Wait for all workers
-    for (int i = 0; i < num_workers; ++i) {
-        wait(nullptr);
-    }
-
-    // Cleanup
-    sem_close(mutex);
-    sem_close(barrier);
-    sem_unlink("/barrier_mutex");
-    sem_unlink("/barrier_wait");
-    munmap(counter, sizeof(int));
-
+    if (!children.wait_all()) return 1;
     std::cout << "All workers finished\n";
     return 0;
+} catch (const std::exception& error) {
+    std::cerr << error.what() << '\n';
+    return 1;
 }

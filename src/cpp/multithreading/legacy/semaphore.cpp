@@ -1,4 +1,7 @@
 /**
+ * LEGACY COMPARISON: hand-built semaphore. Start with ../std_semaphore.cpp (C++20).
+ * Kept to explain the mutex/condition-variable implementation.
+ *
  * Semaphore
  *
  * This example demonstrates a counting semaphore - a synchronization

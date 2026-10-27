@@ -1,4 +1,6 @@
 /**
+ * Modern C++20 example: scoped worker ownership with std::jthread.
+ *
  * std::latch — C++20 One-Shot Countdown Synchronization
  *
  * std::latch is a single-use synchronization point. Its internal counter
@@ -15,14 +17,16 @@
  * - "Ready gate": all workers signal ready; main thread waits, then starts them
  * - "Done gate": main thread waits until all workers have finished a phase
  *
- * Compare with barrier.cpp (manual impl) and std_barrier.cpp (C++20 reusable).
+ * Compare legacy/latch.cpp (manual) and std_barrier.cpp (C++20 reusable).
  *
  * Compile: g++ -std=c++20 -pthread std_latch.cpp
  */
 
 #include <chrono>
 #include <iostream>
+#include <syncstream>
 #include <latch>
+#include <functional>
 #include <thread>
 #include <vector>
 
@@ -33,7 +37,7 @@ using namespace std::chrono_literals;
 void worker(int id, std::latch& loaded_latch, std::latch& start_latch) {
     // Simulate variable-length data loading
     std::this_thread::sleep_for(std::chrono::milliseconds(100 * id));
-    std::cout << "Worker " << id << ": data loaded.\n";
+    std::osyncstream(std::cout) << "Worker " << id << ": data loaded.\n";
 
     // Signal the coordinator that this worker is ready
     loaded_latch.count_down();
@@ -41,9 +45,9 @@ void worker(int id, std::latch& loaded_latch, std::latch& start_latch) {
     // Block here until the coordinator releases everyone
     start_latch.wait();
 
-    std::cout << "Worker " << id << ": processing!\n";
+    std::osyncstream(std::cout) << "Worker " << id << ": processing!\n";
     std::this_thread::sleep_for(50ms);
-    std::cout << "Worker " << id << ": done.\n";
+    std::osyncstream(std::cout) << "Worker " << id << ": done.\n";
 }
 
 int main() {
@@ -52,7 +56,7 @@ int main() {
     std::latch loaded(kWorkers);  // Workers count down as they finish loading
     std::latch start(1);          // Coordinator counts down once to release all
 
-    std::vector<std::thread> workers;
+    std::vector<std::jthread> workers;
     workers.reserve(kWorkers);
     for (int i = 1; i <= kWorkers; ++i) {
         workers.emplace_back(worker, i, std::ref(loaded), std::ref(start));
@@ -60,13 +64,13 @@ int main() {
 
     // Wait until every worker has finished loading
     loaded.wait();
-    std::cout << "\nAll workers ready — releasing!\n\n";
+    std::osyncstream(std::cout) << "\nAll workers ready — releasing!\n\n";
 
     // Release all workers to start processing at the same time
     start.count_down();
 
     for (auto& w : workers) w.join();
 
-    std::cout << "\nAll workers finished.\n";
+    std::osyncstream(std::cout) << "\nAll workers finished.\n";
     return 0;
 }

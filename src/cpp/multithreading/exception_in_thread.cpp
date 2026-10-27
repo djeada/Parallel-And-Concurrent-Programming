@@ -1,7 +1,9 @@
 /**
+ * Modern C++20 example: scoped worker ownership with std::jthread.
+ *
  * Exception Handling Across Thread Boundaries
  *
- * Exceptions thrown in a std::thread do NOT propagate to the spawning
+ * Exceptions thrown in a std::jthread do NOT propagate to the spawning
  * thread — an uncaught exception in a thread calls std::terminate.
  * This example shows two safe ways to propagate exceptions back to the
  * calling thread.
@@ -14,13 +16,14 @@
  *
  * See also: src/cpp/asynchrony/promise_future.cpp for the async approach.
  *
- * Compile: g++ -std=c++11 -pthread exception_in_thread.cpp
+ * Compile: g++ -std=c++20 -pthread exception_in_thread.cpp
  */
 
 #include <exception>
 #include <future>
 #include <iostream>
 #include <stdexcept>
+#include <functional>
 #include <thread>
 #include <vector>
 
@@ -29,7 +32,7 @@
 // The code below is intentionally left commented out.
 // Uncomment it to observe std::terminate being called:
 //
-//   std::thread bad([] { throw std::runtime_error("crash"); });
+//   std::jthread bad([] { throw std::runtime_error("crash"); });
 //   bad.join();  // Program terminates before reaching this line!
 
 // ─── Pattern 1: manual propagation with std::exception_ptr ───────────────────
@@ -46,7 +49,7 @@ void demo_exception_ptr() {
     std::cout << "=== Manual exception_ptr propagation ===\n";
 
     std::exception_ptr captured;
-    std::thread worker(risky_worker, std::ref(captured));
+    std::jthread worker(risky_worker, std::ref(captured));
     worker.join();
 
     // Re-throw in the main thread where it can be handled normally
@@ -87,7 +90,7 @@ void demo_multiple_exceptions() {
     constexpr int kWorkers = 4;
 
     std::vector<std::exception_ptr> errors(kWorkers);
-    std::vector<std::thread> threads;
+    std::vector<std::jthread> threads;
 
     for (int i = 0; i < kWorkers; ++i) {
         threads.emplace_back([i, &errors] {

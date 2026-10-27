@@ -1,4 +1,7 @@
 /**
+ * LEGACY COMPARISON: hand-built barrier. Start with ../std_barrier.cpp (C++20).
+ * Kept to explain the mutex/condition-variable implementation.
+ *
  * Barrier Synchronization
  *
  * This example demonstrates a barrier - a synchronization primitive that

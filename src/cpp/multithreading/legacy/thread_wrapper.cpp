@@ -1,4 +1,7 @@
 /**
+ * LEGACY COMPARISON: manual joining wrapper. Start with ../jthread.cpp (C++20).
+ * A custom wrapper is no longer needed just to join on scope exit.
+ *
  * Thread Wrapper Class
  *
  * This example demonstrates wrapping std::thread in a custom class to

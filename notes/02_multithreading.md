@@ -6,6 +6,8 @@ Threads may run in parallel on different cores or take turns on one core. They c
 
 The main correctness question is who may read or change each shared value. Establish that rule before choosing a synchronization primitive.
 
+The working C++ examples use **C++20**. Start with the [modern C++ examples](#examples-in-c); older implementations and intentional failure demonstrations are labeled separately.
+
 ### Thread Pool vs On-Demand Thread
 
 ```
@@ -262,7 +264,7 @@ int main() {
     const int numThreads = 10;
     const int incrementsPerThread = 100000;
 
-    std::vector<std::thread> threads;
+    std::vector<std::jthread> threads;
 
     // Start timer
     auto start = std::chrono::high_resolution_clock::now();
@@ -378,7 +380,7 @@ int main() {
     const int numThreads = 10;
     const int incrementsPerThread = 100000;
 
-    std::vector<std::thread> threads;
+    std::vector<std::jthread> threads;
     
     // Create and start threads
     for (int i = 0; i < numThreads; ++i) {
@@ -427,6 +429,8 @@ A **deadlock** occurs when two or more threads are blocked, each waiting for a l
 Analogy:  
 
 *Imagine two cars on a narrow one-lane bridge coming from opposite ends. Each driver refuses to back up, and neither can move forward. Both are blocked indefinitely, waiting for the other to yield.*
+
+**Antipattern:** this program can hang. Use [scoped locking](../src/cpp/multithreading/scoped_lock_deadlock_avoidance.cpp) to acquire both mutexes safely.
 
 Example:
 
@@ -488,6 +492,8 @@ A **livelock** occurs when threads keep reacting to one another but still fail t
 Analogy:  
 
 *Picture two people in a narrow hallway who both step aside to let the other pass—only to keep stepping in the same direction repeatedly. They’re not standing still, but neither can get by the other.*
+
+**Antipattern:** repeated retries can prevent useful progress. Prefer a consistent acquisition strategy or [scoped locking](../src/cpp/multithreading/scoped_lock_deadlock_avoidance.cpp).
 
 Example:
 
@@ -597,7 +603,7 @@ void worker(int id) {
 }
 
 int main() {
-    std::vector<std::thread> threads;
+    std::vector<std::jthread> threads;
     
     // Launch multiple threads
     for (int i = 0; i < 5; ++i) {
@@ -710,305 +716,150 @@ Choose using measurements and the library's concurrency requirements. More threa
 
 #### Examples in C++
 
-In a typical C++ program, `main()` runs on the initial thread. That thread can create additional threads so work can proceed concurrently. Since C++11, the Standard Library has provided `std::thread` for creating and managing threads. A new thread is started by passing a callable, along with any arguments, to the `std::thread` constructor.
+Use **C++20** for the main examples. The [C++ guide](../src/cpp/README.md)
+separates the modern learning path, older comparison implementations, low-level
+mechanisms, and intentional antipatterns. Choose the abstraction that matches the
+problem; mutexes and futures remain useful even though they predate C++20.
 
-##### Creating Threads
+##### Start with an Algorithm for Independent Data
 
-A new C++ thread is created by constructing a `std::thread`. Its constructor accepts a callable—such as a function, lambda, or function object—plus any arguments to pass to that callable.
+For sorting, transforming, or reducing a collection, start with a standard
+algorithm rather than building thread management into the application:
+
+```cpp
+#include <algorithm>
+#include <execution>
+#include <functional>
+#include <iostream>
+#include <numeric>
+#include <vector>
+
+int main() {
+    std::vector<int> values{5, 2, 4, 1, 3};
+    const auto sum = std::transform_reduce(
+        std::execution::par, values.begin(), values.end(), 0LL,
+        std::plus<>{}, [](int value) noexcept { return 1LL * value; });
+    std::sort(std::execution::par, values.begin(), values.end());
+    std::cout << "Sum: " << sum << '\n';
+}
+```
+
+`std::execution::par` permits parallelism but may execute sequentially. Callbacks
+must avoid data races; reductions may combine values in a different order, so
+floating-point rounding can change. Small inputs usually do not benefit from
+parallel execution. [parallel_algorithms.cpp](../src/cpp/multithreading/parallel_algorithms.cpp)
+uses a larger input and validates the result. These algorithms were introduced
+in C++17 and remain the higher-level starting point in this C++20 path. See
+[execution-policy semantics](https://eel.is/c++draft/algorithms.parallel.exec).
+Some toolchains require a parallel backend such as TBB and linking with `-ltbb`.
+
+##### Own Workers with `std::jthread`
+
+When a problem needs explicit workers, prefer scoped ownership. Constructing a
+`std::jthread` starts its callable; destroying a joinable `jthread` requests stop
+and joins it. Arguments can be passed by value, or captured in a lambda:
 
 ```cpp
 #include <iostream>
+#include <syncstream>
 #include <thread>
-#include <string>
 
-void printMessage(const std::string& message) {
-    std::cout << message << std::endl;
+void print_sum(int a, int b) {
+    std::osyncstream(std::cout) << "Sum: " << a + b << '\n';
 }
 
 int main() {
-    std::thread t1(printMessage, "Hello from thread!");
-    t1.join(); // Wait for the thread to finish
-    return 0;
+    {
+        std::jthread first(print_sum, 5, 10);
+        std::jthread second([] {
+            std::osyncstream(std::cout) << "Lambda worker finished\n";
+        });
+    } // Both finite tasks have returned and both threads have joined.
+    std::cout << "All workers finished\n";
 }
 ```
 
-In this example, `printMessage` is called in a separate thread, and the main thread waits for `t1` to complete using `join()`.
+`std::osyncstream` emits each worker's message together. It does not protect other
+shared data. Declare referenced state before the threads so the threads are
+joined before the state is destroyed. `std::jthread` does not propagate exceptions
+from its callable: catch them in the worker or use a future-based task to retrieve
+a result or exception. See [jthread semantics](https://eel.is/c++draft/thread.jthread.class).
 
-##### Thread Joining
+##### Cancellation and Completion Are Different Operations
 
-The `join()` function is called on a `std::thread` object to wait for the associated thread to complete execution. This blocks the calling thread until the thread represented by `std::thread` finishes.
+A stop request asks a worker to return; the worker must cooperate. Use
+`std::stop_token` checks and, for an idle worker,
+`condition_variable_any::wait(lock, token, predicate)` or its timed counterpart.
+A plain `sleep_for`, semaphore acquisition, or blocking socket call does not
+become interruptible just because the thread owns a stop token.
 
-Advantages:
+[thread_life_cycle.cpp](../src/cpp/multithreading/thread_life_cycle.cpp) stops two
+workers, [scheduler.cpp](../src/cpp/multithreading/scheduler.cpp) interrupts a timer
+wait, and [pause_resume.cpp](../src/cpp/asynchrony/pause_resume.cpp) can stop while
+paused. See [stop-aware waits](https://eel.is/c++draft/thread.condvarany.intwait).
 
-- The calling thread can wait for a worker to complete before using its results or continuing shutdown.
-- Joining provides a clear lifecycle boundary and helps prevent threads from being abandoned while they still use process resources.
+Call `join()` explicitly when a result is needed before scope exit, or when
+finite work must complete without first receiving a cancellation request. The
+[bounded queue example](../src/cpp/multithreading/producer_consumer.cpp) joins the
+producer, closes the queue, then drains accepted work before consumers finish.
+For several cancellable workers, request stop on all of them before waiting for
+any one of them. Automatic joining still blocks if a worker cannot finish.
 
-Disadvantages:
- 
-- `join()` blocks the calling thread until the target thread finishes, so joining at the wrong time can hurt responsiveness.
-- A join can wait indefinitely if the target thread is stuck, so shutdown and cancellation paths still need careful design.
+##### Protect State with Scoped Locks
 
-```cpp
-t1.join(); // Main thread waits for t1 to finish
-```
-
-##### Thread Detaching
-
-Using `detach()`, a thread is disassociated from its `std::thread` object and continues independently within the process. The original thread can continue without waiting for it. Once detached, the thread cannot be joined through that `std::thread` object, which makes lifetime and shutdown management much harder.
-
-Advantages:
-
-- The creating thread can continue without waiting for the detached thread.
-- It can be acceptable for narrowly scoped, truly independent best-effort work.
-
-Disadvantages:
-
-- The creating code loses the ability to join the thread or directly manage its completion.
-- The process may exit while the thread is still running, and detached threads can easily outlive objects they reference if lifetimes are not designed carefully.
-
-```cpp
-std::thread t2(printMessage, "This is a detached thread");
-t2.detach(); // Main thread does not wait for t2
-```
-
-##### Thread Lifecycle and Resource Management
-
-Each thread has a lifecycle, beginning with creation, execution, and finally termination. Upon termination, the resources held by the thread need to be cleaned up. If a thread object goes out of scope and is still joinable (not yet joined or detached), the program will terminate with `std::terminate` because it is considered an error to destroy a `std::thread` object without properly handling the thread.
-
-##### Passing Arguments to Threads
-
-Arguments can be passed to the thread function through the `std::thread` constructor. The arguments are copied or moved as necessary. Special care must be taken when passing pointers or references, as these must refer to objects that remain valid throughout the thread's execution.
+Use `std::scoped_lock` or `std::lock_guard` for automatic unlock, including when a
+scope exits through an exception. Keep the critical section small:
 
 ```cpp
 #include <iostream>
-#include <thread>
-
-void printSum(int a, int b) {
-    std::cout << "Sum: " << (a + b) << std::endl;
-}
-
-int main() {
-    int x = 5, y = 10;
-    std::thread t(printSum, x, y); // Passing arguments by value
-    t.join();
-    return 0;
-}
-```
-
-In this example, `x` and `y` are passed by value to the `printSum` function.
-
-##### Using Lambdas with Threads
-
-Lambda expressions provide a convenient way to define thread tasks inline. They can capture local variables by value or reference, allowing for flexible and concise thread management.
-
-```cpp
-#include <iostream>
-#include <thread>
-
-int main() {
-    int a = 5, b = 10;
-    std::thread t([a, b]() {
-        std::cout << "Lambda Sum: " << (a + b) << std::endl;
-    });
-    t.join();
-    return 0;
-}
-```
-
-In this case, the lambda captures `a` and `b` by value and uses them inside the thread.
-
-##### Mutex for Synchronization
-
-`std::mutex` is used to protect shared data from being accessed simultaneously by multiple threads. It ensures that only one thread can access the critical section at a time, preventing data races.
-
-```cpp
-#include <iostream>
-#include <thread>
 #include <mutex>
-
-std::mutex mtx;
-int sharedCounter = 0;
-
-void increment() {
-    std::lock_guard<std::mutex> lock(mtx);
-    ++sharedCounter;
-}
-
-int main() {
-    std::thread t1(increment);
-    std::thread t2(increment);
-    t1.join();
-    t2.join();
-    std::cout << "Shared Counter: " << sharedCounter << std::endl;
-    return 0;
-}
-```
-
-In this example, `std::lock_guard` automatically locks the mutex on creation and unlocks it on destruction, ensuring the increment operation is thread-safe.
-
-##### Deadlocks and Avoidance
-
-Deadlocks occur when threads wait on one another in a cycle, so none can proceed. Common prevention techniques include acquiring locks in a consistent order, reducing nested locking, or using utilities such as `std::lock`/`std::scoped_lock` that acquire multiple mutexes without deadlocking.
-
-```cpp
-#include <iostream>
-#include <thread>
-#include <mutex>
-
-std::mutex mutex1;
-std::mutex mutex2;
-
-void taskA() {
-    std::lock(mutex1, mutex2);
-    std::lock_guard<std::mutex> lock1(mutex1, std::adopt_lock);
-    std::lock_guard<std::mutex> lock2(mutex2, std::adopt_lock);
-    std::cout << "Task A acquired both mutexes\n";
-}
-
-void taskB() {
-    std::lock(mutex1, mutex2);
-    std::lock_guard<std::mutex> lock1(mutex1, std::adopt_lock);
-    std::lock_guard<std::mutex> lock2(mutex2, std::adopt_lock);
-    std::cout << "Task B acquired both mutexes\n";
-}
-
-int main() {
-    std::thread t1(taskA);
-    std::thread t2(taskB);
-    t1.join();
-    t2.join();
-    return 0;
-}
-```
-
-Here, `std::lock` uses a deadlock-avoidance algorithm to acquire both mutexes. The `std::lock_guard` objects then adopt ownership so the mutexes are released automatically when the function returns.
-
-##### Condition Variables
-
-`std::condition_variable` is used for thread synchronization by allowing threads to wait until they are notified to proceed. This is useful for scenarios where a thread must wait for some condition to become true.
-
-```cpp
-#include <iostream>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-
-std::mutex mtx;
-std::condition_variable cv;
-bool ready = false;
-
-void print_id(int id) {
-    std::unique_lock<std::mutex> lock(mtx);
-    cv.wait(lock, [] { return ready; });
-    std::cout << "Thread " << id << "\n";
-}
-
-void set_ready() {
-    std::unique_lock<std::mutex> lock(mtx);
-    ready = true;
-    cv.notify_all();
-}
-
-int main() {
-    std::thread t1(print_id, 1);
-    std::thread t2(print_id, 2);
-    std::thread t3(set_ready);
-
-    t1.join();
-    t2.join();
-    t3.join();
-    return 0;
-}
-```
-
-In this example, `cv.wait` makes the threads wait until `ready` becomes true. `set_ready` changes the condition and notifies all waiting threads.
-
-##### Semaphores
-
-C++20 introduces `std::counting_semaphore` and `std::binary_semaphore`. Semaphores are synchronization primitives that control access to a common resource by multiple threads. They use a counter to allow a fixed number of threads to access a resource concurrently.
-
-```cpp
-#include <iostream>
-#include <thread>
-#include <semaphore>
-#include <chrono>
-
-std::binary_semaphore semaphore(1);
-
-void task(int id) {
-    semaphore.acquire();
-    std::cout << "Task " << id << " is running\n";
-    std::this_thread::sleep_for(std::chrono::milliseconds(100)); // simulate some work
-    semaphore.release();
-}
-
-int main() {
-    std::thread t1(task, 1);
-    std::thread t2(task, 2);
-    t1.join();
-    t2.join();
-    return 0;
-}
-```
-
-Here, `semaphore.acquire()` ensures that only one thread can access the critical section at a time, and `semaphore.release()` signals that the resource is available again.
-
-##### Thread Local Storage
-
-C++ provides thread-local storage via the `thread_local` keyword, allowing data to be local to each thread. This is useful when each thread requires its own instance of a variable, such as when storing non-shared data.
-
-```cpp
-#include <iostream>
 #include <thread>
 
-thread_local int localVar = 0;
-
-void increment(int id) {
-    ++localVar;
-    std::cout << "Thread " << id << ": localVar = " << localVar << std::endl;
-}
-
 int main() {
-    std::thread t1(increment, 1);
-    std::thread t2(increment, 2);
-    t1.join();
-
-
-    t2.join();
-    return 0;
-}
-```
-
-In this example, each thread has its own instance of `localVar`, independent of the other threads.
-
-##### Atomic Operations
-
-For simple shared values that need atomic updates, C++ provides the `std::atomic` template. Atomics can avoid an explicit mutex for operations such as counters and flags, but `std::atomic<T>` is not guaranteed to be lock-free on every platform.
-
-```cpp
-#include <iostream>
-#include <thread>
-#include <atomic>
-
-std::atomic<int> atomicCounter(0);
-
-void increment() {
-    for (int i = 0; i < 100000; ++i) {
-        ++atomicCounter;
+    std::mutex mutex;
+    int counter = 0;
+    const auto increment = [&] {
+        for (int i = 0; i < 1000; ++i) {
+            std::scoped_lock lock(mutex);
+            ++counter;
+        }
+    };
+    {
+        std::jthread first(increment);
+        std::jthread second(increment);
     }
-}
-
-int main() {
-    std::thread t1(increment);
-    std::thread t2(increment);
-    t1.join();
-    t2.join();
-    std::cout << "Atomic Counter: " << atomicCounter << std::endl;
-    return 0;
+    std::cout << "Counter: " << counter << '\n'; // 2000
 }
 ```
 
-In this example, `std::atomic<int>` ensures that the increment operation is atomic, preventing data races.
+For several mutexes, one `std::scoped_lock lock(mutex_a, mutex_b);` acquires them
+with deadlock avoidance. For waiting or a non-blocking attempt, use
+`std::unique_lock`; [try_lock.cpp](../src/cpp/multithreading/try_lock.cpp) retains
+RAII ownership even after a successful `try_lock()`. There is usually no need to
+pair raw `lock()` and `unlock()` calls in application code.
+
+##### Use Standard Synchronization Primitives
+
+| Requirement | Modern starting point | Example |
+|---|---|---|
+| Wait for a predicate involving shared state | Condition variable + mutex + predicate | [condition_variable.cpp](../src/cpp/multithreading/condition_variable.cpp) |
+| Wait for a single atomic value to change | `atomic::wait` and `notify_one` | [atomic_wait.cpp](../src/cpp/multithreading/atomic_wait.cpp) |
+| Limit concurrent resource users | `std::counting_semaphore` | [std_semaphore.cpp](../src/cpp/multithreading/std_semaphore.cpp) |
+| Wait for one batch of arrivals | `std::latch` | [std_latch.cpp](../src/cpp/multithreading/std_latch.cpp) |
+| Meet at the end of repeated phases | `std::barrier` | [std_barrier.cpp](../src/cpp/multithreading/std_barrier.cpp) |
+| Transfer work with backpressure and completion | Bounded queue with explicit closure | [producer_consumer.cpp](../src/cpp/multithreading/producer_consumer.cpp) |
+| Reuse workers and retrieve results or exceptions | Pool with `std::packaged_task` and futures | [thread_pool_futures.cpp](../src/cpp/asynchrony/thread_pool_futures.cpp) |
+
+For a condition variable, check the predicate while holding its mutex. A semaphore
+bounds concurrent access but does not protect mutable data shared by several
+permit holders. A barrier requires every participant to arrive at each phase;
+letting one worker leave early can strand the others.
+
+Use `thread_local` for per-thread state and an atomic read-modify-write operation
+for an independent shared counter. Neither requires replacing a mutex that
+protects an invariant over several related values. See
+[thread_local_storage.cpp](../src/cpp/multithreading/thread_local_storage.cpp) and
+[atomic.cpp](../src/cpp/multithreading/atomic.cpp).
 
 ##### Memory Orderings
 
@@ -1081,21 +932,20 @@ void producer() {
 
     // 2. Publish that data is ready
     ready.store(true, std::memory_order_release);
+    ready.notify_one();
 }
 
 void consumer() {
     // Wait until the data is ready
-    while (!ready.load(std::memory_order_acquire)) {
-        // spin or sleep
-    }
+    ready.wait(false, std::memory_order_acquire); // Wait without polling
 
     // Now it is guaranteed that we see data.value = 42
     std::cout << "Shared data value = " << data.value << std::endl;
 }
 
 int main() {
-    std::thread t1(producer);
-    std::thread t2(consumer);
+    std::jthread t1(producer);
+    std::jthread t2(consumer);
     t1.join();
     t2.join();
     return 0;
@@ -1103,7 +953,7 @@ int main() {
 ```
 
 - The producer writes `data.value` before publishing `true` with a release store.
-- The consumer may initially read `false`. When its acquire load reads the `true` written by that release store, the earlier write to `data.value` is ordered before the consumer reads the data.
+- The consumer waits while the flag is `false`. When its acquire wait observes the `true` written by that release store, the earlier write to `data.value` is ordered before the consumer reads the data.
 - This is one-time publication: the producer does not modify `data.value` again. Repeated updates would need an additional protocol. See [acquire and release ordering](https://eel.is/c++draft/atomics.order).
 
 What is happening:
@@ -1123,35 +973,39 @@ What is happening:
 - The **release** store publishes earlier writes, including `data.value = 42`.
 - When the **acquire** load reads the value written by that release, the operations synchronize, so the consumer can safely observe `data.value = 42`.
 
+##### Older Implementations for Comparison
+
+Study these after the modern examples. They explain existing code and primitive
+implementation details; they are kept separately in
+[`multithreading/legacy/`](../src/cpp/multithreading/legacy/).
+
+| Older example | Modern starting point |
+|---|---|
+| [raw_pthread.cpp](../src/cpp/multithreading/legacy/raw_pthread.cpp) | `std::jthread` for scoped workers; parallel algorithms for collection operations |
+| [is_joinable.cpp](../src/cpp/multithreading/legacy/is_joinable.cpp) | `std::jthread` for automatic ownership |
+| [thread_wrapper.cpp](../src/cpp/multithreading/legacy/thread_wrapper.cpp) | `std::jthread` instead of a custom joining destructor |
+| [semaphore.cpp](../src/cpp/multithreading/legacy/semaphore.cpp) | `std::counting_semaphore` |
+| [latch.cpp](../src/cpp/multithreading/legacy/latch.cpp) | `std::latch` |
+| [barrier.cpp](../src/cpp/multithreading/legacy/barrier.cpp) | `std::barrier` |
+
+`std::thread` remains available when explicit ownership control is required.
+Detaching discards the normal join boundary and makes shared-state lifetime and
+shutdown harder to manage. Study
+[detached_thread_antipattern.cpp](../src/cpp/multithreading/detached_thread_antipattern.cpp)
+as an intentional failure example rather than a recommended worker pattern.
+Other `_antipattern` files demonstrate data races, deadlock, livelock, starvation,
+and false sharing. Low-level experiments such as
+[spinlock.cpp](../src/cpp/multithreading/spinlock.cpp) are labeled separately;
+start with a mutex and measure before choosing busy waiting.
+
 ##### Performance Considerations and Best Practices
 
-- The frequent creation and destruction of threads can be costly, leading to significant overhead. To minimize this, it is advisable to use thread pools or reuse threads, which can reduce the performance impact associated with thread lifecycle management.
-- Synchronization mechanisms, such as mutexes, should be used sparingly because excessive synchronization can lead to contention and reduced performance. It is important to apply these mechanisms only when necessary to avoid unnecessary delays and overhead.
-- Protect shared mutable data with synchronization appropriate to the access pattern. That may mean a mutex, an atomic, a reader-writer lock, a concurrent data structure, or another mechanism that establishes safe access and ordering.
-- Utilizing modern features introduced in C++11 and later, such as `std::thread`, `std::mutex`, `std::lock_guard`, and `std::future`, can greatly simplify thread management and help avoid common pitfalls. These features provide robust and standardized ways to handle concurrency, making the code more maintainable and less error-prone.
-
-The following examples use the files in [the C++ multithreading directory](../src/cpp/multithreading). Most need a C++20 compiler and `-pthread`; the download example also requires libcurl. Examples marked **antipattern** deliberately demonstrate a problem.
-
-| Example | What to look for |
-|---|---|
-| [thread_life_cycle.cpp](../src/cpp/multithreading/thread_life_cycle.cpp) | Start workers, signal them to stop, and join them. |
-| [thread_wrapper.cpp](../src/cpp/multithreading/thread_wrapper.cpp) | Wrap `std::thread` and manage its lifetime. |
-| [is_joinable.cpp](../src/cpp/multithreading/is_joinable.cpp) | Check whether a thread object still needs joining or detaching. |
-| [simple_data_race_antipattern.cpp](../src/cpp/multithreading/simple_data_race_antipattern.cpp) | **Antipattern:** conflicting updates to an ordinary counter. |
-| [race_condition.cpp](../src/cpp/multithreading/race_condition.cpp) | A mutex prevents data races; the final result can still depend on operation order. |
-| [simple_mutex.cpp](../src/cpp/multithreading/simple_mutex.cpp) | Protect a shared counter with a mutex. |
-| [atomic.cpp](../src/cpp/multithreading/atomic.cpp) | Increment a shared counter with atomic operations. |
-| [std_semaphore.cpp](../src/cpp/multithreading/std_semaphore.cpp) | Limit concurrent resource use with a C++20 semaphore. |
-| [producer_consumer.cpp](../src/cpp/multithreading/producer_consumer.cpp) | Coordinate a queue with a mutex and condition variable. |
-| [download_images.cpp](../src/cpp/multithreading/download_images.cpp) | Overlap HTTP downloads; requires libcurl and reachable URLs. |
-| [merge_sort.cpp](../src/cpp/multithreading/merge_sort.cpp) | Split sorting work and compare sequential and parallel timing. |
-| [scheduler.cpp](../src/cpp/multithreading/scheduler.cpp) | Run periodic work in a background thread. |
-| [std_barrier.cpp](../src/cpp/multithreading/std_barrier.cpp) | Synchronize repeated phases with a C++20 barrier. |
-| [std_latch.cpp](../src/cpp/multithreading/std_latch.cpp) | Wait for a one-time batch of work. |
-| [thread_local_storage.cpp](../src/cpp/multithreading/thread_local_storage.cpp) | Give each thread its own copy of a variable. |
-| [thread_pool.cpp](../src/cpp/multithreading/thread_pool.cpp) | Reuse a fixed group of workers. |
-| [shared_mutex.cpp](../src/cpp/multithreading/shared_mutex.cpp) | Allow concurrent readers while writers hold exclusive access. |
-| [memory_order.cpp](../src/cpp/multithreading/memory_order.cpp) | Explore ordering between atomic and ordinary memory accesses. |
+- Prefer an algorithm or bounded set of workers over a new thread for every item.
+- Keep shared state small and critical sections short; consider per-worker results
+  followed by a reduction instead of a contended counter.
+- Design completion, cancellation, queue closure, and object lifetimes together.
+- Validate against a sequential reference and benchmark representative inputs.
+  Higher-level code and newer language features do not guarantee a speedup.
 
 #### Examples in Python
 

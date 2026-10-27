@@ -1,4 +1,8 @@
 /**
+ * Modern C++20 example: scoped worker ownership with std::jthread.
+ * For application sorting, start with parallel_algorithms.cpp and std::sort.
+ * This implementation teaches recursive work partitioning.
+ *
  * Parallel Merge Sort
  *
  * This example demonstrates divide-and-conquer parallelism using merge sort.
@@ -18,6 +22,7 @@
 #include <chrono>
 #include <cmath>
 #include <iostream>
+#include <functional>
 #include <thread>
 #include <vector>
 
@@ -64,7 +69,7 @@ void parallel_sort(std::vector<int>& arr, int left, int right, int depth = 0) {
 
     if (depth < max_depth) {
         // Spawn thread for left half, do right half ourselves
-        std::thread left_thread(parallel_sort, std::ref(arr),
+        std::jthread left_thread(parallel_sort, std::ref(arr),
                                 left, mid, depth + 1);
         parallel_sort(arr, mid + 1, right, depth + 1);
         left_thread.join();

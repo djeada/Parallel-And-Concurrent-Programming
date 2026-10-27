@@ -1,4 +1,6 @@
 /**
+ * Modern C++20 example: scoped worker ownership with std::jthread.
+ *
  * Exception Propagation Through std::future
  *
  * When a task launched with std::async (or packaged_task/promise) throws,
@@ -12,7 +14,7 @@
  *   4. Unhandled exception inside a detached thread (crash — antipattern note)
  *
  * Compile:
- *   g++ -std=c++17 -pthread -O1 async_exception.cpp
+ *   g++ -std=c++20 -pthread -O1 async_exception.cpp
  */
 
 #include <chrono>
@@ -78,7 +80,7 @@ void demo_promise_exception() {
     std::promise<int> p;
     std::future<int> f = p.get_future();
 
-    std::thread worker([&p]() {
+    std::jthread worker([&p]() {
         try {
             // simulate work that can fail
             throw std::overflow_error("overflow in worker");
@@ -104,7 +106,7 @@ void demo_exception_ptr_transport() {
     std::exception_ptr ep;
 
     // Background thread captures exception into exception_ptr
-    std::thread t([&ep]() {
+    std::jthread t([&ep]() {
         try {
             throw std::logic_error("logic error in thread");
         } catch (...) {
@@ -125,9 +127,9 @@ void demo_exception_ptr_transport() {
 
 // ── NOTE: antipattern — unhandled exception in detached thread ────────────
 //
-//   std::thread([]{ throw std::runtime_error("boom"); }).detach();
+//   std::jthread([]{ throw std::runtime_error("boom"); }).detach();
 //
-// An unhandled exception in a std::thread calls std::terminate().
+// An unhandled exception in a std::jthread calls std::terminate().
 // There is no way to catch it from the creating thread.
 // Always use futures, promises, or exception_ptr to propagate errors
 // out of background threads.

@@ -1,98 +1,40 @@
 /**
- * Shared Memory Between Processes
- *
- * This example demonstrates sharing memory between processes using
- * POSIX shared memory (shm_open + mmap).
- *
- * Key concepts:
- * - shm_open() creates a named shared memory object
- * - mmap() maps it into the process's address space
- * - Semaphores protect concurrent access to shared data
- * - Changes in one process are visible to all others
- * - Must manually synchronize access (unlike threads, no atomic types)
- *
- * Shared memory is the fastest IPC mechanism but requires
- * careful synchronization to prevent data races.
+ * C++20 + POSIX: named shared memory with scoped ownership.
+ * Create an exclusive name per run and unlink it after opening. The descriptor
+ * and mapping have separate owners; child processes inherit the live mapping.
+ * A POSIX semaphore protects the shared int; std::mutex is process-local.
+ * Compile: g++ -std=c++20 -pthread shared_memory.cpp
  */
+#include "../common/posix.hpp"
 
-#include <fcntl.h>
 #include <iostream>
-#include <semaphore.h>
-#include <sys/mman.h>
-#include <sys/wait.h>
-#include <unistd.h>
+#include <mutex>
+#include <string>
 
-constexpr char SHM_NAME[] = "/example_shm";
-constexpr char SEM_NAME[] = "/example_sem";
-
-void incrementer(int* shared_value, sem_t* sem) {
+int main() try {
+    const auto name = "/cpp_shared_" + std::to_string(getpid());
+    posix_example::UniqueFd fd(shm_open(name.c_str(), O_CREAT | O_EXCL | O_RDWR, 0600));
+    if (fd.get() < 0) posix_example::fail("shm_open");
+    posix_example::check(shm_unlink(name.c_str()), "shm_unlink");
+    posix_example::check(ftruncate(fd.get(), sizeof(int)), "ftruncate");
+    posix_example::SharedObject<int> shared_value(fd.get());
+    fd.reset(); // The mapping stays valid after closing the descriptor.
+    posix_example::Semaphore semaphore(1, "shared_value");
+    posix_example::ChildGroup children(1);
+    children.spawn([&] {
+        for (int i = 0; i < 5; ++i) {
+            std::lock_guard permit(semaphore);
+            ++*shared_value.get();
+        }
+    });
     for (int i = 0; i < 5; ++i) {
-        sem_wait(sem);
-        ++(*shared_value);
-        std::cout << "Incrementer: " << *shared_value << "\n";
-        sem_post(sem);
-        usleep(100'000);
+        std::lock_guard permit(semaphore);
+        --*shared_value.get();
     }
-}
-
-void decrementer(int* shared_value, sem_t* sem) {
-    for (int i = 0; i < 5; ++i) {
-        sem_wait(sem);
-        --(*shared_value);
-        std::cout << "Decrementer: " << *shared_value << "\n";
-        sem_post(sem);
-        usleep(100'000);
-    }
-}
-
-int main() {
-    // Create shared memory
-    int shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
-    if (shm_fd == -1) {
-        perror("shm_open");
-        return 1;
-    }
-    ftruncate(shm_fd, sizeof(int));
-
-    int* shared_value = static_cast<int*>(
-        mmap(nullptr, sizeof(int), PROT_READ | PROT_WRITE,
-             MAP_SHARED, shm_fd, 0));
-    if (shared_value == MAP_FAILED) {
-        perror("mmap");
-        return 1;
-    }
-    *shared_value = 0;
-
-    // Create semaphore for synchronization
-    sem_t* sem = sem_open(SEM_NAME, O_CREAT, 0666, 1);
-    if (sem == SEM_FAILED) {
-        perror("sem_open");
-        return 1;
-    }
-
-    std::cout.flush();
-
-    pid_t pid = fork();
-
-    if (pid == 0) {
-        // Child process
-        incrementer(shared_value, sem);
-        std::cout.flush();
-        _exit(0);
-    } else {
-        // Parent process
-        decrementer(shared_value, sem);
-        waitpid(pid, nullptr, 0);
-
-        std::cout << "Final value: " << *shared_value << "\n";
-
-        // Cleanup
-        munmap(shared_value, sizeof(int));
-        close(shm_fd);
-        sem_close(sem);
-        shm_unlink(SHM_NAME);
-        sem_unlink(SEM_NAME);
-    }
-
-    return 0;
+    if (!children.wait_all()) return 1;
+    std::cout << "Final value: " << *shared_value.get() << '\n';
+    return *shared_value.get() == 0 ? 0 : 1;
+} catch (const std::exception& error) {
+    std::cerr << error.what() << '\n';
+    return 1;
 }

@@ -1,4 +1,6 @@
 /**
+ * Modern C++20 example: scoped worker ownership with std::jthread.
+ *
  * Recursive Mutex
  *
  * This example demonstrates std::recursive_mutex, which allows the same
@@ -14,6 +16,7 @@
  */
 
 #include <iostream>
+#include <syncstream>
 #include <mutex>
 #include <thread>
 
@@ -40,15 +43,15 @@ void worker() {
 }
 
 int main() {
-    std::thread alice(worker);
-    std::thread bob(worker);
+    std::jthread alice(worker);
+    std::jthread bob(worker);
 
     alice.join();
     bob.join();
 
     // Each iteration: 1 document + 1 report + 1 document = 3 documents, 1 report
-    std::cout << "Documents processed: " << document_count << "\n";  // 40000
-    std::cout << "Reports generated:   " << report_count << "\n";    // 20000
+    std::osyncstream(std::cout) << "Documents processed: " << document_count << "\n";  // 40000
+    std::osyncstream(std::cout) << "Reports generated:   " << report_count << "\n";    // 20000
 
     return 0;
 }

@@ -1,73 +1,33 @@
 /**
- * Process Semaphore
- *
- * This example demonstrates using named semaphores to limit
- * concurrent access to a shared resource across processes.
- *
- * Key concepts:
- * - Named semaphores (sem_open) work across unrelated processes
- * - Semaphore count limits concurrent access
- * - sem_wait() decrements (blocks if zero), sem_post() increments
- * - Must unlink semaphore when done to clean up
- *
- * Unlike a mutex (binary semaphore), counting semaphores allow
- * multiple concurrent accessors up to the limit.
+ * C++20 + POSIX: scoped permits across processes.
+ * POSIX semaphore handles can be inherited by forked children; std::semaphore
+ * does not promise process-shared behavior. A lock_guard releases each permit.
+ * This bounds concurrent access, not requests per second.
+ * Compile: g++ -std=c++20 -pthread process_semaphore.cpp
  */
+#include "../common/posix.hpp"
 
 #include <chrono>
-#include <fcntl.h>
 #include <iostream>
-#include <random>
-#include <semaphore.h>
-#include <sys/wait.h>
+#include <mutex>
 #include <thread>
-#include <unistd.h>
-#include <vector>
 
-constexpr char SEM_NAME[] = "/resource_semaphore";
-constexpr int MAX_CONCURRENT = 3;
-
-void access_resource(sem_t* sem, int id) {
-    std::cout << "Process " << id << " waiting for resource...\n";
-
-    sem_wait(sem);
-    std::cout << "Process " << id << " acquired resource\n";
-
-    // Simulate work
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-    std::cout << "Process " << id << " releasing resource\n";
-    sem_post(sem);
-}
-
-int main() {
+int main() try {
     constexpr int num_processes = 10;
-
-    // Create semaphore with count = MAX_CONCURRENT
-    sem_unlink(SEM_NAME);  // Clean up any existing
-    sem_t* sem = sem_open(SEM_NAME, O_CREAT, 0644, MAX_CONCURRENT);
-
-    std::vector<pid_t> children;
-
-    for (int i = 0; i < num_processes; ++i) {
-        std::cout.flush();
-        pid_t pid = fork();
-        if (pid == 0) {
-            access_resource(sem, i);
-            std::cout.flush();
-            _exit(0);
-        }
-        children.push_back(pid);
+    posix_example::Semaphore permits(3, "resource_limit");
+    posix_example::ChildGroup children(num_processes);
+    for (int id = 0; id < num_processes; ++id) {
+        children.spawn([&, id] {
+            std::lock_guard permit(permits);
+            std::cout << "Process " << id << " acquired resource\n" << std::flush;
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::cout << "Process " << id << " releasing resource\n" << std::flush;
+        });
     }
-
-    // Wait for all children
-    for (pid_t pid : children) {
-        waitpid(pid, nullptr, 0);
-    }
-
-    sem_close(sem);
-    sem_unlink(SEM_NAME);
-
+    if (!children.wait_all()) return 1;
     std::cout << "All processes completed\n";
     return 0;
+} catch (const std::exception& error) {
+    std::cerr << error.what() << '\n';
+    return 1;
 }

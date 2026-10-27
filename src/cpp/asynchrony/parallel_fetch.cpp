@@ -1,88 +1,38 @@
 /**
- * Parallel HTTP Fetching
- *
- * This example demonstrates fetching multiple URLs in parallel
- * using std::async, comparing synchronous vs asynchronous performance.
- *
- * Key concepts:
- * - I/O-bound tasks benefit greatly from async execution
- * - Each fetch runs in its own thread (with std::launch::async)
- * - Results are collected as futures complete
- * - Speedup is proportional to the number of independent fetches
- *
- * Build: g++ -std=c++17 -o parallel_fetch parallel_fetch.cpp -lcurl
+ * C++20 + libcurl: bounded asynchronous HTTP on one event-loop thread.
+ * curl_multi_perform/poll progresses transfers without a thread per URL.
+ * Scoped easy/multi handles clean up on success and failure.
+ * Build: g++ -std=c++20 parallel_fetch.cpp -o parallel_fetch -lcurl
+ * Run: ./parallel_fetch [url ...]
  */
+#include "../common/curl_support.hpp"
 
 #include <chrono>
-#include <curl/curl.h>
-#include <future>
 #include <iostream>
 #include <string>
 #include <vector>
 
-const std::vector<std::string> URLS = {
-    "https://httpbin.org/get",
-    "https://api.github.com",
-    "https://www.example.com",
-};
-
-size_t write_callback(void* contents, size_t size, size_t nmemb, void* userp) {
-    static_cast<std::string*>(userp)->append(
-        static_cast<char*>(contents), size * nmemb);
-    return size * nmemb;
-}
-
-std::string fetch_url(const std::string& url) {
-    std::string buffer;
-    CURL* curl = curl_easy_init();
-
-    if (curl) {
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
-        curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
+int main(int argc, char* argv[]) try {
+    curl_example::Environment curl;
+    const std::vector<std::string> urls = argc > 1
+        ? std::vector<std::string>(argv + 1, argv + argc)
+        : std::vector<std::string>{"https://example.com", "https://www.iana.org"};
+    const auto start = std::chrono::steady_clock::now();
+    const auto responses = curl_example::fetch_many(urls, 4);
+    bool success = true;
+    for (std::size_t index = 0; index < urls.size(); ++index) {
+        const auto& response = responses[index];
+        if (response.outcome != CURLE_OK) {
+            std::cerr << "Failed: " << urls[index] << ": " << curl_easy_strerror(response.outcome) << '\n';
+            success = false;
+        } else {
+            std::cout << "Fetched: " << urls[index] << " (" << response.body.size() << " bytes)\n";
+        }
     }
-
-    std::cout << "Fetched: " << url << "\n";
-    return buffer;
-}
-
-void fetch_sync() {
-    auto start = std::chrono::steady_clock::now();
-
-    for (const auto& url : URLS) {
-        fetch_url(url);
-    }
-
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::steady_clock::now() - start);
-    std::cout << "Synchronous: " << elapsed.count() / 1000.0 << "s\n\n";
-}
-
-void fetch_async() {
-    auto start = std::chrono::steady_clock::now();
-
-    std::vector<std::future<std::string>> futures;
-    for (const auto& url : URLS) {
-        futures.push_back(std::async(std::launch::async, fetch_url, url));
-    }
-
-    for (auto& f : futures) {
-        f.get();
-    }
-
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::steady_clock::now() - start);
-    std::cout << "Asynchronous: " << elapsed.count() / 1000.0 << "s\n";
-}
-
-int main() {
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-
-    fetch_sync();
-    fetch_async();
-
-    curl_global_cleanup();
-    return 0;
+    const std::chrono::duration<double> elapsed = std::chrono::steady_clock::now() - start;
+    std::cout << "Asynchronous: " << elapsed.count() << "s\n";
+    return success ? 0 : 1;
+} catch (const std::exception& error) {
+    std::cerr << error.what() << '\n';
+    return 1;
 }

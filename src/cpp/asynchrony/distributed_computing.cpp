@@ -1,22 +1,18 @@
 /**
- * Distributed Computing Pattern
- *
- * This example demonstrates a basic distributed computing pattern
- * with a server coordinating work among multiple workers.
- *
- * Key concepts:
- * - Server accepts connections and distributes tasks
- * - Workers connect and process assigned work
- * - Clients submit work and receive results
- * - Socket-based communication between components
- *
- * Run as:
- *   ./distributed_computing server 3000
- *   ./distributed_computing worker 3000  (in another terminal)
- *   ./distributed_computing client 3000  (in another terminal)
+ * C++20 + POSIX: bounded asynchronous TCP echo service.
+ * A single poll event loop owns sockets and caps per-client output buffering.
+ * Client/worker modes demonstrate stream framing and complete sends/receives;
+ * this example is a socket protocol, not a distributed task dispatcher.
+ * Compile: g++ -std=c++20 -pthread distributed_computing.cpp
+ * Run: ./distributed_computing [server|worker|client] port
  */
 
+#include "../common/posix.hpp"
+
 #include <arpa/inet.h>
+#include <array>
+#include <poll.h>
+#include <vector>
 #include <algorithm>
 #include <cerrno>
 #include <csignal>
@@ -50,114 +46,145 @@ ssize_t receive(int fd, char* data, size_t size) {
     return bytes;
 }
 
+// A bounded poll event loop owns all client sockets. Each output buffer is
+// capped; pausing reads supplies backpressure when a peer is slow to receive.
 class Server {
 public:
-    explicit Server(int port) {
-        socket_fd_ = socket(AF_INET, SOCK_STREAM, 0);
-        if (socket_fd_ < 0) {
-            throw std::runtime_error("Socket creation failed");
-        }
-
-        sockaddr_in addr{};
-        addr.sin_family = AF_INET;
-        addr.sin_addr.s_addr = INADDR_ANY;
-        addr.sin_port = htons(port);
-
-        if (bind(socket_fd_, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
-            throw std::runtime_error("Bind failed");
-        }
+    explicit Server(int port) : socket_fd_(socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0)) {
+        if (socket_fd_.get() < 0) posix_example::fail("socket");
+        const int enabled = 1;
+        posix_example::check(setsockopt(socket_fd_.get(), SOL_SOCKET, SO_REUSEADDR,
+                                       &enabled, sizeof(enabled)), "setsockopt");
+        sockaddr_in address{};
+        address.sin_family = AF_INET;
+        address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        address.sin_port = htons(port);
+        posix_example::check(bind(socket_fd_.get(), reinterpret_cast<sockaddr*>(&address),
+                                  sizeof(address)), "bind");
+        posix_example::check(listen(socket_fd_.get(), SOMAXCONN), "listen");
+        set_nonblocking(socket_fd_.get());
     }
 
-    ~Server() { close(socket_fd_); }
-
     void start() {
-        listen(socket_fd_, SOMAXCONN);
         std::cout << "Server started\n";
-
         while (true) {
-            sockaddr_in client_addr{};
-            socklen_t addr_len = sizeof(client_addr);
-            int client_fd = accept(socket_fd_,
-                                   reinterpret_cast<sockaddr*>(&client_addr),
-                                   &addr_len);
-            if (client_fd >= 0) {
-                std::thread(&Server::handle_client, this, client_fd).detach();
+            std::vector<pollfd> events;
+            events.push_back({socket_fd_.get(), static_cast<short>(clients_.size() < 64 ? POLLIN : 0), 0});
+            for (const auto& client : clients_) {
+                short requested = 0;
+                if (!client.eof && client.pending.size() < buffer_limit) requested |= POLLIN;
+                if (!client.pending.empty()) requested |= POLLOUT;
+                events.push_back({client.fd.get(), requested, 0});
+            }
+            const int ready = poll(events.data(), events.size(), -1);
+            if (ready < 0 && errno == EINTR) continue;
+            posix_example::check(ready, "poll");
+            // Process existing clients before accepting: appending can move the vector.
+            for (std::size_t index = clients_.size(); index-- > 0;) {
+                auto& client = clients_[index];
+                const short happened = events[index + 1].revents;
+                bool failed = happened & (POLLERR | POLLNVAL);
+                if (!failed && happened & (POLLIN | POLLHUP)) {
+                    std::array<char, BUFFER_SIZE> buffer{};
+                    const auto room = buffer_limit - client.pending.size();
+                    if (room != 0) {
+                        const auto received = recv(client.fd.get(), buffer.data(), std::min(buffer.size(), room), 0);
+                        if (received > 0) client.pending.append(buffer.data(), static_cast<std::size_t>(received));
+                        else if (received == 0) client.eof = true;
+                        else if (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) failed = true;
+                    }
+                }
+                if (!failed && happened & POLLOUT) {
+                    const auto sent = send(client.fd.get(), client.pending.data(), client.pending.size(), 0);
+                    if (sent > 0) client.pending.erase(0, static_cast<std::size_t>(sent));
+                    else if (sent < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) failed = true;
+                }
+                if (failed || (client.eof && client.pending.empty())) {
+                    clients_.erase(clients_.begin() + static_cast<std::ptrdiff_t>(index));
+                }
+            }
+            if (events.front().revents & POLLIN) {
+                posix_example::UniqueFd client(accept(socket_fd_.get(), nullptr, nullptr));
+                if (client.get() < 0) {
+                    if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) continue;
+                    posix_example::fail("accept");
+                }
+                set_nonblocking(client.get());
+                clients_.push_back({std::move(client), {}, false});
             }
         }
     }
 
 private:
-    void handle_client(int client_fd) {
-        char buffer[BUFFER_SIZE];
-        while (true) {
-            ssize_t bytes = receive(client_fd, buffer, sizeof(buffer));
-            if (bytes <= 0) break;
-
-            std::cout << "Received: ";
-            std::cout.write(buffer, bytes);
-            std::cout << "\n";
-            if (!send_all(client_fd, buffer, bytes)) break;  // Echo back
-        }
-        close(client_fd);
+    static void set_nonblocking(int fd) {
+        const int flags = fcntl(fd, F_GETFL);
+        posix_example::check(flags, "fcntl get flags");
+        posix_example::check(fcntl(fd, F_SETFL, flags | O_NONBLOCK), "fcntl nonblocking");
     }
-
-    int socket_fd_;
+    static constexpr std::size_t buffer_limit = 64 * 1024;
+    struct Connection {
+        posix_example::UniqueFd fd;
+        std::string pending;
+        bool eof;
+    };
+    posix_example::UniqueFd socket_fd_;
+    std::vector<Connection> clients_;
 };
 
 class Worker {
 public:
     Worker(const std::string& ip, int port) {
-        socket_fd_ = socket(AF_INET, SOCK_STREAM, 0);
+        socket_fd_.reset(socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0));
+        if (socket_fd_.get() < 0) posix_example::fail("socket");
 
         sockaddr_in addr{};
         addr.sin_family = AF_INET;
         addr.sin_addr.s_addr = inet_addr(ip.c_str());
         addr.sin_port = htons(port);
 
-        if (connect(socket_fd_, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
+        if (connect(socket_fd_.get(), reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
             throw std::runtime_error("Connection failed");
         }
     }
 
-    ~Worker() { close(socket_fd_); }
 
     void run() {
-        char buffer[BUFFER_SIZE];
+        std::array<char, BUFFER_SIZE> buffer{};
         while (true) {
-            ssize_t bytes = receive(socket_fd_, buffer, sizeof(buffer));
+            ssize_t bytes = receive(socket_fd_.get(), buffer.data(), buffer.size());
             if (bytes <= 0) break;
 
             std::cout << "Task: ";
-            std::cout.write(buffer, bytes);
+            std::cout.write(buffer.data(), bytes);
             std::cout << "\n";
-            if (!send_all(socket_fd_, buffer, bytes)) break;
+            if (!send_all(socket_fd_.get(), buffer.data(), bytes)) break;
         }
     }
 
 private:
-    int socket_fd_;
+    posix_example::UniqueFd socket_fd_;
 };
 
 class Client {
 public:
     Client(const std::string& ip, int port) {
-        socket_fd_ = socket(AF_INET, SOCK_STREAM, 0);
+        socket_fd_.reset(socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0));
+        if (socket_fd_.get() < 0) posix_example::fail("socket");
 
         sockaddr_in addr{};
         addr.sin_family = AF_INET;
         addr.sin_addr.s_addr = inet_addr(ip.c_str());
         addr.sin_port = htons(port);
 
-        if (connect(socket_fd_, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
+        if (connect(socket_fd_.get(), reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
             throw std::runtime_error("Connection failed");
         }
     }
 
-    ~Client() { close(socket_fd_); }
 
     void run() {
         std::string input;
-        char buffer[BUFFER_SIZE];
+        std::array<char, BUFFER_SIZE> buffer{};
 
         while (true) {
             std::cout << "Enter task: ";
@@ -165,19 +192,19 @@ public:
             // An empty send produces no bytes and therefore no echo response.
             if (input.empty()) continue;
 
-            if (!send_all(socket_fd_, input.data(), input.size())) {
+            if (!send_all(socket_fd_.get(), input.data(), input.size())) {
                 throw std::runtime_error("Sending task failed");
             }
 
             // The echo has exactly the task's length, possibly across many reads.
             std::string result;
             while (result.size() < input.size()) {
-                ssize_t bytes = receive(socket_fd_, buffer,
-                    std::min(sizeof(buffer), input.size() - result.size()));
+                ssize_t bytes = receive(socket_fd_.get(), buffer.data(),
+                    std::min(buffer.size(), input.size() - result.size()));
                 if (bytes <= 0) {
                     throw std::runtime_error("Connection closed before the full reply");
                 }
-                result.append(buffer, bytes);
+                result.append(buffer.data(), bytes);
             }
 
             std::cout << "Result: " << result << "\n";
@@ -185,7 +212,7 @@ public:
     }
 
 private:
-    int socket_fd_;
+    posix_example::UniqueFd socket_fd_;
 };
 
 int main(int argc, char* argv[]) {
@@ -197,10 +224,10 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    std::string role = argv[1];
-    int port = std::stoi(argv[2]);
-
+    const std::string role = argv[1];
     try {
+        const int port = std::stoi(argv[2]);
+        if (port < 1 || port > 65535) throw std::invalid_argument("Port must be between 1 and 65535");
         if (role == "server") {
             Server server(port);
             server.start();

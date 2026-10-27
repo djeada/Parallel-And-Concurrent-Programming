@@ -1,4 +1,6 @@
 /**
+ * Modern C++20 example: scoped worker ownership with std::jthread.
+ *
  * Shared Mutex (Reader-Writer Lock)
  *
  * This example demonstrates std::shared_mutex, which allows multiple
@@ -17,6 +19,7 @@
 #include <array>
 #include <chrono>
 #include <iostream>
+#include <syncstream>
 #include <mutex>
 #include <shared_mutex>
 #include <thread>
@@ -37,7 +40,7 @@ void reader(int id) {
         // Shared lock - multiple readers allowed
         std::shared_lock lock(inventory.mutex);
 
-        std::cout << "Reader-" << id << " sees " << inventory.items[i]
+        std::osyncstream(std::cout) << "Reader-" << id << " sees " << inventory.items[i]
                   << " stock: " << inventory.stock[i] << "\n";
 
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -50,7 +53,7 @@ void writer(int id) {
         std::unique_lock lock(inventory.mutex);
 
         inventory.stock[i] += (id + 1);
-        std::cout << "Writer-" << id << " updated " << inventory.items[i]
+        std::osyncstream(std::cout) << "Writer-" << id << " updated " << inventory.items[i]
                   << " to: " << inventory.stock[i] << "\n";
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -58,8 +61,8 @@ void writer(int id) {
 }
 
 int main() {
-    std::vector<std::thread> readers;
-    std::vector<std::thread> writers;
+    std::vector<std::jthread> readers;
+    std::vector<std::jthread> writers;
 
     // Many readers, few writers (typical use case)
     for (int i = 0; i < 5; ++i) {
@@ -76,6 +79,6 @@ int main() {
         w.join();
     }
 
-    std::cout << "All operations complete.\n";
+    std::osyncstream(std::cout) << "All operations complete.\n";
     return 0;
 }

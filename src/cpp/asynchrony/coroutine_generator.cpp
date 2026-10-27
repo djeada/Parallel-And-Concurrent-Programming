@@ -1,8 +1,8 @@
 /**
- * C++20 Coroutine Generator
+ * C++20 Coroutine Mechanics: Synchronous Lazy Generator
  *
- * This example demonstrates implementing an async generator using
- * C++20 coroutines. Values are produced lazily on demand.
+ * This example implements a synchronous generator using C++20 coroutines.
+ * Values are produced lazily on demand on the calling thread.
  *
  * Key concepts:
  * - co_yield suspends and produces a value
@@ -10,8 +10,8 @@
  * - promise_type defines coroutine behavior
  * - Lazy evaluation: values generated only when requested
  *
- * Coroutines enable writing async code that looks synchronous,
- * making complex control flow easier to understand.
+ * co_yield suspends this generator, but supplies no event loop or async I/O.
+ * Any sleep_for in the generator blocks its caller.
  *
  * Compile with: g++ -std=c++20 -fcoroutines coroutine_generator.cpp
  */

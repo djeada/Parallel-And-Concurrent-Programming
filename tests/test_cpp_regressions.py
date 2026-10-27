@@ -20,7 +20,7 @@ class CppRegressions(unittest.TestCase):
         cls.addClassCleanup(cls.directory.cleanup)
         cls.binaries = {}
         examples = {
-            "latch": "multithreading/latch.cpp",
+            "latch": "multithreading/legacy/latch.cpp",
             "try_lock": "multithreading/try_lock.cpp",
             "pause_resume": "asynchrony/pause_resume.cpp",
             "heavy_functions": "asynchrony/heavy_functions.cpp",

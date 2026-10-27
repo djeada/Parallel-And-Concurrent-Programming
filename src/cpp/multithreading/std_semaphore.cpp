@@ -1,4 +1,6 @@
 /**
+ * Modern C++20 example: scoped worker ownership with std::jthread.
+ *
  * std::counting_semaphore and std::binary_semaphore (C++20)
  *
  * C++20 provides two standard semaphore types:
@@ -15,13 +17,14 @@
  * - A semaphore can be released by a DIFFERENT thread than the one that
  *   acquired it — enabling producer/consumer signaling patterns.
  *
- * Compare with semaphore.cpp which shows a manual implementation.
+ * Compare with legacy/semaphore.cpp for the manual implementation.
  *
  * Compile: g++ -std=c++20 -pthread std_semaphore.cpp
  */
 
 #include <chrono>
 #include <iostream>
+#include <syncstream>
 #include <semaphore>
 #include <thread>
 #include <vector>
@@ -34,20 +37,28 @@ using namespace std::chrono_literals;
 
 std::counting_semaphore<3> room_capacity{3};
 
+// Scoped permit ownership also releases the resource if work throws.
+class RoomPermit {
+public:
+    RoomPermit() { room_capacity.acquire(); }
+    ~RoomPermit() { room_capacity.release(); }
+    RoomPermit(const RoomPermit&) = delete;
+    RoomPermit& operator=(const RoomPermit&) = delete;
+};
+
 void server_room_worker(int id) {
-    std::cout << "Worker " << id << " waiting to enter room...\n";
-    room_capacity.acquire();
-    std::cout << "Worker " << id << " entered room.\n";
+    std::osyncstream(std::cout) << "Worker " << id << " waiting to enter room...\n";
+    RoomPermit permit;
+    std::osyncstream(std::cout) << "Worker " << id << " entered room.\n";
 
     std::this_thread::sleep_for(300ms);  // Simulate work inside
 
-    std::cout << "Worker " << id << " leaving room.\n";
-    room_capacity.release();
+    std::osyncstream(std::cout) << "Worker " << id << " leaving room.\n";
 }
 
 void demo_counting_semaphore() {
-    std::cout << "=== counting_semaphore<3>: 7 workers, room fits 3 ===\n";
-    std::vector<std::thread> workers;
+    std::osyncstream(std::cout) << "=== counting_semaphore<3>: 7 workers, room fits 3 ===\n";
+    std::vector<std::jthread> workers;
     for (int i = 1; i <= 7; ++i) {
         workers.emplace_back(server_room_worker, i);
     }
@@ -63,22 +74,22 @@ std::binary_semaphore result_ready{0};  // starts at 0 = "not ready"
 int computed_value = 0;
 
 void producer_task() {
-    std::cout << "Producer: computing...\n";
+    std::osyncstream(std::cout) << "Producer: computing...\n";
     std::this_thread::sleep_for(500ms);
     computed_value = 99;
-    std::cout << "Producer: result ready.\n";
+    std::osyncstream(std::cout) << "Producer: result ready.\n";
     result_ready.release();  // signal consumer — different thread!
 }
 
 void consumer_task() {
     result_ready.acquire();  // block until producer signals
-    std::cout << "Consumer: received value = " << computed_value << "\n";
+    std::osyncstream(std::cout) << "Consumer: received value = " << computed_value << "\n";
 }
 
 void demo_binary_semaphore() {
-    std::cout << "\n=== binary_semaphore: producer signals consumer ===\n";
-    std::thread prod(producer_task);
-    std::thread cons(consumer_task);
+    std::osyncstream(std::cout) << "\n=== binary_semaphore: producer signals consumer ===\n";
+    std::jthread prod(producer_task);
+    std::jthread cons(consumer_task);
     prod.join();
     cons.join();
 }

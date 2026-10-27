@@ -1,4 +1,7 @@
 /**
+ * LEGACY COMPARISON: hand-built latch. Start with ../std_latch.cpp (C++20).
+ * Kept to explain the mutex/condition-variable implementation.
+ *
  * Latch Synchronization
  *
  * This example demonstrates a latch - a single-use synchronization barrier.

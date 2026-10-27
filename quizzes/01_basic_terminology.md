@@ -373,7 +373,7 @@ void buyer() {
 int x = 0;
 
 int main() {
-    std::thread t([] { x = 1; });
+    std::jthread t([] { x = 1; });
     t.join();
     std::cout << x << '\n';
 }

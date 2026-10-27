@@ -1,4 +1,6 @@
 /**
+ * C++20 + MPI: scoped environment and checked calls through the supported C API.
+ *
  * Point-to-Point Communication
  *
  * This example demonstrates basic point-to-point communication using
@@ -19,54 +21,52 @@
  * Parameters for MPI_Recv:
  *   buffer, count, datatype, source, tag, communicator, status
  *
- * Compile: mpicxx -o point_to_point point_to_point_communication.cpp
+ * Compile: mpicxx -std=c++20 -o point_to_point point_to_point_communication.cpp
  * Run: mpirun -np 2 ./point_to_point
  */
 
-#include <mpi.h>
+#include "../common/mpi_support.hpp"
 
 #include <iostream>
 
 int main(int argc, char* argv[]) {
-    MPI_Init(&argc, &argv);
+    return mpi_example::run(argc, argv, [&]() -> int {
 
-    int rank = 0;
-    int size = 0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+        int rank = 0;
+        int size = 0;
+        mpi_example::check(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
+        mpi_example::check(MPI_Comm_size(MPI_COMM_WORLD, &size));
 
-    if (size < 2) {
-        if (rank == 0) {
-            std::cerr << "Error: This program requires at least 2 processes."
-                      << std::endl;
+        if (size < 2) {
+            if (rank == 0) {
+                std::cerr << "Error: This program requires at least 2 processes."
+                          << std::endl;
+            }
+            return 1;
         }
-        MPI_Finalize();
-        return 1;
-    }
 
-    constexpr int tag = 0;
+        constexpr int tag = 0;
 
-    if (rank == 0) {
-        // Process 0 sends data to process 1
-        int data = 42;
-        std::cout << "Process 0: Sending value " << data << " to process 1"
-                  << std::endl;
+        if (rank == 0) {
+            // Process 0 sends data to process 1
+            int data = 42;
+            std::cout << "Process 0: Sending value " << data << " to process 1"
+                      << std::endl;
 
-        MPI_Send(&data, 1, MPI_INT, 1, tag, MPI_COMM_WORLD);
+            mpi_example::check(MPI_Send(&data, 1, MPI_INT, 1, tag, MPI_COMM_WORLD));
 
-        std::cout << "Process 0: Message sent successfully" << std::endl;
+            std::cout << "Process 0: Message sent successfully" << std::endl;
 
-    } else if (rank == 1) {
-        // Process 1 receives data from process 0
-        int received_data = 0;
+        } else if (rank == 1) {
+            // Process 1 receives data from process 0
+            int received_data = 0;
 
-        MPI_Recv(&received_data, 1, MPI_INT, 0, tag, MPI_COMM_WORLD,
-                 MPI_STATUS_IGNORE);
+            mpi_example::check(MPI_Recv(&received_data, 1, MPI_INT, 0, tag, MPI_COMM_WORLD,
+                     MPI_STATUS_IGNORE));
 
-        std::cout << "Process 1: Received value " << received_data
-                  << " from process 0" << std::endl;
-    }
-
-    MPI_Finalize();
-    return 0;
+            std::cout << "Process 1: Received value " << received_data
+                      << " from process 0" << std::endl;
+        }
+        return 0;
+    });
 }

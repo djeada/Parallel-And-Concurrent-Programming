@@ -1,75 +1,36 @@
 /**
- * Pipe Communication Between Processes
- *
- * This example demonstrates inter-process communication using
- * anonymous pipes created with pipe().
- *
- * Key concepts:
- * - pipe() creates a unidirectional data channel
- * - pipe_fd[0] is the read end, pipe_fd[1] is the write end
- * - Fork inherits the pipe file descriptors
- * - Close unused ends to avoid resource leaks and hangs
- * - read() blocks until data is available or write end is closed
- *
- * Pipes are simpler than message queues but:
- * - Only work between related processes (parent/child)
- * - Are unidirectional (need two pipes for bidirectional)
- * - Don't have message boundaries (stream of bytes)
+ * C++20 + POSIX: owned pipe endpoints and complete records.
+ * Pipe owns both descriptors; close unused endpoints before waiting for EOF.
+ * read_exact/write_all handle short transfers, EINTR, and truncated records.
+ * This native-int protocol is for related processes on the same machine.
+ * Compile: g++ -std=c++20 -pthread pipe_communication.cpp
  */
+#include "../common/posix.hpp"
 
-#include <cstdlib>
 #include <iostream>
-#include <sys/wait.h>
-#include <unistd.h>
+#include <span>
 
-void producer(int write_fd) {
-    for (int i = 1; i <= 5; ++i) {
-        std::cout << "Producer: sending " << i << "\n";
-        write(write_fd, &i, sizeof(i));
-        usleep(200'000);  // 200ms
+int main() try {
+    posix_example::Pipe pipe;
+    posix_example::ChildGroup children(1);
+    children.spawn([&] {
+        pipe.writer.reset();
+        int item = 0;
+        while (posix_example::read_exact(pipe.reader.get(),
+                                        std::as_writable_bytes(std::span(&item, 1)))) {
+            std::cout << "Consumer: received " << item << '\n';
+        }
+    });
+    pipe.reader.reset();
+    for (int item = 1; item <= 5; ++item) {
+        posix_example::write_all(pipe.writer.get(), std::as_bytes(std::span(&item, 1)));
+        std::cout << "Producer: sending " << item << '\n';
     }
-    close(write_fd);
-}
-
-void consumer(int read_fd) {
-    int item;
-    while (read(read_fd, &item, sizeof(item)) > 0) {
-        std::cout << "Consumer: received " << item << "\n";
-        usleep(100'000);
-    }
-    close(read_fd);
-}
-
-int main() {
-    int pipe_fd[2];
-
-    if (pipe(pipe_fd) == -1) {
-        perror("pipe");
-        return 1;
-    }
-
-    std::cout.flush();
-
-    pid_t pid = fork();
-
-    if (pid == -1) {
-        perror("fork");
-        return 1;
-    }
-
-    if (pid == 0) {
-        // Child: consumer
-        close(pipe_fd[1]);  // Close unused write end
-        consumer(pipe_fd[0]);
-        std::cout.flush();
-        _exit(0);
-    } else {
-        // Parent: producer
-        close(pipe_fd[0]);  // Close unused read end
-        producer(pipe_fd[1]);
-        wait(nullptr);
-    }
-
+    pipe.writer.reset(); // EOF must be visible before waiting for the consumer.
+    if (!children.wait_all()) return 1;
     std::cout << "Done\n";
     return 0;
+} catch (const std::exception& error) {
+    std::cerr << error.what() << '\n';
+    return 1;
 }

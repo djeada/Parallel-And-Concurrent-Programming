@@ -1,4 +1,6 @@
 /**
+ * C++20 + MPI: scoped environment and checked calls through the supported C API.
+ *
  * Barrier Synchronization
  *
  * This example demonstrates MPI_Barrier, which synchronizes all processes
@@ -15,14 +17,14 @@
  * - Synchronizing before timing measurements
  * - Ensuring file I/O is complete before reading results
  *
- * Note: Many collective operations (Bcast, Reduce, etc.) have implicit
- * synchronization, so explicit barriers are often unnecessary.
+ * A collective is not generally a barrier: its return does not imply that
+ * every peer has returned. Use only the ordering each operation guarantees.
  *
- * Compile: mpicxx -o barrier barrier_synchronization.cpp
+ * Compile: mpicxx -std=c++20 -o barrier barrier_synchronization.cpp
  * Run: mpirun -np 4 ./barrier
  */
 
-#include <mpi.h>
+#include "../common/mpi_support.hpp"
 
 #include <chrono>
 #include <iostream>
@@ -40,58 +42,57 @@ void do_work(int rank) {
 }
 
 int main(int argc, char* argv[]) {
-    MPI_Init(&argc, &argv);
+    return mpi_example::run(argc, argv, [&]() -> int {
 
-    int rank = 0;
-    int size = 0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+        int rank = 0;
+        int size = 0;
+        mpi_example::check(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
+        mpi_example::check(MPI_Comm_size(MPI_COMM_WORLD, &size));
 
-    // Phase 1: Each process does variable-length work
-    std::cout << "Process " << rank << ": Starting Phase 1 work..." << std::endl;
-    do_work(rank);
-    std::cout << "Process " << rank << ": Phase 1 complete" << std::endl;
+        // Phase 1: Each process does variable-length work
+        std::cout << "Process " << rank << ": Starting Phase 1 work..." << std::endl;
+        do_work(rank);
+        std::cout << "Process " << rank << ": Phase 1 complete" << std::endl;
 
-    // Barrier: Wait for all processes to complete Phase 1
-    std::cout << "Process " << rank << ": Waiting at barrier..." << std::endl;
-    MPI_Barrier(MPI_COMM_WORLD);
-    std::cout << "Process " << rank << ": Passed barrier" << std::endl;
+        // Barrier: Wait for all processes to complete Phase 1
+        std::cout << "Process " << rank << ": Waiting at barrier..." << std::endl;
+        mpi_example::check(MPI_Barrier(MPI_COMM_WORLD));
+        std::cout << "Process " << rank << ": Passed barrier" << std::endl;
 
-    // Phase 2: All processes start together
-    if (rank == 0) {
-        std::cout << std::endl;
-        std::cout << "=== All processes synchronized ===" << std::endl;
-        std::cout << "=== Starting Phase 2 ===" << std::endl;
-        std::cout << std::endl;
-    }
+        // Phase 2: All processes start together
+        if (rank == 0) {
+            std::cout << std::endl;
+            std::cout << "=== All processes synchronized ===" << std::endl;
+            std::cout << "=== Starting Phase 2 ===" << std::endl;
+            std::cout << std::endl;
+        }
 
-    // Another barrier to ensure the message is printed before Phase 2 output
-    MPI_Barrier(MPI_COMM_WORLD);
+        // Another barrier to ensure the message is printed before Phase 2 output
+        mpi_example::check(MPI_Barrier(MPI_COMM_WORLD));
 
-    std::cout << "Process " << rank << ": Phase 2 starting now" << std::endl;
+        std::cout << "Process " << rank << ": Phase 2 starting now" << std::endl;
 
-    // Demonstrate timing with barrier synchronization
-    MPI_Barrier(MPI_COMM_WORLD);
-    double start_time = MPI_Wtime();
+        // Demonstrate timing with barrier synchronization
+        mpi_example::check(MPI_Barrier(MPI_COMM_WORLD));
+        double start_time = MPI_Wtime();
 
-    // All processes do the same work
-    do_work(0);  // Same duration for all
+        // All processes do the same work
+        do_work(0);  // Same duration for all
 
-    double end_time = MPI_Wtime();
-    double local_elapsed = end_time - start_time;
+        double end_time = MPI_Wtime();
+        double local_elapsed = end_time - start_time;
 
-    // Report timing
-    std::cout << "Process " << rank << ": Elapsed time = " << local_elapsed
-              << " seconds" << std::endl;
+        // Report timing
+        std::cout << "Process " << rank << ": Elapsed time = " << local_elapsed
+                  << " seconds" << std::endl;
 
-    // Final barrier before exit
-    MPI_Barrier(MPI_COMM_WORLD);
+        // Final barrier before exit
+        mpi_example::check(MPI_Barrier(MPI_COMM_WORLD));
 
-    if (rank == 0) {
-        std::cout << std::endl;
-        std::cout << "All processes completed successfully" << std::endl;
-    }
-
-    MPI_Finalize();
-    return 0;
+        if (rank == 0) {
+            std::cout << std::endl;
+            std::cout << "All processes completed successfully" << std::endl;
+        }
+        return 0;
+    });
 }

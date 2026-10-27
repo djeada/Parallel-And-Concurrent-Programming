@@ -1,4 +1,6 @@
 /**
+ * C++20 + MPI: scoped environment and checked calls through the supported C API.
+ *
  * Communicators and Groups
  *
  * This example demonstrates how to create sub-communicators using
@@ -17,54 +19,52 @@
  * - Isolating communication in different parts of the program
  * - Creating library-safe communication contexts
  *
- * Compile: mpicxx -o comm_split communicators_and_groups.cpp
+ * Compile: mpicxx -std=c++20 -o comm_split communicators_and_groups.cpp
  * Run: mpirun -np 8 ./comm_split
  */
 
-#include <mpi.h>
+#include "../common/mpi_support.hpp"
 
 #include <iostream>
 
 int main(int argc, char* argv[]) {
-    MPI_Init(&argc, &argv);
+    return mpi_example::run(argc, argv, [&]() -> int {
 
-    int world_rank = 0;
-    int world_size = 0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+        int world_rank = 0;
+        int world_size = 0;
+        mpi_example::check(MPI_Comm_rank(MPI_COMM_WORLD, &world_rank));
+        mpi_example::check(MPI_Comm_size(MPI_COMM_WORLD, &world_size));
 
-    // Split processes into two groups based on rank parity
-    // Even ranks (0, 2, 4, ...) get color 0
-    // Odd ranks (1, 3, 5, ...) get color 1
-    int color = world_rank % 2;
+        // Split processes into two groups based on rank parity
+        // Even ranks (0, 2, 4, ...) get color 0
+        // Odd ranks (1, 3, 5, ...) get color 1
+        int color = world_rank % 2;
 
-    // Use world_rank as key to preserve relative ordering
-    MPI_Comm new_comm;
-    MPI_Comm_split(MPI_COMM_WORLD, color, world_rank, &new_comm);
+        // Use world_rank as key to preserve relative ordering
+        mpi_example::Communicator new_comm;
+        mpi_example::check(MPI_Comm_split(MPI_COMM_WORLD, color, world_rank, new_comm.out()));
 
-    // Get rank within the new communicator
-    int new_rank = 0;
-    int new_size = 0;
-    MPI_Comm_rank(new_comm, &new_rank);
-    MPI_Comm_size(new_comm, &new_size);
+        // Get rank within the new communicator
+        int new_rank = 0;
+        int new_size = 0;
+        mpi_example::check(MPI_Comm_rank(new_comm.get(), &new_rank));
+        mpi_example::check(MPI_Comm_size(new_comm.get(), &new_size));
 
-    std::cout << "World rank " << world_rank << " -> Group "
-              << (color == 0 ? "EVEN" : "ODD") << ", new rank " << new_rank
-              << " of " << new_size << std::endl;
+        std::cout << "World rank " << world_rank << " -> Group "
+                  << (color == 0 ? "EVEN" : "ODD") << ", new rank " << new_rank
+                  << " of " << new_size << std::endl;
 
-    // Demonstrate communication within the sub-communicator
-    // Reduce within each group separately
-    int group_sum = 0;
-    MPI_Reduce(&world_rank, &group_sum, 1, MPI_INT, MPI_SUM, 0, new_comm);
+        // Demonstrate communication within the sub-communicator
+        // Reduce within each group separately
+        int group_sum = 0;
+        mpi_example::check(MPI_Reduce(&world_rank, &group_sum, 1, MPI_INT, MPI_SUM, 0, new_comm.get()));
 
-    if (new_rank == 0) {
-        std::cout << "Group " << (color == 0 ? "EVEN" : "ODD")
-                  << " sum of world ranks: " << group_sum << std::endl;
-    }
+        if (new_rank == 0) {
+            std::cout << "Group " << (color == 0 ? "EVEN" : "ODD")
+                      << " sum of world ranks: " << group_sum << std::endl;
+        }
 
-    // Clean up the new communicator
-    MPI_Comm_free(&new_comm);
-
-    MPI_Finalize();
-    return 0;
+        // new_comm is freed before MPI finalizes.
+        return 0;
+    });
 }

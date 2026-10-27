@@ -1,14 +1,16 @@
 /**
+ * Modern C++20 example: scoped worker ownership with std::jthread.
+ *
  * Atomic Memory Ordering
  *
  * C++ atomics support explicit memory ordering to balance correctness
  * and performance. The default (seq_cst) is safe but conservative; weaker
  * orderings can be faster when their guarantees are sufficient.
  *
- * Memory orderings (weakest to strongest):
+ * Common memory orderings (acquire and release serve different roles):
  * - memory_order_relaxed : atomic operation only; no ordering with other ops
- * - memory_order_release : this STORE is visible before any subsequent acquire
- * - memory_order_acquire : this LOAD sees all stores before the paired release
+ * - memory_order_release : publishes prior writes to a matching acquire
+ * - memory_order_acquire : observes prior writes when reading a matching release
  * - memory_order_seq_cst : total global order across all seq_cst ops (default)
  *
  * Rule of thumb:
@@ -16,7 +18,7 @@
  * - Producer/consumer handoff → release on write, acquire on read
  * - Everything else → seq_cst (default) until you have profiling evidence
  *
- * Compile: g++ -std=c++11 -O2 -pthread memory_order.cpp
+ * Compile: g++ -std=c++20 -O2 -pthread memory_order.cpp
  */
 
 #include <atomic>
@@ -41,7 +43,7 @@ void relaxed_worker() {
 }
 
 void demo_relaxed() {
-    std::vector<std::thread> threads;
+    std::vector<std::jthread> threads;
     for (int i = 0; i < 4; ++i) threads.emplace_back(relaxed_worker);
     for (auto& t : threads) t.join();
 
@@ -64,10 +66,11 @@ int payload = 0;  // NOT atomic, but protected by the acquire/release pair
 void producer() {
     payload = 42;                                           // Write data
     data_ready.store(true, std::memory_order_release);      // "Publish" it
+    data_ready.notify_one();
 }
 
 void consumer() {
-    while (!data_ready.load(std::memory_order_acquire)) {}  // Spin-wait
+    data_ready.wait(false, std::memory_order_acquire);  // C++20: wait without polling
     // Guaranteed to see payload == 42 because of the acquire/release pair
     assert(payload == 42);
     std::cout << "Consumer received payload: " << payload << "\n";
@@ -76,8 +79,8 @@ void consumer() {
 void demo_acquire_release() {
     data_ready.store(false, std::memory_order_relaxed);
     payload = 0;
-    std::thread prod(producer);
-    std::thread cons(consumer);
+    std::jthread prod(producer);
+    std::jthread cons(consumer);
     prod.join();
     cons.join();
 }
@@ -97,7 +100,7 @@ void seq_cst_worker() {
 }
 
 void demo_seq_cst() {
-    std::vector<std::thread> threads;
+    std::vector<std::jthread> threads;
     for (int i = 0; i < 4; ++i) threads.emplace_back(seq_cst_worker);
     for (auto& t : threads) t.join();
 

@@ -1,4 +1,6 @@
 /**
+ * Modern C++20 example: scoped worker ownership with std::jthread.
+ *
  * std::packaged_task and Callbacks
  *
  * This example demonstrates std::packaged_task, which wraps a callable
@@ -43,8 +45,8 @@ int main() {
     std::future<int> future2 = task2.get_future();
 
     // Execute tasks in threads
-    std::thread t1(std::move(task1), 3);
-    std::thread t2(std::move(task2), 4);
+    std::jthread t1(std::move(task1), 3);
+    std::jthread t2(std::move(task2), 4);
 
     // Wait for threads to complete
     t1.join();

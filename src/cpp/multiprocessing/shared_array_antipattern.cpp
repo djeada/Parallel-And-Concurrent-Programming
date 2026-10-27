@@ -22,7 +22,7 @@
  * See shared_memory.cpp for the synchronized version with a semaphore.
  *
  * Compile:
- *   g++ -std=c++17 -o shared_array shared_array_antipattern.cpp
+ *   g++ -std=c++20 -o shared_array shared_array_antipattern.cpp
  */
 
 #include <iostream>

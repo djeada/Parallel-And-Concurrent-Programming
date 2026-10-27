@@ -12,7 +12,7 @@
  * - "All workers wait for the signal, then proceed simultaneously"
  *
  * Compile:
- *   g++ -std=c++17 -pthread -O1 shared_future.cpp
+ *   g++ -std=c++20 -pthread -O1 shared_future.cpp
  */
 
 #include <chrono>

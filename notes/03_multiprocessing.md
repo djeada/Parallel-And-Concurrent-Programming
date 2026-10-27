@@ -929,221 +929,121 @@ VMs tend to have higher overhead compared to containers, as they require running
 
 #### Examples in C++
 
-In C++, process creation and management are provided mainly by operating-system APIs rather than by a standard C++ process class. Processes normally have separate virtual address spaces and resources. Unlike threads in one process, they do not share ordinary application memory by default, so IPC or explicitly shared memory is required to exchange data.
+The C++ examples use **C++20 with POSIX APIs**. Modern C++ does not provide a
+standard process class or make an ordinary `std::mutex`, `std::semaphore`, or
+`std::barrier` process-shared. Keep the platform API that fits the problem and
+use scoped C++ ownership around its resources. See the
+[C++ guide](../src/cpp/README.md).
 
-##### Creating Processes
+##### Choose a Process API by the Work
 
-To create a new process, the operating system provides specific APIs. On POSIX-compliant systems like Linux, the `fork()` system call is commonly used. The `fork()` call creates a new process by duplicating the calling process. The new process, called the child process, runs concurrently with the parent process.
+| Problem | Starting point | Example |
+|---|---|---|
+| Launch another executable | `posix_spawnp` with explicit file actions | [spawn_process.cpp](../src/cpp/multiprocessing/spawn_process.cpp) |
+| Study fork/exec and descriptor inheritance | Checked `fork`, `dup2`, and `execvp` | [exec_process.cpp](../src/cpp/multiprocessing/exec_process.cpp) |
+| Run a few isolated child tasks | Scoped child group and checked child statuses | [basic_process.cpp](../src/cpp/multiprocessing/basic_process.cpp), [multiple_processes.cpp](../src/cpp/multiprocessing/multiple_processes.cpp) |
+| Reuse a fixed number of worker processes | Persistent workers, task pipes, result IPC, bounded in-flight work | [process_pool.cpp](../src/cpp/multiprocessing/process_pool.cpp) |
+| Exchange a byte stream | Owned pipe endpoints and complete-record reads/writes | [pipe_communication.cpp](../src/cpp/multiprocessing/pipe_communication.cpp) |
+| Exchange messages | POSIX message queue with exclusive creation and checked transfer sizes | [message_queue.cpp](../src/cpp/multiprocessing/message_queue.cpp) |
+| Share mutable data | Shared mapping plus a process-shared synchronization primitive | [shared_memory.cpp](../src/cpp/multiprocessing/shared_memory.cpp), [process_mutex.cpp](../src/cpp/multiprocessing/process_mutex.cpp) |
+| Limit concurrent resource use | POSIX semaphore with scoped permit ownership | [process_semaphore.cpp](../src/cpp/multiprocessing/process_semaphore.cpp) |
+| Coordinate phases across processes | `pthread_barrier_t` in shared memory with `PTHREAD_PROCESS_SHARED` | [process_barrier.cpp](../src/cpp/multiprocessing/process_barrier.cpp) |
+| Coordinate file writes | Scoped advisory file lock and complete record writes | [process_manager.cpp](../src/cpp/multiprocessing/process_manager.cpp) |
 
-```cpp
-#include <iostream>
-#include <unistd.h>
+`posix_spawnp` combines program creation and execution without a custom C++ child
+branch. Use it when launching an existing program. The fork examples illustrate
+work in a child of a **single-threaded parent**. After a fork in a multithreaded
+process, the child may call only async-signal-safe functions until an exec; a
+copied mutex can otherwise remain locked by a thread that no longer exists in
+the child. See the [POSIX process-creation specification](https://pubs.opengroup.org/onlinepubs/9799919799/functions/posix_spawn.html).
 
-int main() {
-    pid_t pid = fork();
-    
-    if (pid == 0) {
-        // Child process
-        std::cout << "Hello from the child process!" << std::endl;
-    } else if (pid > 0) {
-        // Parent process
-        std::cout << "Hello from the parent process!" << std::endl;
-    } else {
-        // Fork failed
-        std::cerr << "Fork failed!" << std::endl;
-        return 1;
-    }
-    
-    return 0;
-}
+##### Own Resources and Completion
+
+The examples share small owners in
+[posix.hpp](../src/cpp/common/posix.hpp): `UniqueFd`, `Pipe`, `Mapping`,
+`SharedObject<T>`, `Semaphore`, `TemporaryDirectory`, and `ChildGroup`. The
+underlying POSIX calls remain visible so the resource rules can be studied.
+
+Construct shared mappings and synchronization objects before child owners.
+Wait for the children before destroying that shared state. `ChildGroup` tracks
+only successfully created children, retries interrupted waits, and checks exit
+statuses. During a parent exception it terminates and reaps children already
+started, including workers blocked during an incomplete barrier startup.
+
+`_exit` in a forked child skips inherited parent destructors and exit handlers.
+Finish local scoped work and flush intended output before using it. File
+descriptors and mappings inherited by a process are released by the operating
+system when that process exits.
+
+##### Pipes, Results, and Backpressure
+
+A pipe is a byte stream: a read or write may transfer fewer bytes than requested.
+The examples use `std::span` byte views with `read_exact` and `write_all`, retry
+`EINTR`, and distinguish clean EOF from a truncated record. Close unused
+endpoints promptly; retaining a write end can prevent the reader from seeing EOF.
+
+The process pool reuses workers for multiple tasks, limits in-flight work, and
+returns full results through a result pipe. Exit codes indicate success or
+failure; they are not a general result transport and cannot carry arbitrary
+integers. Its native integer records are a local-machine teaching protocol;
+network protocols need an agreed byte order and format.
+
+##### Shared Memory and Process Synchronization
+
+Shared memory shares bytes, not safe concurrent access. The mutex example puts
+`pthread_mutex_t` in a shared mapping and initializes it with
+`PTHREAD_PROCESS_SHARED`. The barrier uses the matching process-shared platform
+primitive. POSIX semaphore handles are inherited across the example's forks,
+and scoped guards release permits when local work ends.
+
+Named shared-memory objects and semaphores are created exclusively with private
+permissions and unlinked after opening, while existing handles remain usable.
+FIFO and file-manager demos use private temporary directories. Concurrent runs
+therefore do not reuse or delete one another's resources. For unrelated FIFO
+processes, pass the same explicit path to both reader and writer modes.
+
+##### Low-Level Observations and Intentional Failures
+
+[signals.cpp](../src/cpp/multiprocessing/signals.cpp) teaches signal delivery and
+safe child reaping; [orphan_process.cpp](../src/cpp/multiprocessing/orphan_process.cpp)
+intentionally lets its parent exit first to observe reparenting. These are
+platform/lifecycle studies rather than the recommended worker-ownership model.
+Files named `_antipattern.cpp` deliberately demonstrate failures; compare their
+behavior with the scoped, synchronized examples above.
+
+##### Build and Run
+
+From the repository root:
+
+```bash
+g++ -std=c++20 -pthread src/cpp/multiprocessing/spawn_process.cpp -o /tmp/spawn_process
+/tmp/spawn_process
+
+g++ -std=c++20 -pthread src/cpp/multiprocessing/process_pool.cpp -o /tmp/process_pool
+/tmp/process_pool
 ```
 
-In this example, `fork()` creates a new process. The return value in the child process is `0`, while in the parent process, it is the PID of the child.
-
-##### Process Termination
-
-A process can terminate normally with `exit()` or by returning from `main()`. A parent can wait for a child with `wait()` or `waitpid()` and then inspect the returned status to determine how the child exited.
-
-```cpp
-#include <cstdlib>
-#include <iostream>
-#include <sys/wait.h>
-#include <unistd.h>
-
-int main() {
-    pid_t pid = fork();
-
-    if (pid == 0) {
-        std::cout << "Child process terminating." << std::endl;
-        std::exit(0);
-    } else if (pid > 0) {
-        int status;
-        waitpid(pid, &status, 0);
-        if (WIFEXITED(status)) {
-            std::cout << "Child process exited with code "
-                      << WEXITSTATUS(status) << std::endl;
-        }
-    } else {
-        std::cerr << "Fork failed!" << std::endl;
-        return 1;
-    }
-
-    return 0;
-}
-```
-
-Here, the parent waits for the child and uses the wait-status macros to obtain the child's normal exit code.
-
-##### Inter-Process Communication (IPC)
-
-Processes can communicate with each other using IPC mechanisms, such as pipes, message queues, shared memory, and sockets. Pipes are a simple and commonly used IPC method for one-way communication between processes.
-
-```cpp
-#include <iostream>
-#include <cstring>
-#include <unistd.h>
-
-int main() {
-    int pipefd[2];
-    pipe(pipefd);
-    
-    pid_t pid = fork();
-    
-    if (pid == 0) {
-        // Child process
-        close(pipefd[1]); // Close write end
-        char buffer[128];
-        read(pipefd[0], buffer, sizeof(buffer));
-        std::cout << "Child received: " << buffer << std::endl;
-        close(pipefd[0]);
-    } else {
-        // Parent process
-        close(pipefd[0]); // Close read end
-        const char* message = "Hello from parent";
-        write(pipefd[1], message, strlen(message) + 1);
-        close(pipefd[1]);
-    }
-    
-    return 0;
-}
-```
-
-In this example, a pipe is used for communication between the parent and child processes. The parent writes a message to the pipe, and the child reads it.
-
-##### Shared Memory
-
-Shared memory maps the same region into multiple processes, providing a fast way to exchange data without copying it through a pipe or socket. Concurrent access still requires synchronization when operations can conflict.
-
-```cpp
-#include <iostream>
-#include <sys/mman.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <cstring>
-
-int main() {
-    const int SIZE = 4096;
-    void* shared_memory = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-    pid_t pid = fork();
-    
-    if (pid == 0) {
-        // Child process
-        std::strcpy(static_cast<char*>(shared_memory), "Shared memory message");
-        munmap(shared_memory, SIZE);
-    } else {
-        // Parent process
-        wait(nullptr);
-        std::cout << "Parent received: " << static_cast<char*>(shared_memory) << std::endl;
-        munmap(shared_memory, SIZE);
-    }
-    
-    return 0;
-}
-```
-
-Here, `mmap` is used to create a shared memory region accessible by both the parent and child processes.
-
-##### Process Synchronization
-
-Processes can be synchronized with primitives such as semaphores or process-shared mutexes. The following example uses a POSIX semaphore to signal that data in shared memory is ready to be read.
-
-```cpp
-#include <cstring>
-#include <iostream>
-#include <semaphore.h>
-#include <sys/mman.h>
-#include <sys/wait.h>
-#include <unistd.h>
-
-int main() {
-    const int SIZE = 4096;
-
-    void* shared_memory = mmap(
-        nullptr, SIZE, PROT_READ | PROT_WRITE,
-        MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-
-    sem_t* sem = static_cast<sem_t*>(mmap(
-        nullptr, sizeof(sem_t), PROT_READ | PROT_WRITE,
-        MAP_SHARED | MAP_ANONYMOUS, -1, 0));
-
-    sem_init(sem, 1, 0); // Shared between processes; initially not signaled
-
-    pid_t pid = fork();
-
-    if (pid == 0) {
-        // Child process: produce data, then signal the parent.
-        std::strcpy(static_cast<char*>(shared_memory),
-                    "Child writes to shared memory");
-        sem_post(sem);
-
-        munmap(shared_memory, SIZE);
-        munmap(sem, sizeof(sem_t));
-        return 0;
-    }
-
-    if (pid > 0) {
-        // Parent process: wait until the child has produced the data.
-        sem_wait(sem);
-        std::cout << "Parent reads: "
-                  << static_cast<char*>(shared_memory) << std::endl;
-
-        waitpid(pid, nullptr, 0);
-        sem_destroy(sem);
-        munmap(shared_memory, SIZE);
-        munmap(sem, sizeof(sem_t));
-        return 0;
-    }
-
-    std::cerr << "Fork failed!" << std::endl;
-    return 1;
-}
-```
-
-Here, the semaphore provides ordering: the parent blocks until the child has written the shared data and signaled that it is ready.
-
-##### Performance Considerations and Best Practices
-
-- Creating processes is generally more expensive than creating threads due to the need to allocate separate memory and resources. Minimize process creation by reusing processes when possible.
-- IPC mechanisms like pipes and shared memory involve overhead. Use the most efficient IPC method for the task at hand and minimize the amount of data transferred.
-- Ensure that IPC and synchronization mechanisms are used correctly to avoid deadlocks, where two or more processes are waiting indefinitely for each other.
-- Properly manage resources such as file descriptors and shared memory to avoid resource leaks and ensure that resources are cleaned up when no longer needed.
-
+The shared headers are part of the examples; retain the `src/cpp/common/`
+directory when copying or building them. These examples require a compatible
+POSIX system, including support for the selected process-shared primitive.
 
 | No. | Example or reference                                          | Description                                           |
 |-----|---------------------------------------------------|-------------------------------------------------------|
 | 1   | [basic_process.cpp](../src/cpp/multiprocessing/basic_process.cpp) | Create and start a basic process                      |
+| — | [spawn_process.cpp](../src/cpp/multiprocessing/spawn_process.cpp) | Preferred external-program launch with posix_spawnp and owned output pipe |
+| — | [exec_process.cpp](../src/cpp/multiprocessing/exec_process.cpp) | Low-level fork/exec comparison with explicit descriptor redirection |
 | 2   | [multiple_processes.cpp](../src/cpp/multiprocessing/multiple_processes.cpp) | Integrate multiple processes for a complex task       |
 | 3   | [exec family reference](https://man7.org/linux/man-pages/man3/exec.3.html) | Manual for execvp/execl/execve; reference material rather than a repository example |
 | 4   | [signals.cpp](../src/cpp/multiprocessing/signals.cpp) | POSIX signals: sigaction, sig_atomic_t, SIGCHLD reaping, kill()+SIGUSR1 |
 | 5   | [named_pipe.cpp](../src/cpp/multiprocessing/named_pipe.cpp) | Named pipes (FIFOs): mkfifo, unrelated-process IPC, EPIPE handling |
 | 6   | [deadlock_antipattern.cpp](../src/cpp/multiprocessing/deadlock_antipattern.cpp) | ⚠️ ANTIPATTERN — circular-wait deadlock; exits via sem_timedwait timeout |
 | 7   | [deadlock_avoidance.cpp](../src/cpp/multiprocessing/deadlock_avoidance.cpp) | Lock-ordering fix for deadlock_antipattern.cpp; both processes acquire locks in same order |
-| 8   | [process_pool.cpp](../src/cpp/multiprocessing/process_pool.cpp) | Use a process pool to manage concurrent tasks         |
+| 8   | [process_pool.cpp](../src/cpp/multiprocessing/process_pool.cpp) | Reuse persistent workers, bound in-flight work, and return results through pipes         |
 | 9   | [message_queue.cpp](../src/cpp/multiprocessing/message_queue.cpp) | Communicate between processes using a message queue   |
 | 10  | [pipe_communication.cpp](../src/cpp/multiprocessing/pipe_communication.cpp) | Communicate between processes using a Pipe            |
 | 11  | [shared_memory.cpp](../src/cpp/multiprocessing/shared_memory.cpp) | Use shared memory to store data between processes     |
 | 12  | [shared_array_antipattern.cpp](../src/cpp/multiprocessing/shared_array_antipattern.cpp) | ⚠️ ANTIPATTERN — mmap shared array without synchronization (torn reads/writes) |
-| 13  | [process_manager.cpp](../src/cpp/multiprocessing/process_manager.cpp) | Manager/worker pattern with fcntl file locking for safe concurrent appends |
+| 13  | [process_manager.cpp](../src/cpp/multiprocessing/process_manager.cpp) | Scoped fcntl locks and private temporary output for concurrent worker appends |
 | 14  | [process_mutex.cpp](../src/cpp/multiprocessing/process_mutex.cpp) | Use a mutex to synchronize access to shared resources |
 | 15  | [process_semaphore.cpp](../src/cpp/multiprocessing/process_semaphore.cpp) | Use a semaphore to control access to shared resources |
 | 16  | [process_barrier.cpp](../src/cpp/multiprocessing/process_barrier.cpp) | Use a barrier to synchronize multiple processes       |
@@ -1311,7 +1211,7 @@ Python's `multiprocessing` module provides process-based parallelism and isolati
 | 1   | [basic_process.py](../src/python/multiprocessing/basic_process.py) | Create and start a basic process                      |
 | 2   | [multiple_processes.py](../src/python/multiprocessing/multiple_processes.py) | Integrate multiple processes for a complex task       |
 | 3   | [deadlock.py](../src/python/multiprocessing/deadlock.py) | Demonstrate a deadlock scenario in multiprocessing    |
-| 4   | [process_pool.py](../src/python/multiprocessing/process_pool.py) | Use a process pool to manage concurrent tasks         |
+| 4   | [process_pool.py](../src/python/multiprocessing/process_pool.py) | Reuse persistent workers, bound in-flight work, and return results through pipes         |
 | 5   | [queue_communication.py](../src/python/multiprocessing/queue_communication.py) | Communicate between processes using a Queue           |
 | 6   | [pipe_communication.py](../src/python/multiprocessing/pipe_communication.py) | Communicate between processes using a Pipe            |
 | 7   | [shared_value.py](../src/python/multiprocessing/shared_value.py) | Use a shared value to store data between processes    |

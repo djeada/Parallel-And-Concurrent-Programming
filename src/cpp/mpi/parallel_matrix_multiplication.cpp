@@ -1,128 +1,88 @@
 /**
- * Parallel Matrix Multiplication
- *
- * This example demonstrates parallel matrix multiplication using
- * MPI_Scatter and MPI_Gather. Each process computes a portion of
- * the result matrix.
- *
- * Key concepts:
- * - MPI_Scatter: Distributes data from root to all processes
- * - MPI_Gather: Collects data from all processes to root
- * - MPI_Bcast: Broadcasts the entire B matrix to all processes
- * - Data decomposition: Each process handles rows_per_process rows of A
- *
- * Algorithm:
- * 1. Root initializes matrices A and B
- * 2. Scatter rows of A to all processes
- * 3. Broadcast entire B to all processes
- * 4. Each process computes its portion of C = A * B
- * 5. Gather results back to root
- *
- * Note: This assumes matrix size N is evenly divisible by process count.
- *
- * Compile: mpicxx -o matrix_mult parallel_matrix_multiplication.cpp
- * Run: mpirun -np 4 ./matrix_mult
+ * C++20 + MPI: scatter/gather uneven row partitions.
+ * Scatterv/Gatherv handle ranks with different row counts, including zero rows.
+ * Contiguous vectors own data; a span gives the printer a non-owning view.
+ * The root verifies the gathered matrix against a sequential reference.
+ * Compile: mpicxx -std=c++20 parallel_matrix_multiplication.cpp -o matrix_mult
+ * Run: mpiexec -n 3 ./matrix_mult
  */
+#include "../common/mpi_support.hpp"
 
-#include <mpi.h>
-
+#include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include <numeric>
+#include <span>
+#include <string_view>
 #include <vector>
 
-constexpr int N = 4;  // Matrix size (N x N)
+constexpr int N = 4;
 
-void print_matrix(const std::string& name, const std::vector<double>& matrix) {
-    std::cout << name << ":" << std::endl;
-    for (int i = 0; i < N; ++i) {
-        for (int j = 0; j < N; ++j) {
+void print_matrix(std::string_view name, std::span<const double> matrix) {
+    std::cout << name << ":\n";
+    for (int row = 0; row < N; ++row) {
+        for (int column = 0; column < N; ++column) {
             std::cout << std::setw(8) << std::fixed << std::setprecision(1)
-                      << matrix[i * N + j];
+                      << matrix[row * N + column];
         }
-        std::cout << std::endl;
+        std::cout << '\n';
     }
-    std::cout << std::endl;
 }
 
 int main(int argc, char* argv[]) {
-    MPI_Init(&argc, &argv);
+    return mpi_example::run(argc, argv, [&]() -> int {
+        int rank = 0;
+        int size = 0;
+        mpi_example::check(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
+        mpi_example::check(MPI_Comm_size(MPI_COMM_WORLD, &size));
 
-    int rank = 0;
-    int size = 0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+        std::vector<int> counts(size);
+        std::vector<int> displacements(size);
+        for (int process = 0; process < size; ++process) {
+            counts[process] = (N / size + (process < N % size ? 1 : 0)) * N;
+        }
+        std::exclusive_scan(counts.begin(), counts.end(), displacements.begin(), 0);
+        const int local_rows = counts[rank] / N;
 
-    // Check that N is divisible by process count
-    if (N % size != 0) {
+        std::vector<double> A(rank == 0 ? N * N : 0);
+        std::vector<double> B(N * N);
+        std::vector<double> C(rank == 0 ? N * N : 0);
+        std::vector<double> local_A(counts[rank]);
+        std::vector<double> local_C(counts[rank]);
         if (rank == 0) {
-            std::cerr << "Error: Matrix size " << N
-                      << " must be divisible by process count " << size
-                      << std::endl;
-        }
-        MPI_Finalize();
-        return 1;
-    }
-
-    int rows_per_process = N / size;
-
-    // Full matrices (only meaningful on root)
-    std::vector<double> A(N * N);
-    std::vector<double> B(N * N);
-    std::vector<double> C(N * N, 0.0);
-
-    // Local portions
-    std::vector<double> local_A(rows_per_process * N);
-    std::vector<double> local_C(rows_per_process * N, 0.0);
-
-    // Root initializes matrices
-    if (rank == 0) {
-        std::cout << "Parallel Matrix Multiplication (" << N << "x" << N
-                  << ") with " << size << " processes" << std::endl;
-        std::cout << "Each process handles " << rows_per_process << " rows"
-                  << std::endl;
-        std::cout << std::endl;
-
-        // Initialize A and B with simple values
-        for (int i = 0; i < N * N; ++i) {
-            A[i] = static_cast<double>(i);
-            B[i] = static_cast<double>(i % N);
+            std::iota(A.begin(), A.end(), 0.0);
+            for (int index = 0; index < N * N; ++index) B[index] = index % N;
+            print_matrix("Matrix A", A);
+            print_matrix("Matrix B", B);
         }
 
-        print_matrix("Matrix A", A);
-        print_matrix("Matrix B", B);
-    }
-
-    // Scatter rows of A to all processes
-    MPI_Scatter(A.data(), rows_per_process * N, MPI_DOUBLE, local_A.data(),
-                rows_per_process * N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-    // Broadcast entire B to all processes
-    MPI_Bcast(B.data(), N * N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-    // Each process computes its portion of C
-    for (int i = 0; i < rows_per_process; ++i) {
-        for (int j = 0; j < N; ++j) {
-            double sum = 0.0;
-            for (int k = 0; k < N; ++k) {
-                sum += local_A[i * N + k] * B[k * N + j];
+        mpi_example::check(MPI_Scatterv(A.data(), counts.data(), displacements.data(),
+            MPI_DOUBLE, local_A.data(), counts[rank], MPI_DOUBLE, 0, MPI_COMM_WORLD));
+        mpi_example::check(MPI_Bcast(B.data(), N * N, MPI_DOUBLE, 0, MPI_COMM_WORLD));
+        for (int row = 0; row < local_rows; ++row) {
+            for (int column = 0; column < N; ++column) {
+                for (int index = 0; index < N; ++index) {
+                    local_C[row * N + column] += local_A[row * N + index] * B[index * N + column];
+                }
             }
-            local_C[i * N + j] = sum;
         }
-    }
+        mpi_example::check(MPI_Gatherv(local_C.data(), counts[rank], MPI_DOUBLE,
+            C.data(), counts.data(), displacements.data(), MPI_DOUBLE, 0, MPI_COMM_WORLD));
 
-    std::cout << "Process " << rank << ": Computed " << rows_per_process
-              << " rows of result" << std::endl;
-
-    // Gather results back to root
-    MPI_Gather(local_C.data(), rows_per_process * N, MPI_DOUBLE, C.data(),
-               rows_per_process * N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-    // Root prints the result
-    if (rank == 0) {
-        std::cout << std::endl;
-        print_matrix("Result Matrix C = A * B", C);
-    }
-
-    MPI_Finalize();
-    return 0;
+        if (rank == 0) {
+            std::vector<double> reference(N * N, 0.0);
+            for (int row = 0; row < N; ++row) {
+                for (int column = 0; column < N; ++column) {
+                    for (int index = 0; index < N; ++index) {
+                        reference[row * N + column] += A[row * N + index] * B[index * N + column];
+                    }
+                }
+            }
+            print_matrix("Result Matrix C = A * B", C);
+            const bool valid = C == reference; // These small integer-valued doubles are exact.
+            std::cout << "Matches sequential reference: " << std::boolalpha << valid << '\n';
+            if (!valid) return 1;
+        }
+        return 0;
+    });
 }

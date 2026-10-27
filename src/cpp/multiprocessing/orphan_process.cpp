@@ -1,4 +1,7 @@
 /**
+ * LIFECYCLE OBSERVATION: intentional parent exit, not a worker ownership model.
+ * Start with basic_process.cpp for scoped child management.
+ *
  * Orphan Process
  *
  * This example demonstrates orphan processes - child processes whose
@@ -8,7 +11,7 @@
  * - When a parent exits, its children become "orphans"
  * - The init process (PID 1) or systemd adopts orphaned children
  * - Orphaned children continue running normally
- * - getppid() will return 1 (or init's PID) after adoption
+ * - The new parent may be PID 1 or a configured subreaper
  *
  * Orphan processes are not inherently bad - they're properly managed
  * by the OS. However, they can make process hierarchy tracking harder.
@@ -36,9 +39,9 @@ int main() {
 
         sleep(2);  // Wait for parent to exit
 
-        // After parent exits, getppid() returns 1 (init)
+        // After parent exit, the kernel reparents to init or a subreaper.
         std::cout << "Child: After delay, Parent PID=" << getppid() << "\n";
-        std::cout << "Child: I am now an orphan, adopted by init\n";
+        std::cout << "Child: The kernel has reparented me\n";
 
         sleep(3);
         std::cout << "Child: Exiting\n";

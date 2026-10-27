@@ -1,4 +1,6 @@
 /**
+ * FUTURE-BASED THREADING: std::mutex blocks a worker thread, not a coroutine.
+ *
  * Mutex Protection in Async Tasks
  *
  * This example demonstrates protecting shared resources
