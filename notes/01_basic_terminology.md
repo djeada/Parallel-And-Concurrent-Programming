@@ -197,7 +197,7 @@ The following states form a useful scheduling model. Operating systems and langu
 | Waiting / blocked | Unable to continue yet. | An event occurs, a timer expires, or a resource becomes available. |
 | Terminated | Execution has ended. | No further execution; owners still collect results and release resources. |
 
-A stopped process, such as one suspended by a debugger or a signal, is distinct from a process waiting for I/O. A POSIX zombie has already terminated: only its exit information remains for the parent to collect. See [process lifetimes](03_multiprocessing.md#zombie-process) for the distinction between zombies and orphans.
+A stopped process, such as one suspended by a debugger or a signal, is distinct from a process waiting for I/O. A POSIX zombie has already terminated: only its exit information remains for the parent to collect. See [process lifetimes](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/notes/03_multiprocessing.md#zombie-process) for the distinction between zombies and orphans.
 
 Practical Implications:
 

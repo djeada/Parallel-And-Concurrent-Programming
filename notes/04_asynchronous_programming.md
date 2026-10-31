@@ -254,26 +254,26 @@ In C++, asynchronous and concurrent work can be expressed with facilities such a
 
 ##### Choose the Execution Model First
 
-The [C++ guide](../src/cpp/README.md) uses **C++20** as its baseline and separates
+The [C++ guide](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/README.md) uses **C++20** as its baseline and separates
 modern solutions, older comparisons, and low-level mechanics. A feature's
 introduction date does not decide whether it fits a problem today.
 
 | Problem | Approach | Execution model |
 |---|---|---|
 | A few independent results | `std::async` with retained futures | C++11 facility still useful in modern code; `get()` blocks the caller |
-| Many small tasks with results | [Owned worker pool](../src/cpp/asynchrony/thread_pool_futures.cpp) | C++20 `std::jthread` workers; packaged tasks propagate results and exceptions |
-| Pause, resume, or cancel a worker | [Stop-aware waits](../src/cpp/asynchrony/pause_resume.cpp) | C++20 stop tokens and `condition_variable_any` |
-| Sort or reduce independent data | [Standard parallel algorithms](../src/cpp/multithreading/parallel_algorithms.cpp) | C++17 execution policies remain the higher-level starting point |
-| Learn coroutine suspension and return types | [Generator](../src/cpp/asynchrony/coroutine_generator.cpp) and [Task](../src/cpp/asynchrony/coroutine_task.cpp) | C++20 mechanics; these examples execute synchronously |
-| Event-driven HTTP | [Bounded libcurl multi transfers](../src/cpp/asynchrony/parallel_fetch.cpp) | Multiple requests progressed on one event-loop thread |
-| Event-driven TCP | [Bounded poll-based echo service](../src/cpp/asynchrony/distributed_computing.cpp) | Owned nonblocking sockets, per-client output limits, and backpressure |
+| Many small tasks with results | [Owned worker pool](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/thread_pool_futures.cpp) | C++20 `std::jthread` workers; packaged tasks propagate results and exceptions |
+| Pause, resume, or cancel a worker | [Stop-aware waits](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/pause_resume.cpp) | C++20 stop tokens and `condition_variable_any` |
+| Sort or reduce independent data | [Standard parallel algorithms](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/parallel_algorithms.cpp) | C++17 execution policies remain the higher-level starting point |
+| Learn coroutine suspension and return types | [Generator](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/coroutine_generator.cpp) and [Task](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/coroutine_task.cpp) | C++20 mechanics; these examples execute synchronously |
+| Event-driven HTTP | [Bounded libcurl multi transfers](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/parallel_fetch.cpp) | Multiple requests progressed on one event-loop thread |
+| Event-driven TCP | [Bounded poll-based echo service](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/distributed_computing.cpp) | Owned nonblocking sockets, per-client output limits, and backpressure |
 | Coroutine-based network I/O | An async I/O library such as Boost.Asio | Library-provided event loop, I/O operations, and coroutine integration |
 
 The `async_mutex`, `async_barrier`, `async_semaphore`, and
 `async_producer_consumer` filenames refer to threaded/future-based work. Their
 waits block OS threads; they are not awaitable coroutine synchronization tools.
 For a bounded queue with explicit closure, start with
-[producer_consumer.cpp](../src/cpp/multithreading/producer_consumer.cpp).
+[producer_consumer.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/producer_consumer.cpp).
 
 ##### Asynchronous Tasks with `std::async`
 
@@ -468,11 +468,11 @@ int main() {
 }
 ```
 
-For event-driven composition, use a library such as [Boost.Asio](https://www.boost.org/doc/libs/latest/doc/html/boost_asio/overview/composition/cpp20_coroutines.html) with asynchronous operations. The local [coroutine_task.cpp](../src/cpp/asynchrony/coroutine_task.cpp) only demonstrates synchronous `co_await` mechanics; it supplies no I/O scheduler.
+For event-driven composition, use a library such as [Boost.Asio](https://www.boost.org/doc/libs/latest/doc/html/boost_asio/overview/composition/cpp20_coroutines.html) with asynchronous operations. The local [coroutine_task.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/coroutine_task.cpp) only demonstrates synchronous `co_await` mechanics; it supplies no I/O scheduler.
 
 ##### Performance Considerations and Best Practices
 
-- For HTTP I/O, [parallel_fetch.cpp](../src/cpp/asynchrony/parallel_fetch.cpp) uses libcurl multi with at most four in-flight transfers, scoped handles, timeouts, and per-request error reporting. It creates no thread per URL.
+- For HTTP I/O, [parallel_fetch.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/parallel_fetch.cpp) uses libcurl multi with at most four in-flight transfers, scoped handles, timeouts, and per-request error reporting. It creates no thread per URL.
 - Use asynchronous or concurrent execution when it helps keep the caller responsive or overlap independent work.
 - Handle exceptions from asynchronous operations explicitly, especially when retrieving results through futures.
 - Protect shared mutable state with appropriate synchronization when work can run concurrently.
@@ -481,28 +481,28 @@ For event-driven composition, use a library such as [Boost.Asio](https://www.boo
 
 | No. | Filename                                                                                         | Description                                              |
 |-----|--------------------------------------------------------------------------------------------------|----------------------------------------------------------|
-| 1   | [basic_async.cpp](../src/cpp/asynchrony/basic_async.cpp) | Create and start a basic asynchronous task              |
-| 2   | [parallel_futures.cpp](../src/cpp/asynchrony/parallel_futures.cpp) | Launch multiple parallel tasks and collect results via `std::future` |
-| 3   | [future.cpp](../src/cpp/asynchrony/future.cpp) | Read the result of a completed `std::future`             |
-| 4   | [shared_future.cpp](../src/cpp/asynchrony/shared_future.cpp) | Broadcast one result to many consumers with `std::shared_future` |
-| 5   | [future_timed_wait.cpp](../src/cpp/asynchrony/future_timed_wait.cpp) | Timed waits with `wait_for`/`wait_until`/`future_status` |
-| 6   | [async_exception.cpp](../src/cpp/asynchrony/async_exception.cpp) | Exception propagation through futures and `promise::set_exception` |
-| 7   | [async_antipatterns.cpp](../src/cpp/asynchrony/async_antipatterns.cpp) | ⚠️ ANTIPATTERN: forgotten future, default launch policy, double `.get()` |
-| 8   | [promise_future.cpp](../src/cpp/asynchrony/promise_future.cpp) | Use promises and futures to pass values between tasks    |
-| 9   | [packaged_task.cpp](../src/cpp/asynchrony/packaged_task.cpp) | Wrap a callable with `std::packaged_task` for deferred execution |
-| 10  | [thread_pool_futures.cpp](../src/cpp/asynchrony/thread_pool_futures.cpp) | C++20 owned worker pool with packaged tasks, futures, and draining shutdown |
-| 11  | [pause_resume.cpp](../src/cpp/asynchrony/pause_resume.cpp) | Pause, resume, and cancel a C++20 worker with stop-aware waits |
-| 12  | [heavy_functions.cpp](../src/cpp/asynchrony/heavy_functions.cpp) | Execute heavy functions asynchronously                   |
-| 13  | [async_producer_consumer.cpp](../src/cpp/asynchrony/async_producer_consumer.cpp) | Future-based tasks with a bounded queue, explicit closure, and draining |
-| 14  | [recursive_sum.cpp](../src/cpp/asynchrony/recursive_sum.cpp) | Parallel divide-and-conquer sum with `std::async`        |
-| 15  | [async_semaphore.cpp](../src/cpp/asynchrony/async_semaphore.cpp) | Bound concurrent worker access with `std::counting_semaphore`      |
-| 16  | [async_barrier.cpp](../src/cpp/asynchrony/async_barrier.cpp) | Synchronize OS worker threads with a blocking `std::barrier` |
-| 17  | [coroutine_generator.cpp](../src/cpp/asynchrony/coroutine_generator.cpp) | C++20 synchronous lazy generator with `co_yield`                     |
-| 18  | [coroutine_task.cpp](../src/cpp/asynchrony/coroutine_task.cpp) | C++20 synchronous `co_await` mechanics with a minimal `Task<T>` |
-| 19  | [async_mutex.cpp](../src/cpp/asynchrony/async_mutex.cpp) | Protect shared state in threaded tasks with a mutex    |
-| 20  | [parallel_fetch.cpp](../src/cpp/asynchrony/parallel_fetch.cpp) | Bounded asynchronous HTTP on one libcurl multi event-loop thread                |
-| 21  | [async_server_antipattern.cpp](../src/cpp/asynchrony/async_server_antipattern.cpp) | ⚠️ ANTIPATTERN: detached-thread-per-connection server    |
-| 22  | [distributed_computing.cpp](../src/cpp/asynchrony/distributed_computing.cpp) | Bounded nonblocking TCP echo protocol with owned sockets and backpressure  |
+| 1   | [basic_async.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/basic_async.cpp) | Create and start a basic asynchronous task              |
+| 2   | [parallel_futures.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/parallel_futures.cpp) | Launch multiple parallel tasks and collect results via `std::future` |
+| 3   | [future.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/future.cpp) | Read the result of a completed `std::future`             |
+| 4   | [shared_future.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/shared_future.cpp) | Broadcast one result to many consumers with `std::shared_future` |
+| 5   | [future_timed_wait.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/future_timed_wait.cpp) | Timed waits with `wait_for`/`wait_until`/`future_status` |
+| 6   | [async_exception.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/async_exception.cpp) | Exception propagation through futures and `promise::set_exception` |
+| 7   | [async_antipatterns.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/async_antipatterns.cpp) | ⚠️ ANTIPATTERN: forgotten future, default launch policy, double `.get()` |
+| 8   | [promise_future.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/promise_future.cpp) | Use promises and futures to pass values between tasks    |
+| 9   | [packaged_task.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/packaged_task.cpp) | Wrap a callable with `std::packaged_task` for deferred execution |
+| 10  | [thread_pool_futures.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/thread_pool_futures.cpp) | C++20 owned worker pool with packaged tasks, futures, and draining shutdown |
+| 11  | [pause_resume.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/pause_resume.cpp) | Pause, resume, and cancel a C++20 worker with stop-aware waits |
+| 12  | [heavy_functions.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/heavy_functions.cpp) | Execute heavy functions asynchronously                   |
+| 13  | [async_producer_consumer.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/async_producer_consumer.cpp) | Future-based tasks with a bounded queue, explicit closure, and draining |
+| 14  | [recursive_sum.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/recursive_sum.cpp) | Parallel divide-and-conquer sum with `std::async`        |
+| 15  | [async_semaphore.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/async_semaphore.cpp) | Bound concurrent worker access with `std::counting_semaphore`      |
+| 16  | [async_barrier.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/async_barrier.cpp) | Synchronize OS worker threads with a blocking `std::barrier` |
+| 17  | [coroutine_generator.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/coroutine_generator.cpp) | C++20 synchronous lazy generator with `co_yield`                     |
+| 18  | [coroutine_task.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/coroutine_task.cpp) | C++20 synchronous `co_await` mechanics with a minimal `Task<T>` |
+| 19  | [async_mutex.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/async_mutex.cpp) | Protect shared state in threaded tasks with a mutex    |
+| 20  | [parallel_fetch.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/parallel_fetch.cpp) | Bounded asynchronous HTTP on one libcurl multi event-loop thread                |
+| 21  | [async_server_antipattern.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/async_server_antipattern.cpp) | ⚠️ ANTIPATTERN: detached-thread-per-connection server    |
+| 22  | [distributed_computing.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/distributed_computing.cpp) | Bounded nonblocking TCP echo protocol with owned sockets and backpressure  |
 
 #### Examples in Python
 
@@ -682,20 +682,20 @@ In this example, `AsyncCounter` is an asynchronous iterable that generates numbe
 
 | No. | Filename                                                                                         | Description                                              |
 |-----|--------------------------------------------------------------------------------------------------|----------------------------------------------------------|
-| 1   | [basic_async.py](../src/python/asynchrony/basic_async.py) | Create and start a basic asynchronous task              |
-| 2   | [future_create_task.py](../src/python/asynchrony/future_create_task.py) | Create a task using Future and run it asynchronously     |
-| 3   | [future_callback.py](../src/python/asynchrony/future_callback.py) | Use callbacks with Future objects               |
-| 4   | [pause_resume.py](../src/python/asynchrony/pause_resume.py) | Pause and resume asynchronous tasks                      |
-| 5   | [run_heavy_functions.py](../src/python/asynchrony/run_heavy_functions.py) | Execute heavy functions asynchronously                   |
-| 6   | [data_sharing_queue.py](../src/python/asynchrony/data_sharing_queue.py) | Share data between asynchronous tasks using a Queue      |
-| 7   | [semaphore.py](../src/python/asynchrony/semaphore.py) | Control access to shared resources with a Semaphore      |
-| 8   | [producer_consumer.py](../src/python/asynchrony/producer_consumer.py) | Implement a producer-consumer pattern asynchronously     |
-| 9   | [fetch_parallel.py](../src/python/asynchrony/fetch_parallel.py) | Fetch data in parallel using async tasks                 |
-| 10  | [mutex.py](../src/python/asynchrony/mutex.py) | Use a Mutex to synchronize access to shared resources    |
-| 11  | [barrier.py](../src/python/asynchrony/barrier.py) | Synchronize multiple asynchronous tasks using a Barrier |
-| 12  | [async_generator.py](../src/python/asynchrony/async_generator.py) | Create and use asynchronous generators                   |
-| 13  | [async_server.py](../src/python/asynchrony/async_server.py) | Implement an asynchronous server                         |
-| 14  | [distributed_computing.py](../src/python/asynchrony/distributed_computing.py) | Demonstrate distributed computing with async tasks       |
+| 1   | [basic_async.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/basic_async.py) | Create and start a basic asynchronous task              |
+| 2   | [future_create_task.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/future_create_task.py) | Create a task using Future and run it asynchronously     |
+| 3   | [future_callback.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/future_callback.py) | Use callbacks with Future objects               |
+| 4   | [pause_resume.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/pause_resume.py) | Pause and resume asynchronous tasks                      |
+| 5   | [run_heavy_functions.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/run_heavy_functions.py) | Execute heavy functions asynchronously                   |
+| 6   | [data_sharing_queue.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/data_sharing_queue.py) | Share data between asynchronous tasks using a Queue      |
+| 7   | [semaphore.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/semaphore.py) | Control access to shared resources with a Semaphore      |
+| 8   | [producer_consumer.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/producer_consumer.py) | Implement a producer-consumer pattern asynchronously     |
+| 9   | [fetch_parallel.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/fetch_parallel.py) | Fetch data in parallel using async tasks                 |
+| 10  | [mutex.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/mutex.py) | Use a Mutex to synchronize access to shared resources    |
+| 11  | [barrier.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/barrier.py) | Synchronize multiple asynchronous tasks using a Barrier |
+| 12  | [async_generator.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/async_generator.py) | Create and use asynchronous generators                   |
+| 13  | [async_server.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/async_server.py) | Implement an asynchronous server                         |
+| 14  | [distributed_computing.py](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/asynchrony/distributed_computing.py) | Demonstrate distributed computing with async tasks       |
 
 #### Examples in JavaScript
 
@@ -884,26 +884,26 @@ Using Promises or `async`/`await` leads to cleaner and more maintainable code co
 
 | No. | Filename                                                                                         | Description                                              |
 |-----|--------------------------------------------------------------------------------------------------|----------------------------------------------------------|
-| 1   | [01_basic_async.js](../src/js/asynchrony/01_basic_async.js) | Create and start a basic asynchronous task              |
-| 2   | [02_future_create_task.js](../src/js/asynchrony/02_future_create_task.js) | Create a task using Future and run it asynchronously     |
-| 3   | [03_future_callback.js](../src/js/asynchrony/03_future_callback.js) | Read the result of a completed Future task               |
-| 4   | [04_pause_resume.js](../src/js/asynchrony/04_pause_resume.js) | Pause and resume asynchronous tasks with setInterval     |
-| 5   | [05_run_heavy_functions.js](../src/js/asynchrony/05_run_heavy_functions.js) | Execute heavy functions asynchronously with setImmediate yielding |
-| 6   | [06_data_sharing_queue.js](../src/js/asynchrony/06_data_sharing_queue.js) | Share data between async tasks using a bounded async queue |
-| 7   | [07_semaphore.js](../src/js/asynchrony/07_semaphore.js) | Limit concurrency with a Promise-based semaphore         |
-| 8   | [08_producer_consumer.js](../src/js/asynchrony/08_producer_consumer.js) | Producer-consumer with async queue and poison-pill termination |
-| 9   | [09_fetch_parallel.js](../src/js/asynchrony/09_fetch_parallel.js) | Sequential vs parallel HTTP fetch; `Promise.allSettled` |
-| 10  | [10_mutex.js](../src/js/asynchrony/10_mutex.js) | Protect shared state with a Promise-based async mutex    |
-| 11  | [11_barrier.js](../src/js/asynchrony/11_barrier.js) | Synchronize async tasks across phases with a reusable barrier |
-| 12  | [12_async_generator.js](../src/js/asynchrony/12_async_generator.js) | `async function*`, `for await...of`, transform/filter pipelines |
-| 13  | [13_async_server.js](../src/js/asynchrony/13_async_server.js) | Async HTTP server with route handling and graceful shutdown |
-| 14  | [14_distributed_computing.js](../src/js/asynchrony/14_distributed_computing.js) | Distributed task dispatch over TCP (server / worker / client roles) |
-| 15  | [15_promise_combinators.js](../src/js/asynchrony/15_promise_combinators.js) | `race()` timeout, `any()` first-success, `all()` fail-fast, `allSettled()` |
-| 16  | [16_abort_controller.js](../src/js/asynchrony/16_abort_controller.js) | AbortController, `AbortSignal.timeout()`, `AbortSignal.any()`, fetch cancellation |
-| 17  | [17_async_antipatterns.js](../src/js/asynchrony/17_async_antipatterns.js) | ⚠️ ANTIPATTERN: unhandled rejection, `async` in `forEach`, forgotten `await`, sequential loop |
-| 18  | [18_event_loop.js](../src/js/asynchrony/18_event_loop.js) | Event loop phases: `nextTick` → microtasks → timers → `setImmediate`; starvation |
-| 19  | [19_retry_backoff.js](../src/js/asynchrony/19_retry_backoff.js) | Retry with exponential backoff + jitter; circuit breaker pattern |
-| 20  | [20_async_stream.js](../src/js/asynchrony/20_async_stream.js) | `stream.pipeline()`, `for await` on Readable, manual write+drain backpressure |
+| 1   | [01_basic_async.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/01_basic_async.js) | Create and start a basic asynchronous task              |
+| 2   | [02_future_create_task.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/02_future_create_task.js) | Create a task using Future and run it asynchronously     |
+| 3   | [03_future_callback.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/03_future_callback.js) | Read the result of a completed Future task               |
+| 4   | [04_pause_resume.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/04_pause_resume.js) | Pause and resume asynchronous tasks with setInterval     |
+| 5   | [05_run_heavy_functions.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/05_run_heavy_functions.js) | Execute heavy functions asynchronously with setImmediate yielding |
+| 6   | [06_data_sharing_queue.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/06_data_sharing_queue.js) | Share data between async tasks using a bounded async queue |
+| 7   | [07_semaphore.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/07_semaphore.js) | Limit concurrency with a Promise-based semaphore         |
+| 8   | [08_producer_consumer.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/08_producer_consumer.js) | Producer-consumer with async queue and poison-pill termination |
+| 9   | [09_fetch_parallel.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/09_fetch_parallel.js) | Sequential vs parallel HTTP fetch; `Promise.allSettled` |
+| 10  | [10_mutex.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/10_mutex.js) | Protect shared state with a Promise-based async mutex    |
+| 11  | [11_barrier.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/11_barrier.js) | Synchronize async tasks across phases with a reusable barrier |
+| 12  | [12_async_generator.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/12_async_generator.js) | `async function*`, `for await...of`, transform/filter pipelines |
+| 13  | [13_async_server.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/13_async_server.js) | Async HTTP server with route handling and graceful shutdown |
+| 14  | [14_distributed_computing.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/14_distributed_computing.js) | Distributed task dispatch over TCP (server / worker / client roles) |
+| 15  | [15_promise_combinators.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/15_promise_combinators.js) | `race()` timeout, `any()` first-success, `all()` fail-fast, `allSettled()` |
+| 16  | [16_abort_controller.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/16_abort_controller.js) | AbortController, `AbortSignal.timeout()`, `AbortSignal.any()`, fetch cancellation |
+| 17  | [17_async_antipatterns.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/17_async_antipatterns.js) | ⚠️ ANTIPATTERN: unhandled rejection, `async` in `forEach`, forgotten `await`, sequential loop |
+| 18  | [18_event_loop.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/18_event_loop.js) | Event loop phases: `nextTick` → microtasks → timers → `setImmediate`; starvation |
+| 19  | [19_retry_backoff.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/19_retry_backoff.js) | Retry with exponential backoff + jitter; circuit breaker pattern |
+| 20  | [20_async_stream.js](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/asynchrony/20_async_stream.js) | `stream.pipeline()`, `for await` on Readable, manual write+drain backpressure |
 
 ### Summary
 

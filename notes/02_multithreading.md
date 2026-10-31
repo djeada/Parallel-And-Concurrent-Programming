@@ -6,7 +6,7 @@ Threads may run in parallel on different cores or take turns on one core. They c
 
 The main correctness question is who may read or change each shared value. Establish that rule before choosing a synchronization primitive.
 
-The working C++ examples use **C++20**. Start with the [modern C++ examples](#examples-in-c); older implementations and intentional failure demonstrations are labeled separately.
+The working C++ examples use **C++20**. Start with the [modern C++ examples](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/notes/02_multithreading.md#examples-in-c); older implementations and intentional failure demonstrations are labeled separately.
 
 ### Thread Pool vs On-Demand Thread
 
@@ -430,7 +430,7 @@ Analogy:
 
 *Imagine two cars on a narrow one-lane bridge coming from opposite ends. Each driver refuses to back up, and neither can move forward. Both are blocked indefinitely, waiting for the other to yield.*
 
-**Antipattern:** this program can hang. Use [scoped locking](../src/cpp/multithreading/scoped_lock_deadlock_avoidance.cpp) to acquire both mutexes safely.
+**Antipattern:** this program can hang. Use [scoped locking](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/scoped_lock_deadlock_avoidance.cpp) to acquire both mutexes safely.
 
 Example:
 
@@ -493,7 +493,7 @@ Analogy:
 
 *Picture two people in a narrow hallway who both step aside to let the other pass—only to keep stepping in the same direction repeatedly. They’re not standing still, but neither can get by the other.*
 
-**Antipattern:** repeated retries can prevent useful progress. Prefer a consistent acquisition strategy or [scoped locking](../src/cpp/multithreading/scoped_lock_deadlock_avoidance.cpp).
+**Antipattern:** repeated retries can prevent useful progress. Prefer a consistent acquisition strategy or [scoped locking](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/scoped_lock_deadlock_avoidance.cpp).
 
 Example:
 
@@ -716,7 +716,7 @@ Choose using measurements and the library's concurrency requirements. More threa
 
 #### Examples in C++
 
-Use **C++20** for the main examples. The [C++ guide](../src/cpp/README.md)
+Use **C++20** for the main examples. The [C++ guide](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/README.md)
 separates the modern learning path, older comparison implementations, low-level
 mechanisms, and intentional antipatterns. Choose the abstraction that matches the
 problem; mutexes and futures remain useful even though they predate C++20.
@@ -747,7 +747,7 @@ int main() {
 `std::execution::par` permits parallelism but may execute sequentially. Callbacks
 must avoid data races; reductions may combine values in a different order, so
 floating-point rounding can change. Small inputs usually do not benefit from
-parallel execution. [parallel_algorithms.cpp](../src/cpp/multithreading/parallel_algorithms.cpp)
+parallel execution. [parallel_algorithms.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/parallel_algorithms.cpp)
 uses a larger input and validates the result. These algorithms were introduced
 in C++17 and remain the higher-level starting point in this C++20 path. See
 [execution-policy semantics](https://eel.is/c++draft/algorithms.parallel.exec).
@@ -793,14 +793,14 @@ A stop request asks a worker to return; the worker must cooperate. Use
 A plain `sleep_for`, semaphore acquisition, or blocking socket call does not
 become interruptible just because the thread owns a stop token.
 
-[thread_life_cycle.cpp](../src/cpp/multithreading/thread_life_cycle.cpp) stops two
-workers, [scheduler.cpp](../src/cpp/multithreading/scheduler.cpp) interrupts a timer
-wait, and [pause_resume.cpp](../src/cpp/asynchrony/pause_resume.cpp) can stop while
+[thread_life_cycle.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/thread_life_cycle.cpp) stops two
+workers, [scheduler.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/scheduler.cpp) interrupts a timer
+wait, and [pause_resume.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/pause_resume.cpp) can stop while
 paused. See [stop-aware waits](https://eel.is/c++draft/thread.condvarany.intwait).
 
 Call `join()` explicitly when a result is needed before scope exit, or when
 finite work must complete without first receiving a cancellation request. The
-[bounded queue example](../src/cpp/multithreading/producer_consumer.cpp) joins the
+[bounded queue example](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/producer_consumer.cpp) joins the
 producer, closes the queue, then drains accepted work before consumers finish.
 For several cancellable workers, request stop on all of them before waiting for
 any one of them. Automatic joining still blocks if a worker cannot finish.
@@ -834,7 +834,7 @@ int main() {
 
 For several mutexes, one `std::scoped_lock lock(mutex_a, mutex_b);` acquires them
 with deadlock avoidance. For waiting or a non-blocking attempt, use
-`std::unique_lock`; [try_lock.cpp](../src/cpp/multithreading/try_lock.cpp) retains
+`std::unique_lock`; [try_lock.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/try_lock.cpp) retains
 RAII ownership even after a successful `try_lock()`. There is usually no need to
 pair raw `lock()` and `unlock()` calls in application code.
 
@@ -842,13 +842,13 @@ pair raw `lock()` and `unlock()` calls in application code.
 
 | Requirement | Modern starting point | Example |
 |---|---|---|
-| Wait for a predicate involving shared state | Condition variable + mutex + predicate | [condition_variable.cpp](../src/cpp/multithreading/condition_variable.cpp) |
-| Wait for a single atomic value to change | `atomic::wait` and `notify_one` | [atomic_wait.cpp](../src/cpp/multithreading/atomic_wait.cpp) |
-| Limit concurrent resource users | `std::counting_semaphore` | [std_semaphore.cpp](../src/cpp/multithreading/std_semaphore.cpp) |
-| Wait for one batch of arrivals | `std::latch` | [std_latch.cpp](../src/cpp/multithreading/std_latch.cpp) |
-| Meet at the end of repeated phases | `std::barrier` | [std_barrier.cpp](../src/cpp/multithreading/std_barrier.cpp) |
-| Transfer work with backpressure and completion | Bounded queue with explicit closure | [producer_consumer.cpp](../src/cpp/multithreading/producer_consumer.cpp) |
-| Reuse workers and retrieve results or exceptions | Pool with `std::packaged_task` and futures | [thread_pool_futures.cpp](../src/cpp/asynchrony/thread_pool_futures.cpp) |
+| Wait for a predicate involving shared state | Condition variable + mutex + predicate | [condition_variable.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/condition_variable.cpp) |
+| Wait for a single atomic value to change | `atomic::wait` and `notify_one` | [atomic_wait.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/atomic_wait.cpp) |
+| Limit concurrent resource users | `std::counting_semaphore` | [std_semaphore.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/std_semaphore.cpp) |
+| Wait for one batch of arrivals | `std::latch` | [std_latch.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/std_latch.cpp) |
+| Meet at the end of repeated phases | `std::barrier` | [std_barrier.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/std_barrier.cpp) |
+| Transfer work with backpressure and completion | Bounded queue with explicit closure | [producer_consumer.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/producer_consumer.cpp) |
+| Reuse workers and retrieve results or exceptions | Pool with `std::packaged_task` and futures | [thread_pool_futures.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/asynchrony/thread_pool_futures.cpp) |
 
 For a condition variable, check the predicate while holding its mutex. A semaphore
 bounds concurrent access but does not protect mutable data shared by several
@@ -858,8 +858,8 @@ letting one worker leave early can strand the others.
 Use `thread_local` for per-thread state and an atomic read-modify-write operation
 for an independent shared counter. Neither requires replacing a mutex that
 protects an invariant over several related values. See
-[thread_local_storage.cpp](../src/cpp/multithreading/thread_local_storage.cpp) and
-[atomic.cpp](../src/cpp/multithreading/atomic.cpp).
+[thread_local_storage.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/thread_local_storage.cpp) and
+[atomic.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/atomic.cpp).
 
 ##### Memory Orderings
 
@@ -977,25 +977,25 @@ What is happening:
 
 Study these after the modern examples. They explain existing code and primitive
 implementation details; they are kept separately in
-[`multithreading/legacy/`](../src/cpp/multithreading/legacy/).
+[`multithreading/legacy/`](https://github.com/djeada/Parallel-And-Concurrent-Programming/tree/master/src/cpp/multithreading/legacy).
 
 | Older example | Modern starting point |
 |---|---|
-| [raw_pthread.cpp](../src/cpp/multithreading/legacy/raw_pthread.cpp) | `std::jthread` for scoped workers; parallel algorithms for collection operations |
-| [is_joinable.cpp](../src/cpp/multithreading/legacy/is_joinable.cpp) | `std::jthread` for automatic ownership |
-| [thread_wrapper.cpp](../src/cpp/multithreading/legacy/thread_wrapper.cpp) | `std::jthread` instead of a custom joining destructor |
-| [semaphore.cpp](../src/cpp/multithreading/legacy/semaphore.cpp) | `std::counting_semaphore` |
-| [latch.cpp](../src/cpp/multithreading/legacy/latch.cpp) | `std::latch` |
-| [barrier.cpp](../src/cpp/multithreading/legacy/barrier.cpp) | `std::barrier` |
+| [raw_pthread.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/legacy/raw_pthread.cpp) | `std::jthread` for scoped workers; parallel algorithms for collection operations |
+| [is_joinable.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/legacy/is_joinable.cpp) | `std::jthread` for automatic ownership |
+| [thread_wrapper.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/legacy/thread_wrapper.cpp) | `std::jthread` instead of a custom joining destructor |
+| [semaphore.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/legacy/semaphore.cpp) | `std::counting_semaphore` |
+| [latch.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/legacy/latch.cpp) | `std::latch` |
+| [barrier.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/legacy/barrier.cpp) | `std::barrier` |
 
 `std::thread` remains available when explicit ownership control is required.
 Detaching discards the normal join boundary and makes shared-state lifetime and
 shutdown harder to manage. Study
-[detached_thread_antipattern.cpp](../src/cpp/multithreading/detached_thread_antipattern.cpp)
+[detached_thread_antipattern.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/detached_thread_antipattern.cpp)
 as an intentional failure example rather than a recommended worker pattern.
 Other `_antipattern` files demonstrate data races, deadlock, livelock, starvation,
 and false sharing. Low-level experiments such as
-[spinlock.cpp](../src/cpp/multithreading/spinlock.cpp) are labeled separately;
+[spinlock.cpp](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/multithreading/spinlock.cpp) are labeled separately;
 start with a mutex and measure before choosing busy waiting.
 
 ##### Performance Considerations and Best Practices
@@ -1274,21 +1274,21 @@ Here are some example code snippets demonstrating various aspects of multithread
 
 | #  | Example                  | Description                                                                   |
 |----|--------------------------|-------------------------------------------------------------------------------|
-| 1  | [single_worker_thread](../src/python/multithreading/single_worker_thread.py)  | Introduce the concept of threads by creating a single worker thread.         |
-| 2  |  [thread_subclass](../src/python/multithreading/thread_subclass.py)        | Demonstrate how to create a custom thread class by subclassing `Thread`.     |
-| 3  |  [multiple_worker_threads](../src/python/multithreading/multiple_worker_threads.py)  | Show how to create and manage multiple worker threads.                      |
-| 4  |  [race_condition](../src/python/multithreading/race_condition.py)        | Explain race conditions and their impact on multi-threaded applications.      |
-| 5  |  [mutex](../src/python/multithreading/mutex.py)    | Illustrate the use of mutexes to protect shared resources and avoid race conditions. |
-| 6  |  [semaphore](../src/python/multithreading/semaphore.py)           | Demonstrate the use of semaphores to limit the number of concurrent threads accessing a shared resource. |
-| 7  |  [producer_consumer](../src/python/multithreading/producer_consumer.py)    | Present a classic multi-threading problem (Producer-Consumer) and its solution using synchronization mechanisms like mutexes and condition variables. |
-| 8  |  [fetch_parallel](../src/python/multithreading/fetch_parallel.py)        | Showcase a practical application of multi-threading for parallel fetching of data from multiple sources. |
-| 9  |  [merge_sort](../src/python/multithreading/merge_sort.py)           | Demonstrate a threaded merge sort and the limits or potential benefits of parallel work depending on the Python runtime and workload. |
-| 10 |  [schedule_every_n_sec](../src/python/multithreading/schedule_every_n_sec.py)   | Show how to schedule tasks to run periodically at fixed intervals using threads. |
-| 11 |  [barrier](../src/python/multithreading/barrier.py)          | Demonstrate the use of barriers to synchronize multiple threads at a specific point in the execution. |
-| 12 |  [thread_local_storage](../src/python/multithreading/thread_local_storage.py)   | Illustrate the concept of Thread Local Storage (TLS) and how it can be used to store thread-specific data. |
-| 13 |  [thread_pool](../src/python/multithreading/thread_pool.py)          | Show how to create and use a thread pool to efficiently manage a fixed number of worker threads for executing multiple tasks. |
-| 14 |  [reader_writer_lock](../src/python/multithreading/reader_writer_lock.py)   | Explain the concept of Reader-Writer Locks and their use for efficient access to shared resources with multiple readers and a single writer. |
-| 15 |  [daemon_demo](../src/python/multithreading/daemon_demo.py)   | Demonstrate daemon threads, which do not keep the Python process alive and may be stopped during interpreter shutdown. |
+| 1  | [single_worker_thread](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/single_worker_thread.py)  | Introduce the concept of threads by creating a single worker thread.         |
+| 2  |  [thread_subclass](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/thread_subclass.py)        | Demonstrate how to create a custom thread class by subclassing `Thread`.     |
+| 3  |  [multiple_worker_threads](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/multiple_worker_threads.py)  | Show how to create and manage multiple worker threads.                      |
+| 4  |  [race_condition](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/race_condition.py)        | Explain race conditions and their impact on multi-threaded applications.      |
+| 5  |  [mutex](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/mutex.py)    | Illustrate the use of mutexes to protect shared resources and avoid race conditions. |
+| 6  |  [semaphore](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/semaphore.py)           | Demonstrate the use of semaphores to limit the number of concurrent threads accessing a shared resource. |
+| 7  |  [producer_consumer](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/producer_consumer.py)    | Present a classic multi-threading problem (Producer-Consumer) and its solution using synchronization mechanisms like mutexes and condition variables. |
+| 8  |  [fetch_parallel](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/fetch_parallel.py)        | Showcase a practical application of multi-threading for parallel fetching of data from multiple sources. |
+| 9  |  [merge_sort](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/merge_sort.py)           | Demonstrate a threaded merge sort and the limits or potential benefits of parallel work depending on the Python runtime and workload. |
+| 10 |  [schedule_every_n_sec](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/schedule_every_n_sec.py)   | Show how to schedule tasks to run periodically at fixed intervals using threads. |
+| 11 |  [barrier](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/barrier.py)          | Demonstrate the use of barriers to synchronize multiple threads at a specific point in the execution. |
+| 12 |  [thread_local_storage](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/thread_local_storage.py)   | Illustrate the concept of Thread Local Storage (TLS) and how it can be used to store thread-specific data. |
+| 13 |  [thread_pool](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/thread_pool.py)          | Show how to create and use a thread pool to efficiently manage a fixed number of worker threads for executing multiple tasks. |
+| 14 |  [reader_writer_lock](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/reader_writer_lock.py)   | Explain the concept of Reader-Writer Locks and their use for efficient access to shared resources with multiple readers and a single writer. |
+| 15 |  [daemon_demo](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/python/multithreading/daemon_demo.py)   | Demonstrate daemon threads, which do not keep the Python process alive and may be stopped during interpreter shutdown. |
 
 #### Examples in JavaScript (Node.js)
 
@@ -1545,23 +1545,23 @@ Here are some example code snippets demonstrating various aspects of multithread
 
 | #  | Example                  | Description                                                                   |
 |----|--------------------------|-------------------------------------------------------------------------------|
-| 1  | [single_worker_thread](../src/js/multithreading/01_single_worker_thread.js)  | Introduce Worker Threads: `isMainThread`, `parentPort`, two-way messaging.         |
-| 2  | [thread_subclass](../src/js/multithreading/02_thread_subclass.js)        | Worker wrapper class; uses `eval()` for function serialization (note: antipattern for production).     |
-| 3  | [multiple_worker_threads](../src/js/multithreading/03_multiple_worker_threads.js)  | Spawn multiple workers dispatched by `workerData.functionName`; track completion.  |
-| 4  | [race_condition](../src/js/multithreading/04_race_condition_antipattern.js)        | ⚠️ ANTIPATTERN — unsynchronised SharedArrayBuffer counter; result is unpredictable.      |
-| 5  | [mutex](../src/js/multithreading/05_mutex.js)    | Mutex via `Atomics.compareExchange` + `Atomics.wait/notify`; fix for #4. |
-| 6  | [semaphore](../src/js/multithreading/06_semaphore.js)           | Counting semaphore with CAS acquire loop; explains why load+sub is a TOCTOU race. |
-| 7  | [producer_consumer](../src/js/multithreading/07_producer_consumer_antipattern.js)    | ⚠️ ANTIPATTERN — circular buffer with TOCTOU races on writeIdx/readIdx when using multiple producers/consumers. |
-| 8  | [fetch_parallel](../src/js/multithreading/08_fetch_parallel.js)        | Parallel HTTP fetching with workers; sequential vs. concurrent performance comparison. |
-| 9  | [merge_sort](../src/js/multithreading/09_merge_sort.js)           | Divide-and-conquer parallel merge sort; single-threaded vs. multi-threaded timing. |
-| 10 | [schedule_every_n_sec](../src/js/multithreading/10_schedule_every_n_sec.js)   | Periodic tasks in a worker; two-way message control (`start`/`stop` commands). |
-| 11 | [barrier](../src/js/multithreading/11_barrier.js)          | One-shot barrier: all threads wait at a sync point before any can continue. |
-| 12 | [thread_local_storage](../src/js/multithreading/12_thread_local_storage.js)   | Workers have isolated module scope — global variables are thread-local by default. |
-| 13 | [thread_pool](../src/js/multithreading/13_thread_pool.js)          | Fixed worker pool processing a task queue; worker reuse without re-spawning. |
-| 14 | [reader_writer_lock](../src/js/multithreading/14_reader_writer_lock_antipattern.js)   | ⚠️ ANTIPATTERN — naive polling reader-writer lock with TOCTOU races on both reader and writer paths. |
-| 15 | [message_channel](../src/js/multithreading/15_message_channel.js)   | `MessageChannel` for direct worker-to-worker communication; `transferList` for ports. |
-| 16 | [transferable](../src/js/multithreading/16_transferable.js)   | Structured clone vs. `ArrayBuffer` transfer (zero-copy, sender detached) vs. `SharedArrayBuffer`. |
-| 17 | [atomics_waitasync](../src/js/multithreading/17_atomics_waitasync.js)   | `Atomics.waitAsync` — non-blocking Promise-based coordination safe on the main thread; contrast with blocking `Atomics.wait`. |
-| 18 | [deadlock_antipattern](../src/js/multithreading/18_deadlock_antipattern.js)   | ⚠️ ANTIPATTERN — two workers each `Atomics.wait` for the other; exits via 3 s timeout. |
-| 19 | [worker_error_handling](../src/js/multithreading/19_worker_error_handling.js)   | `worker.on('error/exit')`; unhandled rejections; `uncaughtException` in worker; cooperative error propagation. |
-| 20 | [worker_lifecycle](../src/js/multithreading/20_worker_lifecycle.js)   | `worker.terminate()` (abrupt); cooperative cancellation via SAB flag; `worker.ref/unref`. |
+| 1  | [single_worker_thread](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/01_single_worker_thread.js)  | Introduce Worker Threads: `isMainThread`, `parentPort`, two-way messaging.         |
+| 2  | [thread_subclass](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/02_thread_subclass.js)        | Worker wrapper class; uses `eval()` for function serialization (note: antipattern for production).     |
+| 3  | [multiple_worker_threads](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/03_multiple_worker_threads.js)  | Spawn multiple workers dispatched by `workerData.functionName`; track completion.  |
+| 4  | [race_condition](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/04_race_condition_antipattern.js)        | ⚠️ ANTIPATTERN — unsynchronised SharedArrayBuffer counter; result is unpredictable.      |
+| 5  | [mutex](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/05_mutex.js)    | Mutex via `Atomics.compareExchange` + `Atomics.wait/notify`; fix for #4. |
+| 6  | [semaphore](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/06_semaphore.js)           | Counting semaphore with CAS acquire loop; explains why load+sub is a TOCTOU race. |
+| 7  | [producer_consumer](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/07_producer_consumer_antipattern.js)    | ⚠️ ANTIPATTERN — circular buffer with TOCTOU races on writeIdx/readIdx when using multiple producers/consumers. |
+| 8  | [fetch_parallel](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/08_fetch_parallel.js)        | Parallel HTTP fetching with workers; sequential vs. concurrent performance comparison. |
+| 9  | [merge_sort](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/09_merge_sort.js)           | Divide-and-conquer parallel merge sort; single-threaded vs. multi-threaded timing. |
+| 10 | [schedule_every_n_sec](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/10_schedule_every_n_sec.js)   | Periodic tasks in a worker; two-way message control (`start`/`stop` commands). |
+| 11 | [barrier](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/11_barrier.js)          | One-shot barrier: all threads wait at a sync point before any can continue. |
+| 12 | [thread_local_storage](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/12_thread_local_storage.js)   | Workers have isolated module scope — global variables are thread-local by default. |
+| 13 | [thread_pool](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/13_thread_pool.js)          | Fixed worker pool processing a task queue; worker reuse without re-spawning. |
+| 14 | [reader_writer_lock](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/14_reader_writer_lock_antipattern.js)   | ⚠️ ANTIPATTERN — naive polling reader-writer lock with TOCTOU races on both reader and writer paths. |
+| 15 | [message_channel](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/15_message_channel.js)   | `MessageChannel` for direct worker-to-worker communication; `transferList` for ports. |
+| 16 | [transferable](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/16_transferable.js)   | Structured clone vs. `ArrayBuffer` transfer (zero-copy, sender detached) vs. `SharedArrayBuffer`. |
+| 17 | [atomics_waitasync](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/17_atomics_waitasync.js)   | `Atomics.waitAsync` — non-blocking Promise-based coordination safe on the main thread; contrast with blocking `Atomics.wait`. |
+| 18 | [deadlock_antipattern](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/18_deadlock_antipattern.js)   | ⚠️ ANTIPATTERN — two workers each `Atomics.wait` for the other; exits via 3 s timeout. |
+| 19 | [worker_error_handling](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/19_worker_error_handling.js)   | `worker.on('error/exit')`; unhandled rejections; `uncaughtException` in worker; cooperative error propagation. |
+| 20 | [worker_lifecycle](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/js/multithreading/20_worker_lifecycle.js)   | `worker.terminate()` (abrupt); cooperative cancellation via SAB flag; `worker.ref/unref`. |

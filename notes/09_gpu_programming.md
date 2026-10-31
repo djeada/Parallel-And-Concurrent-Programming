@@ -1,7 +1,7 @@
 ## GPU Programming
 
 The CUDA and OpenCL listings in this chapter are **platform API and kernel
-mechanics**, separate from the [C++20 application examples](../src/cpp/README.md).
+mechanics**, separate from the [C++20 application examples](https://github.com/djeada/Parallel-And-Concurrent-Programming/blob/master/src/cpp/README.md).
 CUDA kernels need a CUDA toolchain, and OpenCL examples need its runtime and
 headers. Raw device allocation, transfer, and launch calls are shown to explain
 the GPU execution model; application code should keep those resources in scoped
